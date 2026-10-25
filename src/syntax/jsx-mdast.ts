@@ -8,6 +8,8 @@
  */
 
 import type { Data, Parent, RootContent } from "mdast";
+// 副作用导入：注册 jsxBlock 节点类型（dts 构建必须能沿依赖图找到它）
+import "./jsx-types";
 import type { CompileContext, Extension as FromMarkdownExtension, Token } from "mdast-util-from-markdown";
 import type { Handle, Options as ToMarkdownExtension, State } from "mdast-util-to-markdown";
 

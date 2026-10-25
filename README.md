@@ -40,15 +40,18 @@ import "@heikeson/md-engine/styles.css";
 | Tailwind | 4.x —— 包内 `engine.css` 使用 `@apply`，需由宿主的 Tailwind 管线处理 |
 | 构建器 | 需支持直接消费 TS 源码（Next/Turbopack、Vite、tsup 均可） |
 
-### 发布步骤
+### 构建与发布
 
 ```bash
-npm run typecheck     # 先确认类型
-npm pack --dry-run    # 检查产物清单（应只含 src 与文档）
-npm publish --access public
+npm run build          # tsup → dist（JS + .d.ts + sourcemap）
+npm run typecheck
+npm pack --dry-run     # 核对清单：dist / styles / 文档 / LICENSE，不含 src
+npm publish
 ```
 
-发布前请确认 `package.json` 的 `version`，并按语义化版本递增：新增组件属 minor，修 bug 属 patch。
+`prepublishOnly` 已串好 `build + typecheck`，构建失败就无法发布。
+
+**为什么要构建**：发布到 npm 后包位于 `node_modules`，Next 默认不转译依赖里的 TS，宿主得配 `transpilePackages`；构建后消费者零配置。详见 [docs/构建与发布.md](./docs/构建与发布.md)，含入口隔离、external 清单、样式为何不构建、构建期踩过的坑。
 
 ```
 src/

@@ -4,6 +4,15 @@
   "type": "module",
   "description": "Markdown 内容引擎：尖括号容器语法（<Callout> 等）解析、渲染、序列化与编辑器内核，可直接消费 TS 源码",
   "license": "MIT",
+  "author": "heikeson",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/heikeson/md-engine.git"
+  },
+  "homepage": "https://github.com/heikeson/md-engine#readme",
+  "bugs": {
+    "url": "https://github.com/heikeson/md-engine/issues"
+  },
   "keywords": [
     "markdown",
     "micromark",
@@ -17,21 +26,34 @@
   "sideEffects": [
     "**/*.css"
   ],
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./src/index.ts",
-    "./editor": "./src/editor/index.ts",
-    "./components": "./src/components/index.ts",
-    "./styles.css": "./src/styles/engine.css"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./editor": {
+      "types": "./dist/editor/index.d.ts",
+      "import": "./dist/editor/index.js"
+    },
+    "./components": {
+      "types": "./dist/components/index.d.ts",
+      "import": "./dist/components/index.js"
+    },
+    "./styles.css": "./styles/engine.css"
   },
   "files": [
-    "src",
+    "dist",
+    "styles",
     "README.md",
-    "对接契约.md"
+    "对接契约.md",
+    "LICENSE"
   ],
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build && npm run typecheck"
   },
   "dependencies": {
     "@codemirror/commands": "^6.11.1",
@@ -42,6 +64,7 @@
     "@types/mdast": "4.0.4",
     "clsx": "2.1.1",
     "hast-util-to-jsx-runtime": "2.3.6",
+    "lucide-react": "^1.61.0",
     "mdast-util-from-markdown": "2.0.3",
     "mdast-util-gfm": "3.1.0",
     "mdast-util-to-hast": "13.2.1",
@@ -57,7 +80,8 @@
     "remark-rehype": "11.1.2",
     "tailwind-merge": "3.6.0",
     "unified": "11.0.5",
-    "unist-util-visit": "5.1.0"
+    "unist-util-visit": "5.1.0",
+    "@types/hast": "^3.0.5"
   },
   "peerDependencies": {
     "react": ">=19",
@@ -66,6 +90,14 @@
   "devDependencies": {
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "tsup": "^8.3.0"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   }
 }

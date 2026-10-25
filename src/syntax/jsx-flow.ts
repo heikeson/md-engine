@@ -17,6 +17,10 @@ import type {
   Token,
   TokenizeContext,
 } from "micromark-util-types";
+// 副作用导入：注册自定义 token 名的 declaration merging。
+// 必须显式引入，否则按入口做依赖分析的工具（如 tsup 的 dts）会漏掉这个文件，
+// 导致 TokenTypeMap 未扩展、构建期类型报错。
+import "./jsx-types";
 import { asciiAlpha, asciiAlphanumeric, markdownLineEnding } from "micromark-util-character";
 import { COMPONENTS, ITEMS } from "../registry";
 

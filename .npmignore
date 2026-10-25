@@ -1,0 +1,63 @@
+# @file .npmignore
+# @description npm 发布产物排除清单：与 package.json 的 files 白名单形成双保险。
+#   构建模式下发布物只含 dist/ + styles/ + README.md + 对接契约.md + LICENSE，
+#   源码、配置、开发文档一律不进包。
+# @created 2026-10-25 11:10
+# @updated 2026-10-25 11:40
+
+# —— 源码（构建模式不发布源码，只发 dist/）——
+src/
+
+# —— 开发文档（不进包；README + 对接契约已足够）——
+docs/
+
+# —— 版本控制 ——
+.git/
+.gitignore
+.github/
+
+# —— 依赖与中间产物（dist/ 是发布物，不排除）——
+node_modules/
+build/
+.turbo/
+.next/
+.nuxt/
+.output/
+*.tsbuildinfo
+
+# —— 临时与日志 ——
+*.log
+*.tgz
+.tmp/
+.cache/
+
+# —— IDE 与工具配置 ——
+.vscode/
+.idea/
+.codebuddy/
+*.code-workspace
+.DS_Store
+Thumbs.db
+
+# —— 类型与构建配置（宿主自行配置；tsup.config.ts 是开发用，不进包）——
+tsconfig.json
+tsconfig.*.json
+tsup.config.ts
+*.config.ts
+*.config.js
+*.config.mjs
+*.config.cjs
+
+# —— npm 自身配置文件 ——
+.npmrc
+.npmignore
+
+# —— 测试与 CI（暂无，但预留排除）——
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+__tests__/
+e2e/
+coverage/
+.nyc_output/

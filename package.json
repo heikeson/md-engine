@@ -1,0 +1,71 @@
+{
+  "name": "@heikeson/md-engine",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Markdown 内容引擎：尖括号容器语法（<Callout> 等）解析、渲染、序列化与编辑器内核，可直接消费 TS 源码",
+  "license": "MIT",
+  "keywords": [
+    "markdown",
+    "micromark",
+    "mdast",
+    "unified",
+    "remark",
+    "codemirror",
+    "callout",
+    "fumadocs"
+  ],
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./editor": "./src/editor/index.ts",
+    "./components": "./src/components/index.ts",
+    "./styles.css": "./src/styles/engine.css"
+  },
+  "files": [
+    "src",
+    "README.md",
+    "对接契约.md"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@codemirror/commands": "^6.11.1",
+    "@codemirror/lang-markdown": "^6.5.2",
+    "@codemirror/language": "^6.13.1",
+    "@codemirror/state": "^6.7.6",
+    "@codemirror/view": "^6.43.15",
+    "@types/mdast": "4.0.4",
+    "clsx": "2.1.1",
+    "hast-util-to-jsx-runtime": "2.3.6",
+    "mdast-util-from-markdown": "2.0.3",
+    "mdast-util-gfm": "3.1.0",
+    "mdast-util-to-hast": "13.2.1",
+    "mdast-util-to-markdown": "2.1.2",
+    "micromark-extension-gfm": "3.0.0",
+    "micromark-util-character": "2.1.1",
+    "micromark-util-types": "2.0.2",
+    "rehype-katex": "7.0.1",
+    "rehype-slug": "6.0.0",
+    "remark-gfm": "4.0.1",
+    "remark-math": "6.0.0",
+    "remark-parse": "11.0.0",
+    "remark-rehype": "11.1.2",
+    "tailwind-merge": "3.6.0",
+    "unified": "11.0.5",
+    "unist-util-visit": "5.1.0"
+  },
+  "peerDependencies": {
+    "react": ">=19",
+    "react-dom": ">=19"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.7.0"
+  }
+}

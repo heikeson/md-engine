@@ -1,0 +1,54 @@
+/**
+ * @file 唯一解析入口
+ * @description Markdown → mdast（已含尖括号块节点），再跑策略层得到诊断。
+ *   渲染、序列化、编辑器块索引都基于这里产出的同一棵 mdast，避免重复解析。
+ * @created 2026-10-24 20:24
+ * @updated 2026-10-24 20:24
+ */
+
+import { fromMarkdown } from "mdast-util-from-markdown";
+import { gfm } from "micromark-extension-gfm";
+import { gfmFromMarkdown } from "mdast-util-gfm";
+import type { Root } from "mdast";
+import { jsxBlocks } from "./syntax/jsx-flow";
+import { jsxFromMarkdown } from "./syntax/jsx-mdast";
+import { collectUnclosed, enforceMaxDepth, type Diagnostic } from "./policy";
+import { extractBlocks, type Block } from "./blocks";
+
+/** 解析选项 */
+export interface ParseOptions {
+  /** 覆盖默认嵌套深度上限 */
+  maxDepth?: number;
+}
+
+/** 解析结果 */
+export interface ParseResult {
+  /** mdast 根节点（容器已是 jsxBlock 节点） */
+  tree: Root;
+  /** 扁平块索引，编辑器用于定位与出块 UI */
+  blocks: Block[];
+  /** 诊断列表，供编辑器提示 */
+  diagnostics: Diagnostic[];
+}
+
+/**
+ * 解析 Markdown 为 mdast 并执行策略层
+ * @param md Markdown 原文
+ * @param options 解析选项
+ * @returns mdast 与诊断
+ */
+export function parse(md: string, options?: ParseOptions): ParseResult {
+  const source = md ?? "";
+  const tree = fromMarkdown(source, {
+    // GFM（表格 / 删除线 / 任务列表）与尖括号块并列注册，解析与序列化保持同一口径
+    extensions: [gfm(), jsxBlocks()],
+    mdastExtensions: [gfmFromMarkdown(), jsxFromMarkdown()],
+  });
+  const diagnostics: Diagnostic[] = [
+    ...enforceMaxDepth(tree, source, options?.maxDepth),
+    ...collectUnclosed(tree, source),
+  ];
+  // 块索引必须在策略层裁剪之后提取，保证区间与最终渲染一致
+  const blocks = extractBlocks(tree, source);
+  return { tree, blocks, diagnostics };
+}

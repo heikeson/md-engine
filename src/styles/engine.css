@@ -1,0 +1,342 @@
+/**
+ * @file 内容组件样式（引擎包自带）
+ * @description 由宿主 `app/globals.css` 以 `@import "@heikeson/md-engine/styles.css"` 引入。
+ *   作用域挂在宿主正文容器 `.prose-site` 下（该类由宿主传给渲染器，属对外契约的一部分）。
+ *   颜色一律引用宿主主题变量（`border-border`、`text-muted-foreground` 等），包内不写死色值；
+ *   换肤只改宿主主题，组件样式随包版本升级。
+ * @created 2026-10-24 20:31
+ * @updated 2026-10-24 20:31
+ */
+
+@layer components {
+  /* ---------- Callout 提示框 ---------- */
+  .prose-site .callout {
+    @apply my-5 rounded-lg border-l-4 px-4 py-3;
+  }
+  .prose-site .callout-title {
+    @apply mb-1 flex items-center gap-2 text-sm font-semibold;
+  }
+  .prose-site .callout-icon {
+    @apply size-4 shrink-0;
+  }
+  .prose-site .callout-body > :first-child {
+    @apply mt-0;
+  }
+  .prose-site .callout-body > :last-child {
+    @apply mb-0;
+  }
+  .prose-site .callout-note {
+    @apply border-blue-500 bg-blue-500/10 text-blue-700 dark:text-blue-300;
+  }
+  .prose-site .callout-tip {
+    @apply border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300;
+  }
+  .prose-site .callout-important {
+    @apply border-violet-500 bg-violet-500/10 text-violet-700 dark:text-violet-300;
+  }
+  .prose-site .callout-warning {
+    @apply border-amber-500 bg-amber-500/10 text-amber-700 dark:text-amber-300;
+  }
+  .prose-site .callout-caution {
+    @apply border-red-500 bg-red-500/10 text-red-700 dark:text-red-300;
+  }
+
+  /* ---------- Tabs 选项卡 ---------- */
+  .prose-site .tabs {
+    @apply my-5 overflow-hidden rounded-lg border border-border;
+  }
+  /* 标准下划线形态：无底色、无阴影 */
+  .prose-site .tabs-header {
+    @apply flex flex-wrap gap-5 border-b border-border px-0 py-0;
+  }
+  .prose-site .tab-btn {
+    @apply border-b-2 border-transparent px-1 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground;
+  }
+  .prose-site .tab-btn.active {
+    @apply border-primary text-foreground;
+  }
+  .prose-site .tab-panel {
+    @apply p-4;
+  }
+  .prose-site .tab-panel[hidden] {
+    @apply hidden;
+  }
+
+  /* ---------- Accordion 折叠 ---------- */
+  .prose-site .accordion {
+    @apply my-5 overflow-hidden rounded-lg border border-border bg-background;
+  }
+  .prose-site .accordion-item {
+    @apply border-b border-border last:border-b-0;
+  }
+  /* 触发区：高度 ≥44px（触摸目标），键盘可达，hover 与展开态分层。
+     标题用 semibold + 前景色，与正文（常规字重 + 弱化色）拉开层级。 */
+  .prose-site .accordion-trigger {
+    @apply flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left text-sm font-semibold text-foreground transition-colors;
+  }
+  .prose-site .accordion-trigger:hover {
+    @apply bg-muted/60;
+  }
+  .prose-site .accordion-trigger:focus-visible {
+    @apply outline-none ring-2 ring-ring ring-inset;
+  }
+  /* 注意：Tailwind 4 的 rotate-180 生成独立属性 `rotate:`，用 transition-transform 不会过渡；
+     transition 的默认属性表包含 transform/translate/scale/rotate，故此处用 transition。 */
+  .prose-site .accordion-chevron {
+    @apply size-4 shrink-0 text-muted-foreground transition duration-200;
+  }
+  .prose-site .accordion-item.open .accordion-chevron {
+    @apply rotate-180 text-foreground;
+  }
+  /* 展开项标记：用 inset 阴影画一条贯穿「标题 + 内容」的主色条。
+     不用 border-l，因为 border 会挤占 padding 导致该项文字与其它项错位。 */
+  .prose-site .accordion-item.open {
+    box-shadow: inset 2px 0 0 var(--color-primary, currentColor);
+  }
+  /* 展开动画：grid 0fr → 1fr，无需测量高度 */
+  .prose-site .accordion-panel {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 220ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .prose-site .accordion-panel[data-open="true"] {
+    grid-template-rows: 1fr;
+  }
+  .prose-site .accordion-panel-inner {
+    overflow: hidden;
+    min-height: 0;
+  }
+  /* 正文与标题的区分：弱化文字色 + 浅底 + 顶部留白。
+     收起时 inner 被 grid 压扁并裁剪，padding 不会撑出高度。 */
+  .prose-site .accordion-content {
+    @apply bg-muted/30 px-4 pt-3 pb-4 text-sm leading-relaxed text-muted-foreground;
+  }
+  .prose-site .accordion-content > :first-child {
+    @apply mt-0;
+  }
+  .prose-site .accordion-content > :last-child {
+    @apply mb-0;
+  }
+  /* 偏好减少动画时直接切换，不做过渡 */
+  @media (prefers-reduced-motion: reduce) {
+    .prose-site .accordion-panel,
+    .prose-site .accordion-chevron {
+      transition: none;
+    }
+  }
+
+  /* ---------- Image 图片（对齐 / 尺寸 / 题注） ---------- */
+  .prose-site .image {
+    @apply my-5;
+  }
+  .prose-site .image.align-left {
+    @apply mr-auto;
+  }
+  .prose-site .image.align-center {
+    @apply mx-auto text-center;
+  }
+  .prose-site .image.align-right {
+    @apply ml-auto text-right;
+  }
+  .prose-site .image-img {
+    /* 限制最大宽度：窄屏下宽图不撑破正文容器 */
+    @apply inline-block max-w-full rounded-lg;
+    height: auto;
+  }
+  .prose-site .image figcaption {
+    @apply mt-2 text-center text-sm text-muted-foreground;
+  }
+  /* 图片放大：点击图片全屏查看，点遮罩或 Esc 关闭 */
+  .prose-site .image-img-zoomable {
+    @apply cursor-zoom-in;
+  }
+  .prose-site .image-zoom-mask {
+    @apply fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4;
+    cursor: zoom-out;
+  }
+  .prose-site .image-zoom-img {
+    @apply max-h-full max-w-full rounded-lg object-contain;
+  }
+
+  /* ---------- TypeTable 类型表 ---------- */
+  .prose-site .type-table {
+    @apply my-5 overflow-hidden rounded-lg border border-border;
+  }
+  .prose-site .type-table table {
+    @apply w-full border-collapse text-sm;
+  }
+  .prose-site .type-table thead th {
+    @apply border-b border-border bg-muted/40 px-3 py-2 text-left font-medium text-foreground;
+  }
+  .prose-site .type-table tbody td {
+    @apply border-b border-border px-3 py-2 align-top;
+  }
+  .prose-site .type-table tbody tr:last-child td {
+    @apply border-b-0;
+  }
+  .prose-site .type-table code {
+    @apply rounded bg-muted px-1.5 py-0.5 text-[13px];
+  }
+  .prose-site .type-cell-name code {
+    @apply font-semibold text-foreground;
+  }
+  .prose-site .type-cell-default,
+  .prose-site .type-cell-desc {
+    @apply text-muted-foreground;
+  }
+  .prose-site .type-required {
+    @apply ml-2 rounded bg-red-500/10 px-1.5 py-0.5 text-[11px] text-red-600 dark:text-red-400;
+  }
+
+  /* ---------- Steps 步骤 ---------- */
+  .prose-site .steps {
+    @apply my-5;
+  }
+  .prose-site .step {
+    @apply relative flex gap-3 pb-5 last:pb-0;
+  }
+  .prose-site .step::before {
+    content: "";
+    @apply absolute left-3 top-7 bottom-0 w-px bg-border;
+  }
+  .prose-site .step:last-child::before {
+    @apply hidden;
+  }
+  .prose-site .step-marker {
+    @apply z-10 flex size-6 shrink-0 items-center justify-center rounded-full border border-border bg-background text-xs font-semibold;
+  }
+  .prose-site .step-body {
+    @apply flex-1 min-w-0;
+  }
+  .prose-site .step-title {
+    @apply mb-1 font-semibold;
+  }
+  .prose-site .step-content > :first-child {
+    @apply mt-0;
+  }
+  .prose-site .step-content > :last-child {
+    @apply mb-0;
+  }
+
+  /* ---------- Cards 卡片 ---------- */
+  .prose-site .cards {
+    @apply my-5 grid gap-3 sm:grid-cols-2;
+  }
+  .prose-site .card {
+    @apply block rounded-lg border border-border p-4 transition-colors;
+  }
+  .prose-site .card-link {
+    @apply hover:border-primary hover:bg-muted/50;
+  }
+  .prose-site .card-title {
+    @apply mb-1 font-semibold;
+    overflow-wrap: break-word;
+  }
+  /* 卡片图标（短文本 / emoji） */
+  .prose-site .card-icon {
+    @apply mr-1.5;
+  }
+  .prose-site .card-body {
+    @apply text-sm text-muted-foreground;
+    overflow-wrap: break-word;
+  }
+  .prose-site .card-body > :first-child {
+    @apply mt-0;
+  }
+  .prose-site .card-body > :last-child {
+    @apply mb-0;
+  }
+
+  /* ---------- Files 文件树（Files / Folder / File，原生 details 折叠） ---------- */
+  .prose-site .files {
+    @apply my-5 rounded-lg border border-border bg-muted/20 p-2 text-sm;
+  }
+  .prose-site .files-row {
+    @apply flex items-center gap-2 rounded-md px-2 py-1 text-muted-foreground;
+  }
+  .prose-site .files-folder > summary {
+    @apply cursor-pointer list-none transition-colors hover:bg-muted/60 hover:text-foreground;
+  }
+  .prose-site .files-folder > summary::-webkit-details-marker {
+    display: none;
+  }
+  /* Tailwind 4 的 rotate-90 是独立属性，过渡需用 transition 而非 transition-transform */
+  .prose-site .files-chevron {
+    @apply inline-flex shrink-0 transition duration-200;
+  }
+  .prose-site .files-folder[open] > summary .files-chevron {
+    @apply rotate-90;
+  }
+  /* 嵌套层级用左侧缩进线表示 */
+  .prose-site .files-children {
+    @apply ml-3 border-l border-border/70 pl-2;
+  }
+  .prose-site .files-icon {
+    @apply size-4 shrink-0;
+  }
+  .prose-site .files-name {
+    @apply truncate;
+  }
+  .prose-site .files-folder-name {
+    @apply font-medium text-foreground;
+  }
+  .prose-site .files-count {
+    @apply ml-auto text-[11px] tabular-nums text-muted-foreground;
+  }
+  .prose-site .files-file-row {
+    @apply transition-colors hover:bg-muted/60 hover:text-foreground;
+  }
+  /* 文件行无箭头，补等宽占位使其与目录名对齐 */
+  .prose-site .files-spacer {
+    @apply inline-block w-[10px] shrink-0;
+  }
+
+  /* ---------- 编辑器（后台，不套 .prose-site） ---------- */
+  .md-editor {
+    @apply flex h-full min-h-0 flex-col rounded-lg border border-border bg-background;
+  }
+  .md-editor-toolbar {
+    @apply flex flex-wrap items-center gap-1 border-b border-border px-2 py-1.5;
+  }
+  .md-editor-toolbar button {
+    @apply rounded px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground;
+    min-height: 28px;
+  }
+  .md-editor-toolbar button:disabled {
+    @apply cursor-not-allowed opacity-40;
+  }
+  .md-editor-sep {
+    @apply mx-1 h-4 w-px bg-border;
+  }
+  /* 工具栏右侧推到底：视图切换与全屏 */
+  .md-editor-grow {
+    @apply flex-1;
+  }
+  .md-editor-views {
+    @apply flex items-center gap-0.5 rounded-md bg-muted p-0.5;
+  }
+  .md-editor-views button {
+    @apply rounded px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:text-foreground;
+    min-height: 24px;
+  }
+  .md-editor-views button[data-active="true"] {
+    @apply bg-background text-foreground shadow-sm;
+  }
+  .md-editor-body {
+    @apply flex min-h-0 flex-1;
+  }
+  /* 编辑区容器：交给 CodeMirror 自己排版（内边距与字体在 THEME 里定义） */
+  .md-editor-source {
+    @apply min-h-0 flex-1 overflow-hidden;
+  }
+  /* relative：滚动同步用 el.offsetTop，必须以预览容器作为定位父级，否则 top 会偏到外层 */
+  .md-editor-preview {
+    @apply relative min-h-0 flex-1 overflow-y-auto border-l border-border p-4;
+  }
+  .md-editor-status {
+    @apply flex items-center gap-3 border-t border-border px-3 py-1 text-xs text-muted-foreground;
+  }
+  .md-editor-status-warn {
+    @apply text-amber-600 dark:text-amber-400;
+  }
+}

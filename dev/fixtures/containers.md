@@ -148,9 +148,23 @@ danger 语气，破坏性操作。
 
 <File name="theme.css" />
 
+<File name="data.json" />
+
+<File name="logo.png" />
+
+<File name=".gitignore" />
+
 </Folder>
 
 <File name="README.md" />
+
+<File name="run.sh" />
+
+<File name="report" icon="sheet" />
+
+<File name="types" icon="ts" />
+
+<File name="unknown.custom" />
 
 </Files>
 

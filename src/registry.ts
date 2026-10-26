@@ -55,8 +55,8 @@ export const ITEMS: Readonly<Record<string, ItemSpec>> = {
   AccItem: { name: "AccItem", attrs: ["title", "type"] },
   // 文件树目录：可嵌套，defaultOpen 布尔控制默认展开
   Folder: { name: "Folder", attrs: ["name"], boolAttrs: ["defaultOpen"] },
-  // 文件树叶子：自闭合，href 可选（给了就渲染成链接）
-  File: { name: "File", attrs: ["name", "href"], selfClosing: true },
+  // 文件树叶子：自闭合，href 可选（给了就渲染成链接）；icon 可选（覆盖自动类型图标）
+  File: { name: "File", attrs: ["name", "href", "icon"], selfClosing: true },
   // 类型表行：name 属性名、type 类型、default 默认值、required 布尔必填
   TypeItem: { name: "TypeItem", attrs: ["name", "type", "default"], boolAttrs: ["required"] },
 };

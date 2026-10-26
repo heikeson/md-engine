@@ -1,0 +1,103 @@
+/**
+ * @file dev/theme.css
+ * @description 本地开发渲染的样式入口：引入 Tailwind 4 与真实的 engine.css，并补一套**同名**语义令牌。
+ *   engine.css 全量 @apply 宿主令牌（border-border / bg-muted / text-muted-foreground / border-primary / ring-ring），
+ *   本仓库没有宿主主题，故在此给最小值（名必须与 .prose-site 契约一致，值取宿主近似）。
+ *   这里只做"够看清组件"的近似，真实排版以宿主 blog 为准。
+ * @created 2026-10-26 21:50
+ * @updated 2026-10-26 21:50
+ */
+
+@import "tailwindcss";
+@import "katex/dist/katex.min.css";
+@import "../styles/engine.css";
+
+/* 与宿主一致：dark 由 .dark 祖先类切换（宿主 theme.css 同款写法） */
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-ring: var(--ring);
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #0f1419;
+  --muted: #f3f6f7;
+  --muted-foreground: #5b6b78;
+  --border: #e6ebed;
+  --primary: #01c4b6;
+  --ring: #01c4b6;
+}
+
+.dark {
+  --background: #0f1419;
+  --foreground: #e8eef2;
+  --muted: #1a222a;
+  --muted-foreground: #8a98a3;
+  --border: #232c34;
+  --primary: #19d3c5;
+  --ring: #19d3c5;
+}
+
+/* 基础排版：只覆盖 .prose-site 内最常见元素，保证预览可读；宿主的 prose.css 更完整 */
+@layer components {
+  .prose-site {
+    @apply text-[15px] leading-7 text-foreground;
+  }
+  .prose-site h1 {
+    @apply mt-6 mb-3 text-2xl font-bold;
+  }
+  .prose-site h2 {
+    @apply mt-6 mb-2 text-xl font-semibold;
+  }
+  .prose-site h3 {
+    @apply mt-4 mb-2 text-base font-semibold;
+  }
+  .prose-site p {
+    @apply my-3;
+  }
+  .prose-site a {
+    @apply text-primary underline underline-offset-2;
+  }
+  .prose-site ul {
+    @apply my-3 list-disc pl-6;
+  }
+  .prose-site ol {
+    @apply my-3 list-decimal pl-6;
+  }
+  .prose-site blockquote {
+    @apply my-4 border-l-4 border-border pl-4 text-muted-foreground;
+  }
+  .prose-site code {
+    @apply rounded bg-muted px-1.5 py-0.5 text-[13px];
+  }
+  .prose-site pre {
+    @apply my-4 overflow-x-auto rounded-lg border border-border bg-muted/40 p-4 text-[13px];
+  }
+  .prose-site pre code {
+    @apply bg-transparent p-0;
+  }
+  .prose-site table {
+    @apply my-4 w-full border-collapse text-sm;
+  }
+  .prose-site th,
+  .prose-site td {
+    @apply border-b border-border px-3 py-2 text-left;
+  }
+  .prose-site hr {
+    @apply my-6 border-border;
+  }
+}
+
+/* 编辑器需要确定高度才能撑满（.md-editor 用 h-full） */
+html,
+body,
+#root {
+  height: 100%;
+}

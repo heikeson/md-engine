@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" width="320" height="180" role="img" aria-label="本地占位图">
+  <rect width="320" height="180" rx="12" fill="#0f1419" />
+  <circle cx="56" cy="90" r="22" fill="#19d3c5" />
+  <rect x="96" y="66" width="168" height="12" rx="6" fill="#e8eef2" />
+  <rect x="96" y="90" width="120" height="10" rx="5" fill="#8a98a3" />
+  <rect x="96" y="108" width="144" height="10" rx="5" fill="#8a98a3" />
+</svg>

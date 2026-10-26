@@ -15,6 +15,9 @@ dist/
 # —— npm pack 产物 ——
 *.tgz
 
+# —— 本地渲染产物（dev server 与静态快照的临时输出）——
+dev/.out/
+
 # —— 临时与日志 ——
 *.log
 .tmp/

@@ -3,8 +3,8 @@
 > @file README.md
 > @description 独立 Markdown 引擎项目（包名 `@heikeson/md-engine`）：解析、渲染、序列化、格式化、编辑器的唯一实现地。宿主站点只提供 Markdown 内容与站点级注入。
 > @created 2026-10-24 19:57
-> @updated 2026-10-25 02:30 新增「六、框架说明」「七、组件开发规范」
-> @status 源码已迁入·待独立发布
+> @updated 2026-10-26 21:42 状态同步：包已发布到 npm（0.1.0），宿主已删除本地副本、改为依赖 npm 包
+> @status 已发布 npm 0.1.0·宿主已切换依赖
 
 ## 一、这个项目是什么
 
@@ -18,9 +18,9 @@
 
 ## 二、包形态
 
-> **当前状态**：源码已迁入本目录（**可独立发布**）。`blog-heikeson2026` 暂保留 `packages/md-engine` 作为本地开发副本，待本包发布到 npm 后切换为依赖 `@heikeson/md-engine`。
+> **当前状态（2026-10-26）**：`@heikeson/md-engine@0.1.0` 已于 2026-10-25 发布到 npm（`latest`），产物是 `tsup` 构建的 `dist/`（主入口 / 编辑器 / 组件三个入口）+ `styles/`，源码不入包。宿主 `blog-heikeson2026` 已删除 `packages/md-engine` 本地副本，改为依赖 npm 包（`^0.1.0`）消费 `dist/`——**本仓库现在是该引擎的唯一实现地**。
 
-### 安装与使用（发布后）
+### 安装与使用
 
 ```bash
 npm install @heikeson/md-engine
@@ -38,7 +38,7 @@ import "@heikeson/md-engine/styles.css";
 |---|---|
 | React | 19+（peer dependency） |
 | Tailwind | 4.x —— 包内 `engine.css` 使用 `@apply`，需由宿主的 Tailwind 管线处理 |
-| 构建器 | 需支持直接消费 TS 源码（Next/Turbopack、Vite、tsup 均可） |
+| 构建器 | 无额外要求：包内已产出 `dist/`（JS + `.d.ts`），宿主按常规依赖消费即可 |
 
 ### 构建与发布
 
@@ -50,6 +50,8 @@ npm publish
 ```
 
 `prepublishOnly` 已串好 `build + typecheck`，构建失败就无法发布。
+
+当前线上版本：`0.1.0`（2026-10-25 发布，`latest`）。
 
 **为什么要构建**：发布到 npm 后包位于 `node_modules`，Next 默认不转译依赖里的 TS，宿主得配 `transpilePackages`；构建后消费者零配置。详见 [docs/构建与发布.md](./docs/构建与发布.md)，含入口隔离、external 清单、样式为何不构建、构建期踩过的坑。
 
@@ -69,9 +71,11 @@ src/
 │  ├─ jsx-mdast.ts            token ↔ mdast 双向（含属性解析、自闭合、序列化）
 │  ├─ jsx-remark.ts           把扩展注入 unified 的标准方式（data.micromarkExtensions 等）
 │  └─ jsx-types.ts            TokenTypeMap / RootContentMap 类型注册
-├─ components/                8 个容器组件 + 7 个子项 + index 映射 + internal（cn / url-policy）
-├─ styles/engine.css          语义类 + CSS 变量默认值（宿主只覆盖变量）
+├─ components/                8 个容器组件 + 7 个子项 + index 映射
+├─ internal/                  cn（clsx + tailwind-merge）/ isSafeHref 协议白名单
 └─ editor/                    CodeMirror 封装、纯函数文本动作、插入骨架、滚动同步、工具栏
+
+styles/engine.css             仓库根目录（不在 src 内）：语义类 + CSS 变量默认值
 
 exports
 ├─ "."              → parse / render / serialize / format / blocks / registry（SSR 安全）

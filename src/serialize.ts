@@ -1,13 +1,14 @@
 /**
  * @file 序列化：mdast → Markdown
- * @description 与解析对称：解析支持的写法，序列化必须能产出。GFM（表格/删除线/任务列表）
- *   与尖括号块各自注册 handler，空行由 handler 统一产出。
+ * @description 与解析对称：解析支持的写法，序列化必须能产出。GFM（表格/删除线/任务列表）、
+ *   数学公式与尖括号块各自注册 handler，空行由 handler 统一产出。
  * @created 2026-10-24 20:30
- * @updated 2026-10-24 20:30
+ * @updated 2026-10-26 22:02
  */
 
 import { toMarkdown } from "mdast-util-to-markdown";
 import { gfmToMarkdown } from "mdast-util-gfm";
+import { mathToMarkdown } from "mdast-util-math";
 import type { Root } from "mdast";
 import { jsxToMarkdown } from "./syntax/jsx-mdast";
 import { parse } from "./parse";
@@ -30,7 +31,8 @@ const OPTIONS = {
 export function serialize(tree: Root): string {
   return toMarkdown(tree, {
     ...OPTIONS,
-    extensions: [gfmToMarkdown(), jsxToMarkdown()],
+    // mathToMarkdown 直接把公式原文写回 `$…$` / `$$…$$`，不再走文本转义
+    extensions: [gfmToMarkdown(), mathToMarkdown(), jsxToMarkdown()],
   });
 }
 

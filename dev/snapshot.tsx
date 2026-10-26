@@ -7,7 +7,7 @@
  * @updated 2026-10-26 21:58
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { MarkdownRenderer, roundtrip } from "../src/index";
@@ -79,7 +79,12 @@ function checkRoundtrip(): string[] {
   const failures: string[] = [];
   for (const item of FIXTURES) {
     const out = roundtrip(item.content);
-    if (out === item.content) continue;
+    const dump = join(OUT_DIR, `roundtrip-${item.id}.md`);
+    if (out === item.content) {
+      // 已修复的样例，删掉上一轮遗留的差异文件，避免误读
+      if (existsSync(dump)) unlinkSync(dump);
+      continue;
+    }
     let at = 0;
     while (at < item.content.length && item.content[at] === out[at]) at += 1;
     writeFileSync(join(OUT_DIR, `roundtrip-${item.id}.md`), out, "utf8");

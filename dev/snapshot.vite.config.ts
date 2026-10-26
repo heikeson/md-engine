@@ -15,7 +15,8 @@ export default defineConfig({
   build: {
     ssr: "snapshot.tsx",
     outDir: ".out",
-    emptyOutDir: true,
+    // 不清空输出目录：产物名固定，覆盖即可；清空会触发上层安全删除代理，反复失败
+    emptyOutDir: false,
     target: "node20",
     rollupOptions: {
       // 只有裸包名（react / unified 等）与 node: 内置模块交给 Node 解析；

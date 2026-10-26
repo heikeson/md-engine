@@ -47,7 +47,6 @@ export const FIXTURES: readonly Fixture[] = [
     id: "kitchen-sink",
     label: "常规语法",
     content: kitchenSink,
-    roundtrip: "known-diff",
-    note: "数学公式往返时 `\\_`、`\\,` 被转义，属待修缺陷",
+    roundtrip: "strict",
   },
 ];

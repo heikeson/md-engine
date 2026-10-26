@@ -3,8 +3,8 @@
 > @file README.md
 > @description 独立 Markdown 引擎项目（包名 `@heikeson/md-engine`）：解析、渲染、序列化、格式化、编辑器的唯一实现地。宿主站点只提供 Markdown 内容与站点级注入。
 > @created 2026-10-24 19:57
-> @updated 2026-10-26 21:59 新增「十、本地开发渲染」：playground（5180）与静态快照命令
-> @status 已发布 npm 0.1.0·宿主已切换依赖·本地开发渲染就绪
+> @updated 2026-10-26 22:03 修复数学公式往返被转义（parse / serialize 对称接入 math 扩展）
+> @status 已发布 npm 0.1.0·宿主已切换依赖·本地开发渲染就绪·公式往返已修
 
 ## 一、这个项目是什么
 
@@ -102,7 +102,7 @@ exports
 
 | 类型 | 包 |
 |---|---|
-| 运行依赖 | `mdast-util-from-markdown`、`mdast-util-to-markdown`、`unist-util-visit`、`@types/mdast` |
+| 运行依赖 | `mdast-util-from-markdown`、`mdast-util-to-markdown`、`mdast-util-gfm`、`mdast-util-math`、`micromark-extension-gfm`、`micromark-extension-math`、`unist-util-visit`、`@types/mdast` |
 | 渲染依赖 | `react-markdown`、`remark-gfm`、`remark-math`、`rehype-slug`、`rehype-katex`、`shiki`（按需动态加载）、`mermaid`（按需动态加载） |
 | 编辑器依赖 | `@codemirror/state`、`@codemirror/view`、`@codemirror/commands`、`@codemirror/language`、`@codemirror/lang-markdown` |
 | peer | `react`、`react-dom` |
@@ -321,6 +321,8 @@ npm run snapshot   # 静态快照：3 篇 fixtures → dev/.out/preview.html（�
 1. **样式令牌要在 `dev/theme.css` 里补齐**：`engine.css` 全量 `@apply` 宿主的语义令牌（`border-border`、`bg-muted`、`text-muted-foreground` 等），本仓库没有宿主主题，故 dev 目录维护一套**同名最小令牌**（明/暗各 7 个色值）。改令牌名等于改契约，两边必须一致。
 2. **本地只验证引擎层**：宿主独有排版（`prose.css`、代码高亮 shiki、mermaid、TOC）不在范围内，最终效果以宿主为准。
 
-已记录的差异（底栏按琥珀色提示，不判回归）：数学公式往返会被转义（`\_`、`\,` 当普通文本），以及容错样例的序列化差异——前者是待修缺陷，后者是降级设计的必然结果。详见 [docs/本地开发渲染/需求文档.md](./docs/本地开发渲染/需求文档.md)。
+底栏的往返结论分三态：**逐字一致**（绿）、**样例标注的已知差异**（琥珀）、**疑似回归**（红）。目前只剩「容错降级」一篇是琥珀——未闭合与超深嵌套按设计降级，序列化必然与原文不同；数学公式的转义缺陷已于 2026-10-26 修复（见 [docs/数学公式往返修复](./docs/数学公式往返修复/需求文档.md)），该样例已恢复严格校验。
+
+两点口径说明：表格列宽会被规范化对齐（内容不变，非缺陷）；公式只保证原样保留，不做美化。详见 [docs/本地开发渲染/需求文档.md](./docs/本地开发渲染/需求文档.md)。
 
 `dev/` 不在 `files` 白名单，发布包与 `dist/` 均不受影响。

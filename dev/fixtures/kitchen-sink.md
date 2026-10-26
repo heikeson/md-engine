@@ -20,9 +20,9 @@
 
 ## 表格
 
-| 项 | 类型 | 默认值 |
-|---|---|---|
-| content | string | 无 |
+| 项         | 类型     | 默认值        |
+| --------- | ------ | ---------- |
+| content   | string | 无          |
 | className | string | prose-site |
 
 ## 数学公式

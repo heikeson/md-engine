@@ -5,7 +5,7 @@
  *   颜色一律引用宿主主题变量（`border-border`、`text-muted-foreground` 等），包内不写死色值；
  *   换肤只改宿主主题，组件样式随包版本升级。
  * @created 2026-10-24 20:31
- * @updated 2026-10-26 22:27 tabs 头部补水平内边距，首个选项不再贴左边框
+ * @updated 2026-10-26 23:16 目录图标按 details[open] 切换闭合 / 敞口双形态
  */
 
 @layer components {
@@ -287,6 +287,16 @@
   }
   .prose-site .files-folder[open] > summary .files-chevron {
     @apply rotate-90;
+  }
+  /* 目录图标双形态：收起显示闭合、展开显示敞口；靠 details[open] 属性切换，无需 JS */
+  .prose-site .files-folder > summary .files-shape-open {
+    display: none;
+  }
+  .prose-site .files-folder[open] > summary .files-shape-closed {
+    display: none;
+  }
+  .prose-site .files-folder[open] > summary .files-shape-open {
+    display: inline;
   }
   /* 嵌套层级用左侧缩进线表示 */
   .prose-site .files-children {

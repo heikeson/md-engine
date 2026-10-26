@@ -1,6 +1,6 @@
 {
   "name": "@heikeson/md-engine",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
   "description": "Markdown 内容引擎：尖括号容器语法（<Callout> 等）解析、渲染、序列化与编辑器内核，可直接消费 TS 源码",
   "license": "MIT",

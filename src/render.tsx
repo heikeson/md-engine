@@ -23,6 +23,7 @@ import type { Root } from "mdast";
 import { mdxComponents } from "./components";
 import remarkJsxBlocks from "./syntax/jsx-remark";
 import { rehypeSafeUrls } from "./rehype-safe-urls";
+import { rehypeSafeAnchors } from "./rehype-safe-anchors";
 import type { JsxBlock } from "./syntax/jsx-mdast";
 import { enforceMaxDepth } from "./policy";
 import { rehypeCodeMeta } from "./rehype-code-meta";
@@ -96,6 +97,8 @@ function createProcessor(
     // 紧跟 remark-rehype：此刻所有节点的 href/src 都在，一次清洗即可覆盖
     // 容器属性、普通链接/图片与宿主插件产物，宿主覆盖 a/img 也拿不到危险地址
     .use(rehypeSafeUrls)
+    // 紧接其后：把锚点的 percent-encoding 还原，使 href 与 rehype-slug 生成的 id 字面一致
+    .use(rehypeSafeAnchors)
     // 紧跟 remark-rehype：此时 hast 节点还带 mdast 的 position
     .use(sourcePositions ? [rehypeSourcePositions] : [])
     .use(rehypeCodeMeta)

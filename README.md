@@ -3,8 +3,8 @@
 > @file README.md
 > @description 独立 Markdown 引擎项目（包名 `@heikeson/md-engine`）：解析、渲染、序列化、格式化、编辑器的唯一实现地。宿主站点只提供 Markdown 内容与站点级注入。
 > @created 2026-10-24 19:57
-> @updated 2026-10-26 22:34 URL 口径放宽：放行相对路径与 `//host`，仍拒 `javascript:`/`data:` 等 scheme
-> @status 已发布 npm 0.1.0·宿主已切换依赖·本地开发渲染就绪·往返与诊断均已补齐
+> @updated 2026-10-26 23:39 版本口径改为以 git tag 为准：当前 `v0.2.0`，npm 发布版本必须与 tag 一致
+> @status 当前版本 0.2.0（tag `v0.2.0`）·宿主依赖 `^0.1.0`·本地开发渲染就绪·往返与诊断均已补齐
 
 ## 一、这个项目是什么
 
@@ -18,7 +18,9 @@
 
 ## 二、包形态
 
-> **当前状态（2026-10-26）**：`@heikeson/md-engine@0.1.0` 已于 2026-10-25 发布到 npm（`latest`），产物是 `tsup` 构建的 `dist/`（主入口 / 编辑器 / 组件三个入口）+ `styles/`，源码不入包。宿主 `blog-heikeson2026` 已删除 `packages/md-engine` 本地副本，改为依赖 npm 包（`^0.1.0`）消费 `dist/`——**本仓库现在是该引擎的唯一实现地**。
+> **当前状态（2026-10-26）**：当前版本 `0.2.0`（tag `v0.2.0`），产物是 `tsup` 构建的 `dist/`（主入口 / 编辑器 / 组件三个入口）+ `styles/`，源码不入包。`0.1.0` 已于 2026-10-25 发布到 npm，宿主 `blog-heikeson2026` 改为依赖 npm 包（`^0.1.0`）消费 `dist/`，升到 `^0.2.0` 即获得 [update.md](./update.md) 中的全部更新——**本仓库现在是该引擎的唯一实现地**。
+
+> **版本以 tag 为准**：`package.json` 的 `version` 与 tag（去掉 `v`）一致，npm 发布的就是该 tag 对应的提交；每次发版的更新与修复内容统一记录在 [update.md](./update.md)。
 
 ### 安装与使用
 
@@ -51,7 +53,7 @@ npm publish
 
 `prepublishOnly` 已串好 `build + typecheck`，构建失败就无法发布。
 
-当前线上版本：`0.1.0`（2026-10-25 发布，`latest`）。
+当前版本：`0.2.0`（tag `v0.2.0`）。npm 上的 `latest` 需与 tag 指向同一版本，发布后即为 `0.2.0`。
 
 **为什么要构建**：发布到 npm 后包位于 `node_modules`，Next 默认不转译依赖里的 TS，宿主得配 `transpilePackages`；构建后消费者零配置。详见 [docs/构建与发布.md](./docs/构建与发布.md)，含入口隔离、external 清单、样式为何不构建、构建期踩过的坑。
 

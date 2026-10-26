@@ -3,7 +3,7 @@
 > @file README.md
 > @description 独立 Markdown 引擎项目（包名 `@heikeson/md-engine`）：解析、渲染、序列化、格式化、编辑器的唯一实现地。宿主站点只提供 Markdown 内容与站点级注入。
 > @created 2026-10-24 19:57
-> @updated 2026-10-26 22:24 补齐 `UNSAFE_HREF` / `UNKNOWN_TAG` 诊断；URL 校验收敛到 hast 层唯一闸门
+> @updated 2026-10-26 22:34 URL 口径放宽：放行相对路径与 `//host`，仍拒 `javascript:`/`data:` 等 scheme
 > @status 已发布 npm 0.1.0·宿主已切换依赖·本地开发渲染就绪·往返与诊断均已补齐
 
 ## 一、这个项目是什么
@@ -177,7 +177,7 @@ mdast → toMarkdown（+ gfm + jsxToMarkdown handler）→ Markdown
 | 容器写在列表项内 | **对齐列表内容列即可正常渲染**（`- ` 后 2 空格、`1. ` 后 3 空格）；再多缩进 4 空格会变成缩进代码块 | — |
 | 顶层容器缩进 1–3 空格 | 行为不可靠：实测开启标签能识别、闭标签会残留成 HTML 块；**顶层一律顶格** | — |
 | 顶层容器缩进 4 空格 | 整块降级为缩进代码块（原文保留） | — |
-| 属性里非法协议 | hast 层统一闸门（`rehype-safe-urls`）：非法 `href` → `#`、非法 `src` → 移除；**宿主覆盖 `a`/`img` 也绕不过** | `UNSAFE_HREF` |
+| 属性里非法协议 | hast 层统一闸门（`rehype-safe-urls`）：非白名单 scheme（`javascript:` / `data:` / `blob:` …）的 `href` → `#`、`src` → 移除；**宿主覆盖 `a`/`img` 也绕不过**。相对路径、`//host`、`#锚点`、`?查询` 正常放行 | `UNSAFE_HREF` |
 
 ### 6.5 编辑器架构
 
@@ -308,7 +308,7 @@ export const mdxComponents = {
 
 ```bash
 npm run dev        # Vite playground，http://127.0.0.1:5180
-npm run snapshot   # 静态快照：3 篇 fixtures → dev/.out/preview.html（样式内联）+ 往返自检
+npm run snapshot   # 静态快照：4 篇 fixtures → dev/.out/preview.html（样式内联）+ 诊断/往返自检
 ```
 
 | 入口 | 内容 |
@@ -316,7 +316,7 @@ npm run snapshot   # 静态快照：3 篇 fixtures → dev/.out/preview.html（�
 | 渲染视图 | 左：可编辑 Markdown 原文；右：`<MarkdownRenderer />` 实时渲染 |
 | 编辑器视图 | 包内 `<MarkdownEditor />` 分屏，验证工具栏、滚动同步与状态栏 |
 | 底栏 | `parse()` 诊断（`UNCLOSED_TAG` / `DEPTH_EXCEEDED` / `UNSAFE_HREF`）+ 往返结论 + 耗时 |
-| 顶栏 | 三篇 fixtures 切换（容器全量 / 容错降级 / 常规语法）、明暗切换、重置 |
+| 顶栏 | 四篇 fixtures 切换（容器全量 / 容错降级 / 常规语法 / 真实文章）、明暗切换、重置 |
 
 两条使用前提：
 

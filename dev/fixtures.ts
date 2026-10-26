@@ -10,6 +10,7 @@
 import containers from "./fixtures/containers.md?raw";
 import edgeCases from "./fixtures/edge-cases.md?raw";
 import kitchenSink from "./fixtures/kitchen-sink.md?raw";
+import realWorld from "./fixtures/real-world.md?raw";
 
 /** 往返预期 */
 export type RoundtripExpectation = "strict" | "known-diff";
@@ -48,5 +49,12 @@ export const FIXTURES: readonly Fixture[] = [
     label: "常规语法",
     content: kitchenSink,
     roundtrip: "strict",
+  },
+  {
+    id: "real-world",
+    label: "真实文章",
+    content: realWorld,
+    roundtrip: "known-diff",
+    note: "按自然写作习惯书写，容器内的空行会被序列化补全（内容不变）",
   },
 ];

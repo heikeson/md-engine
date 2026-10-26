@@ -145,3 +145,5 @@ danger 语气，破坏性操作。
 ## Image
 
 <Image src="/dev-logo.svg" alt="占位图" caption="本地占位图，来自 dev/public/dev-logo.svg" zoom />
+
+<Image src="dev-logo.svg" alt="相对路径图" caption="相对路径不应被协议闸门降级" />

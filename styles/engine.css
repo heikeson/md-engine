@@ -19,6 +19,26 @@
   .prose-site .callout-icon {
     @apply size-4 shrink-0;
   }
+  /* 自定义文本图标（emoji 等）：固定 16×16 盒，与 lucide 图标同尺寸，对齐规则一致。
+     注意不要在这里设 line-height：下方用 `1lh` 计算首行居中，lh 取的是元素自身行高，
+     一旦写成 leading-none，算出来的偏移会变成负数，图标会整体偏上。 */
+  .prose-site .callout-icon-text {
+    @apply inline-flex size-4 shrink-0 items-center justify-center text-[15px];
+  }
+  /* 无标题形态：图标与正文同一行，正文占满剩余宽度 */
+  .prose-site .callout-inline {
+    @apply flex items-start gap-2;
+  }
+  .prose-site .callout-inline .callout-icon,
+  .prose-site .callout-inline .callout-icon-text {
+    /* 垂直居中于正文首行：用 lh 跟随主题行高（行高变了也不会偏），
+       回退值按 1.75rem 行高、16px 图标换算 */
+    margin-top: 0.375rem;
+    margin-top: calc((1lh - 1rem) / 2);
+  }
+  .prose-site .callout-inline .callout-body {
+    @apply min-w-0 flex-1;
+  }
   .prose-site .callout-body > :first-child {
     @apply mt-0;
   }

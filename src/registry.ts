@@ -66,7 +66,8 @@ export const COMPONENTS: Readonly<Record<string, ComponentSpec>> = {
   Callout: {
     name: "Callout",
     mode: "visual",
-    attrs: ["type", "title"],
+    // icon：自定义图标，字符串（emoji / 短文本）；不写则用类型默认图标
+    attrs: ["type", "title", "icon"],
     defaultAttrs: { type: "note" },
   },
   Tabs: { name: "Tabs", mode: "visual", items: "Tab" },

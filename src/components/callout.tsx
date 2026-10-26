@@ -30,21 +30,43 @@ const TYPE_MAP: Record<CalloutType | string, { icon: LucideIcon; cls: string; la
 export default function Callout({
   type = "note",
   title,
+  icon,
   children,
 }: {
   type?: string;
   title?: string;
+  /** 自定义图标：字符串（emoji / 短文本，Markdown 属性可用）或 React 节点（TSX 直接使用时可用） */
+  icon?: ReactNode;
   children?: ReactNode;
 }) {
   const meta = TYPE_MAP[type] ?? TYPE_MAP.note;
   const Icon = meta.icon;
+  // 字符串图标包一层固定尺寸的 span（与 lucide 图标同为 16×16，对齐规则一致）；
+  // 节点原样渲染，交给使用方控制样式
+  const iconNode =
+    icon === undefined || icon === null || icon === ""
+      ? <Icon className="callout-icon" />
+      : typeof icon === "string"
+        ? <span className="callout-icon-text" role="img" aria-label={icon}>{icon}</span>
+        : icon;
+
   return (
     <div className={`callout ${meta.cls}`}>
-      <div className="callout-title">
-        <Icon className="callout-icon" />
-        <span>{title ?? meta.label}</span>
-      </div>
-      <div className="callout-body">{children}</div>
+      {title ? (
+        <>
+          <div className="callout-title">
+            {iconNode}
+            <span>{title}</span>
+          </div>
+          <div className="callout-body">{children}</div>
+        </>
+      ) : (
+        // 无标题：图标与正文同行，不补默认标签（避免凭空多出"注意/警告"一行）
+        <div className="callout-inline">
+          {iconNode}
+          <div className="callout-body">{children}</div>
+        </div>
+      )}
     </div>
   );
 }

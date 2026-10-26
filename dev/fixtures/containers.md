@@ -2,17 +2,37 @@
 
 覆盖 8 个容器与 7 个子项，用于本地逐项核对样式与交互。
 
-## Callout 五种语气
+## Callout 标题形态
 
-<Callout type="note" title="提示">
+有 `title`：图标与标题一行，正文在下；可含 **强调** 与 `行内代码`。
 
-默认语气，正文可含 **强调** 与 `行内代码`。
+<Callout type="note" title="带标题的提示">
+
+默认语气，正文从标题下方开始。
 
 </Callout>
 
+自定义图标：`icon` 接受字符串（emoji 或短文本），有标题时图标在标题左侧。
+
+<Callout type="tip" icon="🚀" title="自定义图标">
+
+`icon="🚀"` 会替换左侧默认图标。
+
+</Callout>
+
+自定义图标 + 无标题：图标与正文同行。
+
+<Callout type="note" icon="✅">
+
+`icon="✅"` 作为图标，与正文同一行。
+
+</Callout>
+
+无 `title`：图标与正文同行，不补默认标签。
+
 <Callout type="info">
 
-info 语气。
+info 语气，无标题时图标与正文同一行。
 
 </Callout>
 
@@ -31,6 +51,16 @@ warn 语气，注意别踩坑。
 <Callout type="danger">
 
 danger 语气，破坏性操作。
+
+</Callout>
+
+无标题且正文多段：首段与图标对齐，后续段落继续缩进在同一栏。
+
+<Callout type="warn">
+
+第一段：无标题的多段内容。
+
+第二段：仍然与图标左侧对齐。
 
 </Callout>
 

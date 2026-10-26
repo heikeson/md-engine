@@ -163,5 +163,7 @@ function handleJsxBlock(
   const attrs = serializeAttributes(node.attributes ?? {});
   if (node.selfClosing) return `<${node.name}${attrs} />`;
   const inner = state.containerFlow(node, info as never);
+  // 原文未闭合时不补闭合标签：内容原样保留，不在保存时"顺手修好"用户内容
+  if (node.data?.closed === false) return `<${node.name}${attrs}>\n\n${inner}`;
   return `<${node.name}${attrs}>\n\n${inner}\n\n</${node.name}>`;
 }

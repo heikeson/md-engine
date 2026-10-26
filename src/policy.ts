@@ -140,6 +140,8 @@ export function collectUnclosed(tree: Root, source: string): Diagnostic[] {
     if (node.type === "jsxBlock") {
       const block = node as JsxBlock;
       if (!block.selfClosing && !hasCloseTag(block, source)) {
+        // 结论同时写回节点：序列化据此不补闭合标签，保证诊断与序列化同一口径
+        block.data = { ...(block.data ?? {}), closed: false };
         diagnostics.push({
           code: "UNCLOSED_TAG",
           level: "warn",

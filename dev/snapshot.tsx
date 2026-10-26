@@ -10,7 +10,7 @@
 import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
-import { MarkdownRenderer, roundtrip } from "../src/index";
+import { MarkdownRenderer, parse, roundtrip } from "../src/index";
 import { FIXTURES } from "./fixtures";
 
 /** 产物目录（npm 脚本在仓库根执行） */
@@ -96,11 +96,24 @@ function checkRoundtrip(): string[] {
   return failures;
 }
 
+/**
+ * 打印每篇样例的诊断汇总
+ * @description 让「容错样例是否真的触发诊断」可被脚本核对，而不是靠肉眼
+ */
+function reportDiagnostics(): void {
+  for (const item of FIXTURES) {
+    const codes = parse(item.content).diagnostics.map((d) => d.code);
+    const summary = codes.length === 0 ? "无" : codes.join(", ");
+    console.log(`[snapshot] 诊断 ${item.id}: ${summary}`);
+  }
+}
+
 mkdirSync(OUT_DIR, { recursive: true });
 const css = readCss();
 const target = join(OUT_DIR, "preview.html");
 writeFileSync(target, renderPage(css), "utf8");
 
+reportDiagnostics();
 const failures = checkRoundtrip();
 console.log(`[snapshot] ${FIXTURES.length} 篇 → ${target}${css ? "（样式已内联）" : "（警告：未找到 preview.css，页面无样式）"}`);
 if (failures.length === 0) {

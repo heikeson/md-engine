@@ -8,6 +8,7 @@
 "use client";
 
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { isSafeHref } from "../internal/url-policy";
 
 /** 图片参数 */
 export interface ImageProps {
@@ -36,6 +37,8 @@ export default function Image({
   children,
 }: ImageProps) {
   const [open, setOpen] = useState(false);
+  // 属性来自正文，不能直接信任：协议白名单不过就不加载（诊断在 policy-tags 里给）
+  const safeSrc = src && isSafeHref(src) ? src : undefined;
   const w = width ? (typeof width === "number" ? `${width}px` : width) : undefined;
   const figStyle: CSSProperties = { width: w };
   if (align === "center" && !width) figStyle.marginInline = "auto";
@@ -52,10 +55,10 @@ export default function Image({
 
   return (
     <figure className={`image align-${align}`} style={figStyle}>
-      {src ? (
+      {safeSrc ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={src}
+          src={safeSrc}
           alt={alt ?? ""}
           style={{ width: w }}
           className={zoom ? "image-img image-img-zoomable" : "image-img"}
@@ -67,7 +70,7 @@ export default function Image({
       ) : children ? (
         <figcaption>{children}</figcaption>
       ) : null}
-      {zoom && open && src ? (
+      {zoom && open && safeSrc ? (
         <div
           className="image-zoom-mask"
           role="button"

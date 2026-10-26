@@ -15,6 +15,7 @@ import type { Root } from "mdast";
 import { jsxBlocks } from "./syntax/jsx-flow";
 import { jsxFromMarkdown } from "./syntax/jsx-mdast";
 import { collectUnclosed, enforceMaxDepth, type Diagnostic } from "./policy";
+import { collectUnknownTags, collectUnsafeUrls } from "./policy-tags";
 import { extractBlocks, type Block } from "./blocks";
 
 /** 解析选项 */
@@ -51,6 +52,8 @@ export function parse(md: string, options?: ParseOptions): ParseResult {
   const diagnostics: Diagnostic[] = [
     ...enforceMaxDepth(tree, source, options?.maxDepth),
     ...collectUnclosed(tree, source),
+    ...collectUnsafeUrls(tree),
+    ...collectUnknownTags(tree),
   ];
   // 块索引必须在策略层裁剪之后提取，保证区间与最终渲染一致
   const blocks = extractBlocks(tree, source);

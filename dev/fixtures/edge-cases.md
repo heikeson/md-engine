@@ -40,9 +40,17 @@
 
 ## 非法协议
 
+容器属性：由组件用 `isSafeHref` 拦下（链接不可点、图片不加载）。
+
 <File name="危险链接" href="javascript:alert(1)" />
 
-渲染时 `href` 会被 `isSafeHref` 拦下变成不可点击，但**不产出诊断**（`UNSAFE_HREF` 目前只是类型声明）。
+<Image src="javascript:alert(2)" alt="危险图片" />
+
+普通链接与图片：由渲染期插件把地址改写为 `#`，文本保留。
+
+[危险链接](javascript:alert(3)) 与 ![危险图片](javascript:alert(4))
+
+以上四处都会产出 `UNSAFE_HREF` 诊断。
 
 ## 列表项内的容器
 

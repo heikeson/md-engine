@@ -22,6 +22,7 @@ import type { State as HastState } from "mdast-util-to-hast";
 import type { Root } from "mdast";
 import { mdxComponents } from "./components";
 import remarkJsxBlocks from "./syntax/jsx-remark";
+import { rehypeSafeUrls } from "./rehype-safe-urls";
 import type { JsxBlock } from "./syntax/jsx-mdast";
 import { enforceMaxDepth } from "./policy";
 import { rehypeCodeMeta } from "./rehype-code-meta";
@@ -92,6 +93,9 @@ function createProcessor(
     .use(remarkMath)
     .use(extraRemark ?? [])
     .use(remarkRehype, { handlers: { jsxBlock: jsxBlockToHast as never } })
+    // 紧跟 remark-rehype：此刻所有节点的 href/src 都在，一次清洗即可覆盖
+    // 容器属性、普通链接/图片与宿主插件产物，宿主覆盖 a/img 也拿不到危险地址
+    .use(rehypeSafeUrls)
     // 紧跟 remark-rehype：此时 hast 节点还带 mdast 的 position
     .use(sourcePositions ? [rehypeSourcePositions] : [])
     .use(rehypeCodeMeta)

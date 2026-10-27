@@ -1,16 +1,16 @@
 /**
  * @file dev/theme.css
- * @description 本地开发渲染的样式入口：引入 Tailwind 4 与真实的 engine.css，并补一套**同名**语义令牌。
- *   engine.css 全量 @apply 宿主令牌（border-border / bg-muted / text-muted-foreground / border-primary / ring-ring），
- *   本仓库没有宿主主题，故在此给最小值（名必须与 .prose-site 契约一致，值取宿主近似）。
+ * @description 本地开发渲染的样式入口：引入 Tailwind 4（仅供本文件下方的正文排版近似）与引擎包样式总入口。
+ *   引擎包样式已是原生 CSS，颜色走 --lkes-* 令牌；下方的同名语义令牌扮演"宿主主题"，
+ *   用于验证「未配 --lkes-* 时自动读宿主变量」这条回退链。
  *   这里只做"够看清组件"的近似，真实排版以宿主 blog 为准。
  * @created 2026-10-26 21:50
- * @updated 2026-10-26 21:50
+ * @updated 2026-10-27 13:43 引擎样式改为 index.css（已拆分、无 @apply），令牌降级为宿主模拟
  */
 
 @import "tailwindcss";
 @import "katex/dist/katex.min.css";
-@import "../styles/engine.css";
+@import "../styles/index.css";
 
 /* 与宿主一致：dark 由 .dark 祖先类切换（宿主 theme.css 同款写法） */
 @custom-variant dark (&:is(.dark *));

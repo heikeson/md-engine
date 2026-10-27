@@ -1,0 +1,22 @@
+/**
+ * @file 样式总入口（`@heikeson/md-engine/styles.css`）
+ * @description 按组件拆分后的汇总入口，也可单独引入任一分片（如 `styles/callout.css`）。
+ *   全部为原生 CSS，不含 @apply、不依赖 Tailwind 或任何宿主主题：
+ *   颜色由 styles/tokens.css 的 --lkes-* 令牌提供，令牌未定义时各处的 var() 兜底值生效。
+ *   层顺序：lkes.tokens → lkes.components；两层都低于宿主未分层的声明，宿主覆盖无需抢顺序。
+ * @created 2026-10-27 13:43
+ * @updated 2026-10-27 13:49
+ */
+
+@layer lkes.tokens, lkes.components;
+
+@import "./tokens.css";
+@import "./callout.css";
+@import "./tabs.css";
+@import "./accordion.css";
+@import "./image.css";
+@import "./type-table.css";
+@import "./steps.css";
+@import "./cards.css";
+@import "./files.css";
+@import "./editor.css";

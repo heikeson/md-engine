@@ -1,0 +1,67 @@
+/**
+ * @file TypeTable 类型表样式
+ * @description 原生 CSS 实现；表头/行线取 --lkes-* 令牌，必填标记用内置红色（语义常量，不占命名空间）。
+ * @created 2026-10-27 13:43
+ * @updated 2026-10-27 13:49
+ */
+
+@layer lkes.components {
+  .prose-site .type-table {
+    margin: 1.25rem 0;
+    overflow: hidden;
+    border: 1px solid var(--lkes-border, #e5e7eb);
+    border-radius: var(--lkes-radius, 0.5rem);
+  }
+
+  .prose-site .type-table table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+  }
+
+  .prose-site .type-table thead th {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--lkes-border, #e5e7eb);
+    background-color: color-mix(in oklab, var(--lkes-fill, #f3f4f6) 40%, transparent);
+    text-align: left;
+    font-weight: 500;
+    color: var(--lkes-fg, #1f2937);
+  }
+
+  .prose-site .type-table tbody td {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--lkes-border, #e5e7eb);
+    vertical-align: top;
+  }
+
+  .prose-site .type-table tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  .prose-site .type-table code {
+    padding: 0.125rem 0.375rem;
+    border-radius: calc(var(--lkes-radius, 0.5rem) / 2);
+    background-color: var(--lkes-fill, #f3f4f6);
+    font-size: 13px;
+  }
+
+  .prose-site .type-cell-name code {
+    font-weight: 600;
+    color: var(--lkes-fg, #1f2937);
+  }
+
+  .prose-site .type-cell-default,
+  .prose-site .type-cell-desc {
+    color: var(--lkes-muted, #6b7280);
+  }
+
+  /* 必填标记：红色为语义常量，跟随正文色微调以适应亮暗 */
+  .prose-site .type-required {
+    margin-left: 0.5rem;
+    padding: 0.125rem 0.375rem;
+    border-radius: calc(var(--lkes-radius, 0.5rem) / 2);
+    background-color: color-mix(in oklab, #ef4444 10%, transparent);
+    font-size: 11px;
+    color: color-mix(in oklab, #ef4444 70%, var(--lkes-fg, #1f2937));
+  }
+}

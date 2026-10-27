@@ -6,7 +6,9 @@ import { defineConfig } from "tsup";
  *   （否则阅读页会连带加载 CodeMirror）。
  *   依赖一律 external：避免重复打包，也避免宿主与本包各持一份实例
  *   （CodeMirror 的 state 与 unified 的 processor 都必须唯一）。
- *   样式不参与构建：`styles/engine.css` 含 `@apply`，必须由宿主的 Tailwind 处理。
+ *   样式不参与 JS 构建：`styles/` 为原生 CSS（无 @apply、无 Tailwind 依赖），
+ *   由 `npm run build:css`（esbuild）单独打包成 `dist/styles.css`；
+ *   源码分片同时随包发布，可按需单独引入。
  */
 export default defineConfig({
   entry: ["src/index.ts", "src/editor/index.ts", "src/components/index.ts"],

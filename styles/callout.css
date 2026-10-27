@@ -1,0 +1,94 @@
+/**
+ * @file Callout 提示框样式
+ * @description 颜色走 --lkes-* 令牌，不依赖宿主 Tailwind；五种语义色只声明色相（--lkes-tone），
+ *   底纹与前景由 color-mix 从色相派生，深色模式下自动向 --lkes-fg 靠拢，无需 dark 变体。
+ * @created 2026-10-27 13:43
+ * @updated 2026-10-27 13:49
+ */
+
+@layer lkes.components {
+  .prose-site .callout {
+    margin: 1.25rem 0;
+    padding: 0.75rem 1rem;
+    border-left: 4px solid var(--lkes-tone, var(--lkes-border, #e5e7eb));
+    border-radius: var(--lkes-radius, 0.5rem);
+  }
+
+  .prose-site .callout-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  .prose-site .callout-icon {
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+  }
+
+  /* 自定义文本图标（emoji 等）：固定 16×16 盒，与 lucide 图标同尺寸。
+     此处不设 line-height：下方用 1lh 计算首行居中，取的是元素自身行高。 */
+  .prose-site .callout-icon-text {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+    font-size: 15px;
+  }
+
+  /* 无标题形态：图标与正文同一行 */
+  .prose-site .callout-inline {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .prose-site .callout-inline .callout-icon,
+  .prose-site .callout-inline .callout-icon-text {
+    /* 垂直居中于正文首行：用 lh 跟随主题行高，回退值按 1.75rem 行高、16px 图标换算 */
+    margin-top: 0.375rem;
+    margin-top: calc((1lh - 1rem) / 2);
+  }
+
+  .prose-site .callout-inline .callout-body {
+    min-width: 0;
+    flex: 1;
+  }
+
+  /* 首末子元素贴边，避免与外层 padding 叠加 */
+  .prose-site .callout-body > :first-child {
+    margin-top: 0;
+  }
+  .prose-site .callout-body > :last-child {
+    margin-bottom: 0;
+  }
+
+  /* 语义色：只给色相，其余派生 */
+  .prose-site .callout-note {
+    --lkes-tone: #3b82f6;
+  }
+  .prose-site .callout-tip {
+    --lkes-tone: #10b981;
+  }
+  .prose-site .callout-important {
+    --lkes-tone: #8b5cf6;
+  }
+  .prose-site .callout-warning {
+    --lkes-tone: #f59e0b;
+  }
+  .prose-site .callout-caution {
+    --lkes-tone: #ef4444;
+  }
+
+  .prose-site :is(.callout-note, .callout-tip, .callout-important, .callout-warning, .callout-caution) {
+    border-left-color: var(--lkes-tone);
+    background-color: color-mix(in oklab, var(--lkes-tone) 10%, transparent);
+    /* 向正文色混合：浅底上偏深、深底上偏亮，亮暗共用一套值 */
+    color: color-mix(in oklab, var(--lkes-tone) 62%, var(--lkes-fg, #1f2937));
+  }
+}

@@ -2,7 +2,7 @@
  * @file CodeMirror 封装
  * @description 只做三件事：挂载编辑器、把文本变更回传、把选区回传。
  *   文档模型就是 Markdown 文本本身，不引入第二份 AST。
- *   主题走 CSS 变量（`--md-*` / 宿主 `--color-*`），不写死色值。
+ *   主题走 CSS 变量（`--lkes-*`），不写死色值。
  * @created 2026-10-24 21:02
  * @updated 2026-10-24 21:02
  */
@@ -61,7 +61,7 @@ const THEME = EditorView.theme({
   ".cm-gutters": {
     backgroundColor: "transparent",
     border: "none",
-    color: "var(--md-muted, #9ca3af)",
+    color: "var(--lkes-muted, #6b7280)",
   },
   ".cm-activeLine": { backgroundColor: "transparent" },
   // 文本光标：默认 1px 太细不容易看见，加粗到 2px 并跟随主题前景色

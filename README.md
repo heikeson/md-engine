@@ -29,7 +29,7 @@ npm install @heikeson/md-engine
 |---|---|
 | React | `>=19`（peer dependency，`react` + `react-dom`） |
 | Node | `>=20`（构建与发布；运行时无要求） |
-| Tailwind | 4.x —— 包内样式使用 `@apply`，需由使用方的 Tailwind 管线处理 |
+| Tailwind | 不需要。包内样式为原生 CSS，颜色走 `--lkes-*` 变量，可脱离 Tailwind 独立使用 |
 
 ## 快速开始
 
@@ -179,7 +179,15 @@ export default function EditorPage() {
 
 ### 样式入口 `@heikeson/md-engine/styles.css`
 
-语义类与 CSS 变量默认值，属于 `sideEffects`；类名均挂在 `.prose-site` 作用域下。
+引入一次即可，类名均挂在 `.prose-site` 作用域下。配色由独立命名空间 `--lkes-*` 控制（9 个令牌），
+默认跟随宿主的 `--background` / `--foreground` / `--border` / `--primary` 等变量，宿主不配置也能正常显示；
+覆盖方式与变量清单见 [`对接契约.md`](./对接契约.md) 第 9 节。
+
+需要按组件引入时：
+
+```ts
+import "@heikeson/md-engine/styles/callout.css"; // 只取 Callout
+```
 
 ## 设计要点
 
@@ -226,7 +234,8 @@ Markdown
 npm run dev        # Vite playground，http://127.0.0.1:5180（渲染 + 编辑器联调）
 npm run snapshot   # 静态快照 dev/.out/preview.html + 往返与诊断自检
 npm run typecheck  # tsc --noEmit
-npm run build      # tsup → dist（JS + .d.ts + sourcemap）
+npm run build      # tsup → dist（JS + .d.ts + sourcemap）+ build:css → dist/styles.css
+npm run build:css  # 只打包样式：esbuild 内联 styles/*.css → dist/styles.css
 npm pack --dry-run # 核对发布清单
 ```
 

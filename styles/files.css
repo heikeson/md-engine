@@ -1,0 +1,108 @@
+/**
+ * @file Files 文件树样式（Files / Folder / File）
+ * @description 原生 details 折叠，零 JS；目录图标双形态靠 details[open] 切换。颜色取 --lkes-* 令牌。
+ * @created 2026-10-27 13:43
+ * @updated 2026-10-27 13:49
+ */
+
+@layer lkes.components {
+  .prose-site .files {
+    margin: 1.25rem 0;
+    padding: 0.5rem;
+    border: 1px solid var(--lkes-border, #e5e7eb);
+    border-radius: var(--lkes-radius, 0.5rem);
+    background-color: color-mix(in oklab, var(--lkes-fill, #f3f4f6) 20%, transparent);
+    font-size: 0.875rem;
+  }
+
+  .prose-site .files-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    color: var(--lkes-muted, #6b7280);
+  }
+
+  .prose-site .files-folder > summary {
+    cursor: pointer;
+    list-style: none;
+    transition: background-color 150ms ease, color 150ms ease;
+  }
+
+  .prose-site .files-folder > summary:hover {
+    background-color: color-mix(in oklab, var(--lkes-fill, #f3f4f6) 60%, transparent);
+    color: var(--lkes-fg, #1f2937);
+  }
+
+  .prose-site .files-folder > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .prose-site .files-chevron {
+    display: inline-flex;
+    flex-shrink: 0;
+    transition: transform 200ms ease;
+  }
+
+  .prose-site .files-folder[open] > summary .files-chevron {
+    transform: rotate(90deg);
+  }
+
+  /* 目录图标双形态：收起闭合、展开敞口，纯 CSS 切换 */
+  .prose-site .files-folder > summary .files-shape-open {
+    display: none;
+  }
+  .prose-site .files-folder[open] > summary .files-shape-closed {
+    display: none;
+  }
+  .prose-site .files-folder[open] > summary .files-shape-open {
+    display: inline;
+  }
+
+  /* 嵌套层级用左侧缩进线表示 */
+  .prose-site .files-children {
+    margin-left: 0.75rem;
+    padding-left: 0.5rem;
+    border-left: 1px solid color-mix(in oklab, var(--lkes-border, #e5e7eb) 70%, transparent);
+  }
+
+  .prose-site .files-icon {
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+  }
+
+  .prose-site .files-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .prose-site .files-folder-name {
+    font-weight: 500;
+    color: var(--lkes-fg, #1f2937);
+  }
+
+  .prose-site .files-count {
+    margin-left: auto;
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    color: var(--lkes-muted, #6b7280);
+  }
+
+  .prose-site .files-file-row {
+    transition: background-color 150ms ease, color 150ms ease;
+  }
+  .prose-site .files-file-row:hover {
+    background-color: color-mix(in oklab, var(--lkes-fill, #f3f4f6) 60%, transparent);
+    color: var(--lkes-fg, #1f2937);
+  }
+
+  /* 文件行无箭头，补等宽占位使其与目录名对齐 */
+  .prose-site .files-spacer {
+    display: inline-block;
+    width: 10px;
+    flex-shrink: 0;
+  }
+}

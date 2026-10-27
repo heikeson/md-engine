@@ -1,0 +1,32 @@
+/**
+ * @file 主题令牌（独立命名空间 --lkes-*）
+ * @description 颜色配置的唯一出口，不依赖任何宿主主题、也不依赖 Tailwind。
+ *   默认值写在 @layer lkes.tokens 中：分层声明优先级低于未分层声明，
+ *   因此宿主只要在普通样式（不写 @layer）里重新声明同名变量即可覆盖，
+ *   写在 :root、.dark 还是容器上都生效，无需抢样式引入顺序。
+ *   每个默认值优先读宿主已有的变量（--border / --muted / --primary …），
+ *   宿主没有这些变量时回落到内置中性色，故本包可脱离宿主独立使用。
+ * @created 2026-10-27 13:43
+ * @updated 2026-10-27 13:49
+ */
+
+@layer lkes.tokens {
+  :root {
+    /* 面 / 文字 */
+    --lkes-bg: var(--background, #ffffff);
+    --lkes-fg: var(--foreground, #1f2937);
+    --lkes-muted: var(--muted-foreground, #6b7280);
+
+    /* 填充（浅底块：表头、代码、内联代码） */
+    --lkes-fill: var(--muted, #f3f4f6);
+
+    /* 线 / 强调 */
+    --lkes-border: var(--border, #e5e7eb);
+    --lkes-accent: var(--primary, #0f766e);
+    --lkes-ring: var(--ring, var(--primary, #0f766e));
+
+    /* 形状与遮罩 */
+    --lkes-radius: var(--radius, 0.5rem);
+    --lkes-overlay: rgb(0 0 0 / 0.8);
+  }
+}

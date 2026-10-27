@@ -1,0 +1,109 @@
+/**
+ * @file Accordion 折叠面板样式
+ * @description 展开动画用 grid 0fr → 1fr，无需测量高度；箭头旋转用 transform（原生 CSS 下不存在
+ *   Tailwind 4 的 rotate 独立属性问题）。颜色取 --lkes-* 令牌。
+ * @created 2026-10-27 13:43
+ * @updated 2026-10-27 13:49
+ */
+
+@layer lkes.components {
+  .prose-site .accordion {
+    margin: 1.25rem 0;
+    overflow: hidden;
+    border: 1px solid var(--lkes-border, #e5e7eb);
+    border-radius: var(--lkes-radius, 0.5rem);
+    background-color: var(--lkes-bg, #ffffff);
+  }
+
+  .prose-site .accordion-item {
+    border-bottom: 1px solid var(--lkes-border, #e5e7eb);
+  }
+  .prose-site .accordion-item:last-child {
+    border-bottom: 0;
+  }
+
+  /* 触发区：高度 ≥44px（触摸目标），键盘可达 */
+  .prose-site .accordion-trigger {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin: 0;
+    padding: 0.875rem 1rem;
+    border: 0;
+    background: none;
+    text-align: left;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--lkes-fg, #1f2937);
+    cursor: pointer;
+    transition: background-color 150ms ease;
+  }
+
+  .prose-site .accordion-trigger:hover {
+    background-color: color-mix(in oklab, var(--lkes-fill, #f3f4f6) 60%, transparent);
+  }
+
+  .prose-site .accordion-trigger:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--lkes-ring, #0f766e);
+  }
+
+  .prose-site .accordion-chevron {
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+    color: var(--lkes-muted, #6b7280);
+    transition: transform 200ms ease, color 200ms ease;
+  }
+
+  .prose-site .accordion-item.open .accordion-chevron {
+    transform: rotate(180deg);
+    color: var(--lkes-fg, #1f2937);
+  }
+
+  /* 展开项标记：用 inset 阴影画主色条，不用 border（border 会挤占 padding 导致错位） */
+  .prose-site .accordion-item.open {
+    box-shadow: inset 2px 0 0 var(--lkes-accent, currentColor);
+  }
+
+  /* 展开动画：grid 0fr → 1fr */
+  .prose-site .accordion-panel {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 220ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .prose-site .accordion-panel[data-open="true"] {
+    grid-template-rows: 1fr;
+  }
+
+  .prose-site .accordion-panel-inner {
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  /* 正文：弱化文字 + 浅底 + 顶部留白；收起时被 grid 压扁并裁剪 */
+  .prose-site .accordion-content {
+    padding: 0.75rem 1rem 1rem;
+    background-color: color-mix(in oklab, var(--lkes-fill, #f3f4f6) 30%, transparent);
+    font-size: 0.875rem;
+    line-height: 1.625;
+    color: var(--lkes-muted, #6b7280);
+  }
+
+  .prose-site .accordion-content > :first-child {
+    margin-top: 0;
+  }
+  .prose-site .accordion-content > :last-child {
+    margin-bottom: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .prose-site .accordion-panel,
+    .prose-site .accordion-chevron {
+      transition: none;
+    }
+  }
+}

@@ -1,0 +1,55 @@
+/**
+ * @file Tabs 选项卡样式
+ * @description 原生 CSS 实现，颜色取 --lkes-* 令牌；不依赖宿主 preflight，按钮外观属性显式重置。
+ * @created 2026-10-27 13:43
+ * @updated 2026-10-27 13:49
+ */
+
+@layer lkes.components {
+  .prose-site .tabs {
+    margin: 1.25rem 0;
+    overflow: hidden;
+    border: 1px solid var(--lkes-border, #e5e7eb);
+    border-radius: var(--lkes-radius, 0.5rem);
+  }
+
+  /* 头部 px-3 与按钮 px-1 叠加，使首个选项文字左边界与面板 padding 对齐 */
+  .prose-site .tabs-header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    padding: 0 0.75rem;
+    border-bottom: 1px solid var(--lkes-border, #e5e7eb);
+  }
+
+  .prose-site .tab-btn {
+    margin: 0;
+    padding: 0.625rem 0.25rem;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.4;
+    color: var(--lkes-muted, #6b7280);
+    cursor: pointer;
+    transition: color 150ms ease;
+  }
+
+  .prose-site .tab-btn:hover {
+    color: var(--lkes-fg, #1f2937);
+  }
+
+  .prose-site .tab-btn.active {
+    border-bottom-color: var(--lkes-accent, #0f766e);
+    color: var(--lkes-fg, #1f2937);
+  }
+
+  .prose-site .tab-panel {
+    padding: 1rem;
+  }
+
+  .prose-site .tab-panel[hidden] {
+    display: none;
+  }
+}

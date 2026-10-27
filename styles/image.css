@@ -1,0 +1,64 @@
+/**
+ * @file Image 图片样式（对齐 / 尺寸 / 题注 / 点击放大）
+ * @description 原生 CSS 实现；遮罩色取 --lkes-overlay，圆角取 --lkes-radius。
+ * @created 2026-10-27 13:43
+ * @updated 2026-10-27 13:49
+ */
+
+@layer lkes.components {
+  .prose-site .image {
+    margin: 1.25rem 0;
+  }
+
+  .prose-site .image.align-left {
+    margin-right: auto;
+  }
+  .prose-site .image.align-center {
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+  }
+  .prose-site .image.align-right {
+    margin-left: auto;
+    text-align: right;
+  }
+
+  /* 限制最大宽度：窄屏下宽图不撑破正文容器 */
+  .prose-site .image-img {
+    display: inline-block;
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--lkes-radius, 0.5rem);
+  }
+
+  .prose-site .image figcaption {
+    margin-top: 0.5rem;
+    text-align: center;
+    font-size: 0.875rem;
+    color: var(--lkes-muted, #6b7280);
+  }
+
+  /* 点击放大：全屏遮罩，点遮罩或 Esc 关闭 */
+  .prose-site .image-img-zoomable {
+    cursor: zoom-in;
+  }
+
+  .prose-site .image-zoom-mask {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background-color: var(--lkes-overlay, rgb(0 0 0 / 0.8));
+    cursor: zoom-out;
+  }
+
+  .prose-site .image-zoom-img {
+    max-height: 100%;
+    max-width: 100%;
+    object-fit: contain;
+    border-radius: var(--lkes-radius, 0.5rem);
+  }
+}

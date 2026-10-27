@@ -3,8 +3,33 @@
 > @file update.md
 > @description `@heikeson/md-engine` 的版本更新记录，倒序累积。每次发版在此一次性写清「更新内容 + 修复内容」，不记录操作步骤。
 > @created 2026-10-26 23:37
-> @updated 2026-10-26 23:51
-> @status 0.2.1 已记录
+> @updated 2026-10-27 19:10
+> @status 0.3.0 已记录
+
+---
+
+## 0.3.0 — 2026-10-27
+
+### 更新内容
+
+| 内容 | 说明 |
+|---|---|
+| 样式改为原生 CSS | 全部 `@apply` 改写为原生 CSS，包内样式不再依赖宿主 Tailwind；`styles/engine.css` 拆为 `tokens` / `callout` / `tabs` / `accordion` / `image` / `type-table` / `steps` / `cards` / `files` / `editor` 分片，由 `styles/index.css` 汇总 |
+| 样式产物 `dist/styles.css` | 新增 `build:css`（esbuild 打包 `styles/index.css`），`build` 变为 `tsup && build:css`；`styles.css` 入口指向该产物，宿主引入一次即拿到完整样式，不依赖其打包器解析包内相对 `@import` |
+| 按组件引入 | 新增 `./styles/*` 导出，可只取一个分片，例如 `@heikeson/md-engine/styles/callout.css` |
+| 配色令牌 `--lkes-*` | 收敛为 9 个令牌（`bg` / `fg` / `muted` / `fill` / `border` / `accent` / `ring` / `radius` / `overlay`），默认优先读宿主既有语义变量（`--background` / `--foreground` / `--border` / `--primary` / `--ring` / `--radius` 等），读不到用包内中性色，宿主什么都不配也能正常显示 |
+| 编辑器字色 | CodeMirror 行内字色改用 `--lkes-muted`，与正文令牌同源 |
+
+### 修复内容
+
+| 问题 | 修复 |
+|---|---|
+| 宿主未装 Tailwind 时样式不可用 | 旧版样式是带 `@apply` 的源码，宿主没有 Tailwind 管线会直接编译失败；现改为原生 CSS + 令牌默认值，无需 Tailwind 即可显示 |
+
+### 说明
+
+- 向后兼容：组件名、属性语义、语义类名、四个导出路径均未变，`styles/engine.css` 保留为转发入口，旧引入路径继续可用。
+- 样式实现方式调整，视觉以同一套语义类与令牌为准；宿主既有的类级覆盖继续有效。
 
 ---
 

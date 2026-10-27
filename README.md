@@ -3,8 +3,8 @@
 > @file README.md
 > @description React Markdown 内容引擎：尖括号容器语法的解析、渲染、序列化、格式化与 CodeMirror 6 编辑器内核，单一 npm 包四个入口。
 > @created 2026-10-24 19:57
-> @updated 2026-10-26 23:46 重写为独立库文档（安装 / 用法 / 语法 / API / 开发 / 兼容）
-> @status v0.2.0
+> @updated 2026-10-27 19:10 版本口径对齐 0.3.0（样式原生 CSS + 令牌，样式目录改分片）
+> @status v0.3.0
 
 一个面向 React 的 Markdown 内容引擎。在标准 Markdown（GFM + 数学公式）之上，把
 `<Callout>`、`<Cards><Card /></Cards>` 这类**尖括号容器**纳入解析流程，并保证
@@ -254,7 +254,7 @@ src/
 ├─ components/                8 容器 + 7 子项 + 映射
 ├─ internal/                  cn、isSafeHref
 └─ editor/                    CodeMirror 封装、文本动作、滚动同步、工具栏
-styles/engine.css             语义类 + CSS 变量默认值
+styles/*.css                  原生 CSS 分片（按组件拆分，index.css 汇总；engine.css 为旧路径转发）
 ```
 
 开发约定：注释与文档中文；每个文件含 `@file` / `@description` / `@created` / `@updated`；

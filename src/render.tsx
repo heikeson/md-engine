@@ -22,6 +22,8 @@ import type { State as HastState } from "mdast-util-to-hast";
 import type { Root } from "mdast";
 import { mdxComponents } from "./components";
 import remarkJsxBlocks from "./syntax/jsx-remark";
+import remarkInlineItems from "./syntax/jsx-inline";
+import { promoteBlockMath } from "./syntax/math-block";
 import { rehypeSafeUrls } from "./rehype-safe-urls";
 import { rehypeSafeAnchors } from "./rehype-safe-anchors";
 import type { JsxBlock } from "./syntax/jsx-mdast";
@@ -92,6 +94,9 @@ function createProcessor(
     .use(remarkJsxBlocks)
     .use(remarkGfm)
     .use(remarkMath)
+    // 与 parse() 保持同一套 mdast 后处理：行内子项收拢，
+    // 否则渲染与解析对同一段内容的理解会分叉（渲染侧丢标签）
+    .use(remarkInlineItems)
     .use(extraRemark ?? [])
     .use(remarkRehype, { handlers: { jsxBlock: jsxBlockToHast as never } })
     // 紧跟 remark-rehype：此刻所有节点的 href/src 都在，一次清洗即可覆盖
@@ -128,6 +133,9 @@ export default function MarkdownRenderer({
   const rendered = useMemo(() => {
     const source = content ?? "";
     const mdast = processor.parse(source) as Root;
+    // 单行 `$$…$$` 提升发生在 runSync 之前：此处能拿到原文，
+    // 而 unified 的 runSync(tree) 会新建空 vfile，插件里读不到 source
+    promoteBlockMath(mdast, source);
     enforceMaxDepth(mdast, source);
     const hast = processor.runSync(mdast) as HastRoot;
     return toJsxRuntime(hast, {

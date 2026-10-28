@@ -25,6 +25,7 @@ declare module "micromark-util-types" {
     jsxBlockCloseName: "jsxBlockCloseName";
     jsxBlockCloseTagEnd: "jsxBlockCloseTagEnd";
     jsxBlockProbe: "jsxBlockProbe";
+    jsxBlockIndent: "jsxBlockIndent";
   }
 }
 

@@ -241,6 +241,24 @@ const CASES = [
     diagnostics: (codesList) => (codesList.includes("UNCLOSED_TAG") ? null : `诊断缺失：${codesList.join(",")}`),
   },
   {
+    name: "容器内缩进正文产 INDENT_AS_CODE（不改写）",
+    md: "<Callout type=\"tip\">\n    正文缩进四格\n</Callout>\n",
+    diagnostics: (codesList) =>
+      codesList.includes("INDENT_AS_CODE") ? null : `诊断缺失：${codesList.join(",") || "无"}`,
+  },
+  {
+    name: "容器内围栏代码块不产 INDENT_AS_CODE",
+    md: "<Callout type=\"tip\">\n```js\nconst a = 1;\n```\n</Callout>\n",
+    diagnostics: (codesList) =>
+      codesList.includes("INDENT_AS_CODE") ? "围栏代码块不应提示缩进问题" : null,
+  },
+  {
+    name: "tab 缩进的行同样有提示",
+    md: "<Tabs>\n\t<Tab value=\"a\">A</Tab>\n</Tabs>\n",
+    diagnostics: (codesList) =>
+      codesList.includes("INDENT_AS_CODE") ? null : `诊断缺失：${codesList.join(",") || "无"}`,
+  },
+  {
     name: "超限嵌套产 DEPTH_EXCEEDED",
     md: "<Callout type=\"tip\">\n<Callout type=\"tip\">\n<Callout type=\"tip\">\n<Callout type=\"tip\">\n四层\n</Callout>\n</Callout>\n</Callout>\n</Callout>\n",
     knownUnequal: true,

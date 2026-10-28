@@ -11,7 +11,12 @@ import { COMPONENTS, MAX_CONTAINER_DEPTH } from "./registry";
 import type { JsxBlock } from "./syntax/jsx-mdast";
 
 /** 诊断码 */
-export type DiagnosticCode = "UNCLOSED_TAG" | "DEPTH_EXCEEDED" | "UNKNOWN_TAG" | "UNSAFE_HREF";
+export type DiagnosticCode =
+  | "UNCLOSED_TAG"
+  | "DEPTH_EXCEEDED"
+  | "UNKNOWN_TAG"
+  | "UNSAFE_HREF"
+  | "INDENT_AS_CODE";
 
 /** 一条诊断 */
 export interface Diagnostic {
@@ -125,6 +130,51 @@ function hasCloseTag(block: JsxBlock, source: string): boolean {
   if (body.test(source.slice(start, end))) return true;
   // 同名嵌套时内层区间会止于闭合标签之前，紧跟其后的 `</Name>` 同样算作它的闭合
   return new RegExp(`^\\s*</${block.name}\\s*>`).test(source.slice(end, end + 64));
+}
+
+/**
+ * 收集「容器内缩进被当成代码块」的提示
+ * @param tree mdast 根节点
+ * @param source 原始 Markdown（用于区分围栏代码块与缩进代码块）
+ * @returns 诊断列表
+ * @description 只提示、不改解析：CommonMark 规定行首 4 空格即缩进代码块，
+ *   容器里为排版多缩进一段正文就会被判成代码。这里把「容器内、且不是围栏写法」的
+ *   code 节点挑出来，让编辑器能提示作者顶格书写（或在确实要代码时改用围栏）。
+ */
+export function collectIndentAsCode(tree: Root, source: string): Diagnostic[] {
+  const diagnostics: Diagnostic[] = [];
+
+  /**
+   * 递归：只在 jsxBlock 内部统计
+   * @param node 当前节点
+   * @param inside 是否已处于某个容器内部
+   */
+  const visit = (node: Root | RootContent, inside: boolean): void => {
+    if (node.type === "code") {
+      const start = node.position?.start.offset;
+      const end = node.position?.end.offset;
+      if (inside && typeof start === "number" && typeof end === "number") {
+        const raw = source.slice(start, end);
+        // 围栏写法（``` / ~~~）是作者明确要代码；没有围栏的才是缩进代码块
+        if (!/^ {0,3}(`{3,}|~{3,})/.test(raw)) {
+          diagnostics.push({
+            code: "INDENT_AS_CODE",
+            level: "warn",
+            line: node.position?.start.line ?? 1,
+            message: "容器内这段内容因缩进（≥4 空格或 tab）被当成代码块；若是排版缩进，请顶格书写",
+            range: [start, end],
+          });
+        }
+      }
+      return;
+    }
+    const children = (node as { children?: RootContent[] }).children;
+    if (!children) return;
+    for (const child of children) visit(child, inside || node.type === "jsxBlock");
+  };
+
+  visit(tree, false);
+  return diagnostics;
 }
 
 /**

@@ -16,7 +16,7 @@ import { jsxBlocks } from "./syntax/jsx-flow";
 import { jsxFromMarkdown } from "./syntax/jsx-mdast";
 import { foldInlineItems } from "./syntax/jsx-inline";
 import { promoteBlockMath } from "./syntax/math-block";
-import { collectUnclosed, enforceMaxDepth, type Diagnostic } from "./policy";
+import { collectIndentAsCode, collectUnclosed, enforceMaxDepth, type Diagnostic } from "./policy";
 import { collectUnknownTags, collectUnsafeUrls } from "./policy-tags";
 import { extractBlocks, type Block } from "./blocks";
 
@@ -62,6 +62,7 @@ export function parse(md: string, options?: ParseOptions): ParseResult {
     ...collectUnclosed(tree, source),
     ...collectUnsafeUrls(tree),
     ...collectUnknownTags(tree),
+    ...collectIndentAsCode(tree, source),
   ];
   // 块索引必须在策略层裁剪之后提取，保证区间与最终渲染一致
   const blocks = extractBlocks(tree, source);

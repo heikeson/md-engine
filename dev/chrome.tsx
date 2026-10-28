@@ -13,8 +13,9 @@ import { FIXTURES } from "./fixtures";
 /** 往返结论的文案与配色 */
 const ROUNDTRIP_VIEW: Readonly<Record<RoundtripStatus, { text: string; cls: string }>> = {
   ok: { text: "往返逐字一致", cls: "text-emerald-600" },
+  normalized: { text: "往返有差异（结构一致，属规范化：如缩进代码块 ↔ 围栏）", cls: "text-muted-foreground" },
   "expected-diff": { text: "往返差异（样例已标注为已知差异）", cls: "text-amber-600" },
-  "unexpected-diff": { text: "往返有差异（疑似回归）", cls: "text-red-600" },
+  regressed: { text: "往返结构不一致（疑似回归）", cls: "text-red-600" },
 };
 
 /** 主视图：渲染页 / 编辑器联调 */

@@ -30,6 +30,7 @@ const SLASH = 47; // /
 const DQUOTE = 34; // "
 const SQUOTE = 39; // '
 const SPACE = 32; // 空格
+const TAB = 9; // 制表符
 
 /**
  * 判断标签名是否受支持（容器组件或子项组件）
@@ -133,6 +134,8 @@ function tokenizeJsxBlock(
   const closeConstruct: Construct = { tokenize: tokenizeCloseTag, partial: true };
   /** 同名开标签探测：用于深度计数，避免把内层的 `</Name>` 当成本层闭合 */
   const openConstruct: Construct = { tokenize: tokenizeOpenProbe, partial: true };
+  /** 行首缩进探测：缩进 + 已知标签名时，把缩进移出内容区（见 lineStart） */
+  const indentConstruct: Construct = { tokenize: tokenizeIndentTag, partial: true };
 
   return start;
 
@@ -259,6 +262,30 @@ function tokenizeJsxBlock(
    *   看不到里面的嵌套块，因此必须自己数同名深度，否则会把内层的 `</Name>` 当成本层闭合。
    */
   function lineStart(code: Code): State | undefined {
+    // 缩进排版：容器内再缩进 4 空格会被 CommonMark 判成缩进代码块（README 的 Files 示例即如此），
+    // 因此行首若为「缩进 + 已知标签」就把缩进移出内容区，标签回到列 0 再判定闭合/开标签。
+    // 只对标签生效：缩进代码块（缩进后是普通文本）、未知标签（如 <div>）一律不受影响。
+    return effects.check(indentConstruct, indentDetected, plainLineStart)(code);
+  }
+
+  /** 缩进已确认属于标签：消费掉缩进（不进入内容区），回到行首重新判定 */
+  function indentDetected(code: Code): State | undefined {
+    effects.enter("jsxBlockIndent");
+    return consumeIndent(code);
+  }
+
+  /** 消费行首缩进 */
+  function consumeIndent(code: Code): State | undefined {
+    if (code === SPACE || code === TAB) {
+      effects.consume(code);
+      return consumeIndent;
+    }
+    effects.exit("jsxBlockIndent");
+    return plainLineStart(code);
+  }
+
+  /** 无缩进的行首判定 */
+  function plainLineStart(code: Code): State | undefined {
     return effects.check(closeConstruct, closeDetected, notClose)(code);
   }
 
@@ -454,6 +481,65 @@ function tokenizeJsxBlock(
       probePrev = code;
       effects2.consume(code);
       return probeAttrs;
+    }
+  }
+
+  /**
+   * 行首缩进探测：`[ \t]+<[/]Name`
+   * @description 只在名字属于 registry 时成立，避免把「缩进代码块里的普通文本」误当标签去缩进。
+   *   用 `check` 调用，事件会回滚，不消费任何字符。
+   */
+  function tokenizeIndentTag(effects2: Effects, ok2: State, nok2: State): State {
+    let probe = "";
+    return indentStart;
+
+    /** 起始：进入缩进 token 后开始吃空白 */
+    function indentStart(): State | undefined {
+      effects2.enter("jsxBlockIndent");
+      return indentSpace;
+    }
+
+    /** 行首空白 */
+    function indentSpace(code: Code): State | undefined {
+      if (code === SPACE || code === TAB) {
+        effects2.consume(code);
+        return indentSpace;
+      }
+      if (code === LT) {
+        effects2.consume(code);
+        return indentLt;
+      }
+      return nok2(code);
+    }
+
+    /** `<` 之后可以是 `/`（闭合标签） */
+    function indentLt(code: Code): State | undefined {
+      if (code === SLASH) {
+        effects2.consume(code);
+        return indentNameStart;
+      }
+      return indentNameStart(code);
+    }
+
+    /** 名字首字符 */
+    function indentNameStart(code: Code): State | undefined {
+      if (code !== null && asciiAlpha(code)) {
+        probe = String.fromCharCode(code);
+        effects2.consume(code);
+        return indentNameRest;
+      }
+      return nok2(code);
+    }
+
+    /** 名字后续字符：读全后校验注册表 */
+    function indentNameRest(code: Code): State | undefined {
+      if (code !== null && asciiAlphanumeric(code)) {
+        probe += String.fromCharCode(code);
+        effects2.consume(code);
+        return indentNameRest;
+      }
+      effects2.exit("jsxBlockIndent");
+      return isKnownName(probe) ? ok2(code) : nok2(code);
     }
   }
 

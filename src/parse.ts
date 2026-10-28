@@ -14,6 +14,8 @@ import { mathFromMarkdown } from "mdast-util-math";
 import type { Root } from "mdast";
 import { jsxBlocks } from "./syntax/jsx-flow";
 import { jsxFromMarkdown } from "./syntax/jsx-mdast";
+import { foldInlineItems } from "./syntax/jsx-inline";
+import { promoteBlockMath } from "./syntax/math-block";
 import { collectUnclosed, enforceMaxDepth, type Diagnostic } from "./policy";
 import { collectUnknownTags, collectUnsafeUrls } from "./policy-tags";
 import { extractBlocks, type Block } from "./blocks";
@@ -49,6 +51,12 @@ export function parse(md: string, options?: ParseOptions): ParseResult {
     extensions: [gfm(), math(), jsxBlocks()],
     mdastExtensions: [gfmFromMarkdown(), mathFromMarkdown(), jsxFromMarkdown()],
   });
+  // 两个纯 mdast 后处理，必须在策略层之前：
+  // 1) 行内子项（`<Tab value="a">A</Tab>`）收拢成 jsxBlock，否则父容器取不到 props；
+  // 2) 单行 `$$…$$` 提升为块级公式，否则序列化会降级成 `$…$`。
+  // 渲染管线（render.tsx）挂的是同样的两个 transform，保证"能解析的就能渲染"。
+  foldInlineItems(tree);
+  promoteBlockMath(tree, source);
   const diagnostics: Diagnostic[] = [
     ...enforceMaxDepth(tree, source, options?.maxDepth),
     ...collectUnclosed(tree, source),

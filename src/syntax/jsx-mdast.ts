@@ -23,8 +23,11 @@ export interface JsxBlock extends Parent {
   /** 是否为自闭合叶子（`<Image />`） */
   selfClosing: boolean;
   children: RootContent[];
-  /** closed=false 表示未闭合到文件末尾（由 policy 决定是否降级） */
-  data?: Data & { closed?: boolean; inline?: boolean };
+  /**
+   * closed=false 表示未闭合到文件末尾（由 policy 决定是否降级）；
+   * degraded=true 表示嵌套超限被降级：渲染与块索引按源码块，序列化原样输出 `degradedText`
+   */
+  data?: Data & { closed?: boolean; inline?: boolean; degraded?: boolean; degradedText?: string };
 }
 
 /** 开标签解析结果 */
@@ -186,6 +189,8 @@ function handleJsxBlock(
 ): string {
   const attrs = serializeAttributes(node.attributes ?? {});
   const open = `<${node.name}${attrs}>`;
+  // 超限降级：原样吐回原文，不重新拼装、不做转义（降级是显示口径，不是改写用户内容）
+  if (node.data?.degraded && typeof node.data.degradedText === "string") return node.data.degradedText;
   if (node.selfClosing) return `<${node.name}${attrs} />`;
 
   const children = node.children ?? [];

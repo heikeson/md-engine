@@ -6,7 +6,7 @@
  * @updated 2026-10-24 20:24
  */
 
-import type { Root, RootContent, Text } from "mdast";
+import type { Root, RootContent } from "mdast";
 import { COMPONENTS, MAX_CONTAINER_DEPTH } from "./registry";
 import type { JsxBlock } from "./syntax/jsx-mdast";
 
@@ -85,8 +85,10 @@ function walk(
         message: `第 ${childDepth} 层容器 ${child.name} 超出上限 ${maxDepth}，已按源码显示`,
         range: [child.position?.start.offset ?? 0, child.position?.end.offset ?? 0],
       });
-      const fallback: Text = { type: "text", value: text };
-      next.push(fallback);
+      // 保留节点并标记降级：渲染按源码块、块索引按 source、序列化原样输出原文，
+      // 不再拍成 text —— 拍成文本后会被当作段落再解析，往返结构与首次不一致，且原文被加上转义反斜杠。
+      child.data = { ...(child.data ?? {}), degraded: true, degradedText: text };
+      next.push(child);
       continue;
     }
     walk(child, source, childDepth, maxDepth, out);

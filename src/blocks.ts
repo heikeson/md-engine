@@ -24,6 +24,12 @@ export interface VisualBlock {
   type: string;
   start: number;
   end: number;
+  /**
+   * 子块（仅 list / blockquote / listItem 这类容器型可视化块带）
+   * @description 列表、引用里的尖括号容器只有靠这个字段才拿得到区间，
+   *   否则编辑器对「列表里的 <Files>」无法做定位、分屏同步与出块。
+   */
+  blocks?: Block[];
 }
 
 /** 源码块（原样保留，不做可视化） */
@@ -62,6 +68,9 @@ export interface ContainerBlock {
 
 /** 块 */
 export type Block = VisualBlock | SourceBlock | ContainerBlock;
+
+/** 需要递归取子块的可视化容器（列表 / 列表项 / 引用） */
+const CONTAINERISH = new Set(["list", "listItem", "blockquote"]);
 
 /**
  * 判断节点是否为尖括号块
@@ -105,6 +114,10 @@ function toBlock(node: RootContent, source: string, depth: number): Block {
   const [start, end] = rangeOf(node);
 
   if (isJsxBlock(node)) {
+    // 嵌套超限降级：按源码块暴露，渲染与序列化都原样，编辑器口径与 DEPTH_EXCEEDED 一致
+    if (node.data?.degraded) {
+      return { kind: "source", text: source.slice(start, end), reason: "depth-exceeded", start, end };
+    }
     const spec = COMPONENTS[node.name];
     const children = (node.children ?? []) as RootContent[];
     // items 支持单一子项名或数组（Files 混用 Folder / File）
@@ -158,6 +171,12 @@ function toBlock(node: RootContent, source: string, depth: number): Block {
   }
   if (node.type === "definition") {
     return { kind: "source", text: source.slice(start, end), reason: "definition", start, end };
+  }
+
+  // 列表 / 引用的子节点里可能藏着尖括号容器：递归暴露，容器深度不变（列表不计层）
+  if (CONTAINERISH.has(node.type)) {
+    const children = ((node as { children?: RootContent[] }).children ?? []) as RootContent[];
+    return { kind: "visual", type: node.type, start, end, blocks: toBlocks(children, source, depth) };
   }
 
   return { kind: "visual", type: node.type, start, end };

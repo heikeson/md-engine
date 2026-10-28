@@ -66,6 +66,23 @@ export interface MarkdownRendererProps {
  * @returns hast 元素
  */
 function jsxBlockToHast(state: HastState, node: JsxBlock): Element {
+  // 超限降级：按源码块展示（不进组件），与块索引的 source(depth-exceeded) 口径一致
+  if (node.data?.degraded && typeof node.data.degradedText === "string") {
+    return {
+      type: "element",
+      tagName: "pre",
+      properties: { className: ["md-degraded"] },
+      children: [
+        {
+          type: "element",
+          tagName: "code",
+          properties: {},
+          children: [{ type: "text", value: node.data.degradedText }],
+        },
+      ],
+    };
+  }
+
   const properties: Properties = {};
   for (const [key, value] of Object.entries(node.attributes ?? {})) {
     properties[key] = value;

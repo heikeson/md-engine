@@ -55,6 +55,44 @@ function codeValues(tree) {
   return values;
 }
 
+/**
+ * 在块索引里按名字找容器（递归进 visual.blocks 与 container.blocks/items）
+ * @param blocks 块列表
+ * @param name 容器名
+ * @returns 找到的容器块；没有返回 null
+ */
+function findInBlocks(blocks, name) {
+  for (const block of blocks) {
+    if (block.kind === "container" && block.name === name) return block;
+    if (block.blocks) {
+      const hit = findInBlocks(block.blocks, name);
+      if (hit) return hit;
+    }
+    for (const item of block.items ?? []) {
+      const hit = findInBlocks(item.blocks, name);
+      if (hit) return hit;
+    }
+  }
+  return null;
+}
+
+/**
+ * 在块索引里递归找某种降级原因的源码块
+ * @param blocks 块列表
+ * @param reason 降级原因
+ * @returns 找到返回 true
+ */
+function hasSourceReason(blocks, reason) {
+  for (const block of blocks) {
+    if (block.kind === "source" && block.reason === reason) return true;
+    if (block.blocks && hasSourceReason(block.blocks, reason)) return true;
+    for (const item of block.items ?? []) {
+      if (hasSourceReason(item.blocks, reason)) return true;
+    }
+  }
+  return false;
+}
+
 /** 树里是否出现某种节点类型 */
 function hasType(tree, type) {
   let found = false;
@@ -259,10 +297,21 @@ const CASES = [
       codesList.includes("INDENT_AS_CODE") ? null : `诊断缺失：${codesList.join(",") || "无"}`,
   },
   {
-    name: "超限嵌套产 DEPTH_EXCEEDED",
+    name: "超限嵌套：降级但仍往返等价",
     md: "<Callout type=\"tip\">\n<Callout type=\"tip\">\n<Callout type=\"tip\">\n<Callout type=\"tip\">\n四层\n</Callout>\n</Callout>\n</Callout>\n</Callout>\n",
-    knownUnequal: true,
+    identical: true,
     diagnostics: (codesList) => (codesList.includes("DEPTH_EXCEEDED") ? null : `诊断缺失：${codesList.join(",")}`),
+    blocks: (list) => (hasSourceReason(list, "depth-exceeded") ? null : "块索引里没有 depth-exceeded 源码块"),
+  },
+  {
+    name: "列表里的容器能在块索引里找到",
+    md: "- 列表项\n\n  <Files>\n  <Folder name=\"src\">\n  <File name=\"a.ts\" />\n  </Folder>\n  </Files>\n",
+    blocks: (list) => {
+      const files = findInBlocks(list, "Files");
+      if (!files) return "块索引里找不到列表内的 Files";
+      const folder = files.items?.find((item) => item.name === "Folder");
+      return folder ? null : "Files 下找不到 Folder 子项";
+    },
   },
 ];
 
@@ -299,6 +348,12 @@ for (const testCase of CASES) {
     // 5) 诊断断言
     if (testCase.diagnostics) {
       const issue = testCase.diagnostics(codes(parsed.diagnostics));
+      if (issue) problems.push(issue);
+    }
+
+    // 5.5) 块索引断言
+    if (testCase.blocks) {
+      const issue = testCase.blocks(parsed.blocks);
       if (issue) problems.push(issue);
     }
 

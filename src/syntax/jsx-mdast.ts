@@ -4,7 +4,7 @@
  *   以及把节点序列化回 `<Name attr="v">` 文本（toMarkdown）。两侧必须对称：
  *   `md → mdast → md` 要逐字一致。
  * @created 2026-10-24 20:16
- * @updated 2026-10-24 20:16
+ * @updated 2026-10-28 11:40 序列化改为保形：按原文行距写回换行/空行，不再统一加空行；行内形态由 data.inline 决定
  */
 
 import type { Data, Parent, RootContent } from "mdast";
@@ -147,12 +147,36 @@ function serializeAttributes(attributes: Record<string, string | boolean>): stri
 }
 
 /**
- * 序列化 jsxBlock 节点
+ * 是否为行内形态（原写法是单行 `<X a="b">内容</X>`）
+ * @param node 尖括号块节点
+ * @returns 行内形态返回 true
+ */
+export function isInlineLayout(node: JsxBlock): boolean {
+  return node.data?.inline === true;
+}
+
+/**
+ * 两行之间是否需要空行
+ * @param prevLine 上一段结束行（1 起）
+ * @param nextLine 下一段开始行（1 起）
+ * @returns 行距大于 1（中间有空行）或无位置信息时返回 true
+ * @description 无位置信息（宿主手工构造的节点）回退为规范形态，保证输出可读。
+ */
+function needsBlankLine(prevLine?: number, nextLine?: number): boolean {
+  if (typeof prevLine !== "number" || typeof nextLine !== "number") return true;
+  return nextLine - prevLine > 1;
+}
+
+/**
+ * 序列化 jsxBlock 节点（保形）
  * @param node 节点
  * @param _parent 父节点
  * @param state 序列化状态
  * @param info 序列化信息
  * @returns Markdown 文本
+ * @description 三种形态都按原文还原，不凭空增删空行：
+ *   行内（`data.inline`）→ `<X>内容</X>`；块形态 → 按子节点与标签的行距决定 `\n` 还是 `\n\n`。
+ *   需要统一成规范排版时用 `normalizeMarkdown`，不要在这里替用户决定。
  */
 function handleJsxBlock(
   node: JsxBlock,
@@ -161,16 +185,46 @@ function handleJsxBlock(
   info: unknown,
 ): string {
   const attrs = serializeAttributes(node.attributes ?? {});
+  const open = `<${node.name}${attrs}>`;
   if (node.selfClosing) return `<${node.name}${attrs} />`;
-  // 行内子项（原写法与内容同一行）：按行内序列化还原，不展开成多行块，
-  // 否则 `<Tab value="a">A</Tab>` 会被写成块形态，往返即变形
-  if (node.data?.inline) {
-    const first = node.children[0];
-    const body = first ? state.containerPhrasing(first as never, info as never) : "";
-    return `<${node.name}${attrs}>${body}</${node.name}>`;
+
+  const children = node.children ?? [];
+  // 空容器：开闭标签必须各占一行，写成 `<X></X>` 会退回行内 html（flow 构造要求开标签后换行）
+  if (children.length === 0) {
+    const position = node.position;
+    const sameLine = position ? position.start.line === position.end.line : false;
+    return sameLine ? `${open}</${node.name}>` : `${open}\n</${node.name}>`;
   }
-  const inner = state.containerFlow(node, info as never);
+
+  // 行内形态：内容与标签同一行，正文按行内序列化（before/after 说明正文夹在 `>` 与 `<` 之间，
+  // 否则序列化器会以为在行首而加上 `\#`、`1\.` 这类多余转义）
+  if (isInlineLayout(node)) {
+    const flat = children.flatMap((child) => (child.type === "paragraph" ? child.children : [child]));
+    if (flat.length === 0) return `${open}</${node.name}>`;
+    const body = state.containerPhrasing(
+      { type: "paragraph", children: flat } as never,
+      { ...(info as Record<string, unknown>), before: ">", after: "<" } as never,
+    );
+    return `${open}${body}</${node.name}>`;
+  }
+
+  // 块形态：自己拼子节点，才能按原文行距决定空行（containerFlow 固定用空行连接）
+  const tracker = state.createTracker(info as never);
+  let body = "";
+  let prevEnd = node.position?.start.line;
+  for (const child of children) {
+    const gap = needsBlankLine(prevEnd, child.position?.start.line) ? "\n\n" : "\n";
+    const piece = state.handle(child, node, state, {
+      before: "\n",
+      after: "\n",
+      ...tracker.current(),
+    } as never);
+    body += gap + tracker.move(piece);
+    prevEnd = child.position?.end.line;
+  }
+
   // 原文未闭合时不补闭合标签：内容原样保留，不在保存时"顺手修好"用户内容
-  if (node.data?.closed === false) return `<${node.name}${attrs}>\n\n${inner}`;
-  return `<${node.name}${attrs}>\n\n${inner}\n\n</${node.name}>`;
+  if (node.data?.closed === false) return `${open}${body}`;
+  const closeGap = needsBlankLine(prevEnd, node.position?.end.line) ? "\n\n" : "\n";
+  return `${open}${body}${closeGap}</${node.name}>`;
 }

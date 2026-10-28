@@ -56,6 +56,7 @@
     "build": "tsup && npm run build:css",
     "build:css": "esbuild styles/index.css --bundle --minify --outfile=dist/styles.css",
     "snapshot": "vite build --config dev/snapshot.vite.config.ts && vite build --config dev/snapshot.css.vite.config.ts && node dev/.out/snapshot.mjs",
+    "selfcheck": "npm run build && node dev/selfcheck.mjs",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run build && npm run typecheck"
   },

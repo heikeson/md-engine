@@ -1,68 +1,332 @@
 /**
- * @file 解析/序列化自检（构建后运行：node dev/selfcheck.mjs）
- * @description 覆盖三类回归：行内子项收拢、容器内缩进、单行块公式提升。
- *   判据统一为「parse(x) 与 parse(roundtrip(x)) 结构等价」——比逐字比对更能反映真实约束，
- *   因为空行与表格分隔符本来就允许被规范化。
+ * @file 解析 / 渲染 / 序列化自检（构建后运行：node dev/selfcheck.mjs）
+ * @description 覆盖解析、渲染与往返三类约束，用例来自 docs/PR1解析修复优化/ 的矩阵：
+ *   1) 围栏代码块里的标签不参与闭合与嵌套判定（内容不丢）；
+ *   2) 行内子项（含属性带 `>`、子项内含空行）能收拢并拿到 props；
+ *   3) 序列化保形：原文怎么写就怎么写回（不凭空加空行、不做多余转义）；
+ *   4) 渲染结果里容器与子项的 props 可见。
+ *   每条用例默认断言「往返结构等价 + 往返幂等」，个别用例再断言字节一致 / 结构 / 渲染。
  * @created 2026-10-28 03:40
- * @updated 2026-10-28 03:40
+ * @updated 2026-10-28 11:52 扩为断言套件：新增围栏感知、跨段落折叠、序列化保形与渲染断言
  */
 
-import { parse, roundtrip } from "../dist/index.js";
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { parse, roundtrip, MarkdownRenderer } from "../dist/index.js";
 
-/** 去掉 position / data 后的结构快照，用于比较语义是否一致 */
+/** 去掉 position / data 后的结构快照 */
 function shape(node) {
-  const out = {};
-  for (const [key, value] of Object.entries(node)) {
-    if (key === "position" || key === "data") continue;
-    out[key] = Array.isArray(value) ? value.map((item) => (item && typeof item === "object" ? shape(item) : item)) : value;
-  }
+  const out = { type: node.type };
+  if (node.name !== undefined) out.name = node.name;
+  if (node.attributes !== undefined) out.attributes = node.attributes;
+  if (node.value !== undefined) out.value = node.value;
+  if (node.children) out.children = node.children.map(shape);
   return out;
 }
 
-/** 用例：名称 → Markdown */
-const CASES = {
-  "Tabs 行内子项": `<Tabs>\n  <Tab value="npm">npm install</Tab>\n  <Tab value="pnpm">pnpm add</Tab>\n</Tabs>`,
-  "Steps 行内子项": `<Steps>\n  <Step title="一">先这样</Step>\n  <Step title="二">再那样</Step>\n</Steps>`,
-  "Cards 自闭合 + 行内": `<Cards>\n  <Card title="A" description="a" href="/a" />\n  <Card title="B">正文</Card>\n</Cards>`,
-  "Accordion 行内子项": `<Accordion>\n  <AccItem title="Q" type="open">A</AccItem>\n</Accordion>`,
-  "TypeTable 行内子项": `<TypeTable>\n  <TypeItem name="content" type="string" required>内容</TypeItem>\n</TypeTable>`,
-  "Files 缩进 4": `<Files>\n  <Folder name="src">\n    <File name="a.ts" />\n    <File name="b.ts" href="/b" />\n  </Folder>\n  <File name="README.md" />\n</Files>`,
-  "Callout 基础": `<Callout type="warn" title="注意">\n正文 **粗体**\n</Callout>`,
-  "单行块公式": `$$E=mc^2$$`,
-  "三行块公式": `$$\nE=mc^2\n$$`,
-  "行内公式": `文字 $a+b$ 结尾`,
-  "表格": `| a | b |\n|---|---|\n| 1 | 2 |\n`,
-};
+/** 取第一个指定名字的容器节点 */
+function findBlock(tree, name) {
+  let found = null;
+  const visit = (node) => {
+    if (found) return;
+    if (node.type === "jsxBlock" && node.name === name) {
+      found = node;
+      return;
+    }
+    for (const child of node.children ?? []) visit(child);
+  };
+  visit(tree);
+  return found;
+}
+
+/** 取容器下的直接子项节点 */
+function items(block) {
+  return (block?.children ?? []).filter((child) => child.type === "jsxBlock");
+}
+
+/** 收集树里所有 code 节点的值 */
+function codeValues(tree) {
+  const values = [];
+  const visit = (node) => {
+    if (node.type === "code") values.push(node.value);
+    for (const child of node.children ?? []) visit(child);
+  };
+  visit(tree);
+  return values;
+}
+
+/** 树里是否出现某种节点类型 */
+function hasType(tree, type) {
+  let found = false;
+  const visit = (node) => {
+    if (found) return;
+    if (node.type === type) {
+      found = true;
+      return;
+    }
+    for (const child of node.children ?? []) visit(child);
+  };
+  visit(tree);
+  return found;
+}
+
+/** 诊断码集合 */
+function codes(diagnostics) {
+  return diagnostics.map((item) => item.code);
+}
+
+/**
+ * 用例表
+ * @type {Array<{
+ *   name: string,
+ *   md: string,
+ *   identical?: boolean,
+ *   knownUnequal?: boolean,
+ *   structure?: (tree: any) => string | null,
+ *   html?: (html: string) => string | null,
+ * }>}
+ */
+const CASES = [
+  // ---------- D1：围栏代码块里的标签不参与判定 ----------
+  {
+    name: "围栏里写闭合标签（Callout）",
+    md: "<Callout type=\"tip\">\n\n```md\n</Callout>\n```\n\n</Callout>\n",
+    identical: true,
+    structure: (tree) => (codeValues(tree)[0] === "</Callout>" ? null : `代码块内容丢失：${JSON.stringify(codeValues(tree))}`),
+  },
+  {
+    name: "波浪围栏里写闭合标签",
+    md: "<Callout type=\"tip\">\n\n~~~\n</Callout>\n~~~\n\n</Callout>\n",
+    structure: (tree) => (codeValues(tree)[0] === "</Callout>" ? null : `代码块内容丢失：${JSON.stringify(codeValues(tree))}`),
+  },
+  {
+    name: "围栏里写同名开标签",
+    md: "<Callout type=\"tip\">\n\n```md\n<Callout>\n</Callout>\n```\n\n</Callout>\n",
+    identical: true,
+    structure: (tree) => (codeValues(tree)[0] === "<Callout>\n</Callout>" ? null : `代码块内容被污染：${JSON.stringify(codeValues(tree))}`),
+  },
+  {
+    name: "围栏里缩进 + 闭合标签（Tab）",
+    md: "<Tabs>\n<Tab value=\"a\">\n\n```md\n    </Tab>\n```\n\n</Tab>\n</Tabs>\n",
+    identical: true,
+    structure: (tree) => {
+      const tabs = findBlock(tree, "Tabs");
+      const tab = items(tabs)[0];
+      const values = tab ? codeValues(tab) : [];
+      return values[0] === "    </Tab>" ? null : `代码块内容丢失：${JSON.stringify(values)}`;
+    },
+  },
+
+  // ---------- D2：行内子项 ----------
+  {
+    name: "行内子项（Tabs，两行）",
+    md: "<Tabs>\n<Tab value=\"npm\">npm install</Tab>\n<Tab value=\"pnpm\">pnpm add</Tab>\n</Tabs>\n",
+    identical: true,
+    structure: (tree) => {
+      const tabs = findBlock(tree, "Tabs");
+      const list = items(tabs);
+      if (list.length !== 2) return `子项数 ${list.length}，期望 2`;
+      return list[0].attributes.value === "npm" && list[1].attributes.value === "pnpm" ? null : "子项属性丢失";
+    },
+    html: (html) => (html.includes("npm") && html.includes("pnpm") ? null : "标签页标题未渲染"),
+  },
+  {
+    name: "行内子项属性含 >",
+    md: "<Tabs>\n<Tab value=\"a\" title=\"x>y\">A</Tab>\n</Tabs>\n",
+    identical: true,
+    structure: (tree) => {
+      const tab = items(findBlock(tree, "Tabs"))[0];
+      return tab?.attributes?.title === "x>y" ? null : `属性丢失：${JSON.stringify(tab?.attributes)}`;
+    },
+  },
+  {
+    name: "行内子项含空行（Tabs，跨段落）",
+    md: "<Tabs>\n<Tab value=\"a\">第一段\n\n第二段</Tab>\n</Tabs>\n",
+    structure: (tree) => {
+      const list = items(findBlock(tree, "Tabs"));
+      if (list.length !== 1) return `子项数 ${list.length}，期望 1`;
+      const paragraphs = (list[0].children ?? []).filter((child) => child.type === "paragraph");
+      return paragraphs.length === 2 ? null : `段落数 ${paragraphs.length}，期望 2`;
+    },
+  },
+  {
+    name: "行内子项含空行（TypeTable）",
+    md: "<TypeTable>\n<TypeItem name=\"a\" type=\"string\">第一段\n\n第二段</TypeItem>\n</TypeTable>\n",
+    structure: (tree) => {
+      const list = items(findBlock(tree, "TypeTable"));
+      return list.length === 1 ? null : `子项数 ${list.length}，期望 1`;
+    },
+  },
+  {
+    name: "行内子项：Steps / Cards / Accordion",
+    md:
+      "<Steps>\n<Step title=\"一\">先这样</Step>\n</Steps>\n\n" +
+      "<Cards>\n<Card title=\"A\" />\n<Card title=\"B\">正文</Card>\n</Cards>\n\n" +
+      "<Accordion>\n<AccItem title=\"Q\" type=\"open\">A</AccItem>\n</Accordion>\n",
+    identical: true,
+    structure: (tree) => {
+      const steps = items(findBlock(tree, "Steps"));
+      const cards = items(findBlock(tree, "Cards"));
+      const acc = items(findBlock(tree, "Accordion"));
+      if (steps.length !== 1) return `Steps 子项数 ${steps.length}`;
+      if (cards.length !== 2) return `Cards 子项数 ${cards.length}`;
+      if (acc.length !== 1) return `Accordion 子项数 ${acc.length}`;
+      return cards[0].attributes.title === "A" && acc[0].attributes.type === "open" ? null : "子项属性丢失";
+    },
+  },
+  {
+    name: "行内子项不再被多余转义",
+    md: "<Tabs>\n<Tab value=\"a\"># 标题</Tab>\n<Tab value=\"b\">1. 列表</Tab>\n</Tabs>\n",
+    identical: true,
+  },
+
+  // ---------- D4：序列化保形 ----------
+  {
+    name: "紧凑写法（无空行）原样写回",
+    md: "<Callout type=\"tip\">\n正文 **粗体**\n</Callout>\n",
+    identical: true,
+  },
+  {
+    name: "带空行写法原样写回",
+    md: "<Callout type=\"tip\">\n\n正文\n\n</Callout>\n",
+    identical: true,
+  },
+  {
+    name: "嵌套容器（Files / Folder / File）原样写回",
+    md: "<Files>\n<Folder name=\"src\">\n<File name=\"a.ts\" />\n</Folder>\n<File name=\"README.md\" />\n</Files>\n",
+    identical: true,
+    structure: (tree) => {
+      const outer = items(findBlock(tree, "Files"));
+      const folder = items(outer[0]);
+      return outer.length === 2 && folder.length === 1 ? null : `结构不符：外层 ${outer.length}，Folder 内 ${folder.length}`;
+    },
+  },
+  {
+    name: "块级内容紧贴闭标签（列表）",
+    md: "<Callout type=\"tip\">\n- 项一\n- 项二\n</Callout>\n",
+    identical: true,
+    html: (html) => (html.includes("<li") ? null : "列表未渲染"),
+  },
+  {
+    name: "紧凑围栏紧贴闭标签",
+    md: "<Callout type=\"tip\">\n```js\nconst a = 1;\n```\n</Callout>\n",
+    identical: true,
+    structure: (tree) => (codeValues(tree)[0] === "const a = 1;" ? null : "围栏内容丢失"),
+  },
+
+  {
+    name: "空容器原样写回（开闭标签各占一行）",
+    md: "<Callout type=\"tip\">\n</Callout>\n",
+    identical: true,
+    structure: (tree) => {
+      const block = findBlock(tree, "Callout");
+      return block && (block.children ?? []).length === 0 ? null : "空容器结构不符";
+    },
+  },
+
+  // ---------- 缩进（现状行为，防回归；缩进政策见设计文档 D3） ----------
+  {
+    name: "2 空格缩进子项仍可解析",
+    md: "<Files>\n  <Folder name=\"src\">\n    <File name=\"a.ts\" />\n  </Folder>\n</Files>\n",
+    structure: (tree) => {
+      const folder = items(findBlock(tree, "Files"))[0];
+      return folder && items(folder).length === 1 ? null : "缩进子项未识别为容器";
+    },
+  },
+
+  // ---------- 公式 / 表格 ----------
+  {
+    name: "单行块公式提升为块级",
+    md: "$$E=mc^2$$\n",
+    structure: (tree) => (hasType(tree, "math") ? null : "未提升为 math 节点"),
+  },
+  {
+    name: "行内公式保持行内",
+    md: "文字 $a+b$ 结尾\n",
+    structure: (tree) => (hasType(tree, "inlineMath") ? null : "行内公式丢失"),
+  },
+  {
+    name: "表格结构",
+    md: "| a | b |\n|---|---|\n| 1 | 2 |\n",
+    structure: (tree) => (hasType(tree, "table") ? null : "表格未解析"),
+  },
+
+  // ---------- 诊断 ----------
+  {
+    name: "未闭合容器产 UNCLOSED_TAG",
+    md: "<Callout type=\"tip\">\n正文\n",
+    structure: null,
+    diagnostics: (codesList) => (codesList.includes("UNCLOSED_TAG") ? null : `诊断缺失：${codesList.join(",")}`),
+  },
+  {
+    name: "超限嵌套产 DEPTH_EXCEEDED",
+    md: "<Callout type=\"tip\">\n<Callout type=\"tip\">\n<Callout type=\"tip\">\n<Callout type=\"tip\">\n四层\n</Callout>\n</Callout>\n</Callout>\n</Callout>\n",
+    knownUnequal: true,
+    diagnostics: (codesList) => (codesList.includes("DEPTH_EXCEEDED") ? null : `诊断缺失：${codesList.join(",")}`),
+  },
+];
 
 let failed = 0;
+let passed = 0;
 
-for (const [name, md] of Object.entries(CASES)) {
-  const before = shape(parse(md).tree);
-  const once = roundtrip(md);
-  const after = shape(parse(once).tree);
-  const stable = roundtrip(once) === once;
-  const same = JSON.stringify(before) === JSON.stringify(after);
-  if (!same || !stable) {
+for (const testCase of CASES) {
+  const problems = [];
+  const { name, md } = testCase;
+
+  try {
+    const parsed = parse(md);
+    const rendered = roundtrip(md);
+    const renderedTree = parse(rendered);
+
+    // 1) 往返幂等
+    if (roundtrip(rendered) !== rendered) problems.push("往返不幂等");
+
+    // 2) 往返结构等价（个别已知缺陷用例跳过）
+    if (!testCase.knownUnequal) {
+      const same = JSON.stringify(shape(parsed.tree)) === JSON.stringify(shape(renderedTree.tree));
+      if (!same) problems.push("往返结构不等价");
+    }
+
+    // 3) 字节保形
+    if (testCase.identical && rendered !== md) problems.push(`往返字节不同：${JSON.stringify(rendered)}`);
+
+    // 4) 结构断言
+    if (testCase.structure) {
+      const issue = testCase.structure(parsed.tree, renderedTree.tree);
+      if (issue) problems.push(issue);
+    }
+
+    // 5) 诊断断言
+    if (testCase.diagnostics) {
+      const issue = testCase.diagnostics(codes(parsed.diagnostics));
+      if (issue) problems.push(issue);
+    }
+
+    // 6) 渲染断言（原文与往返各一次，保证"能解析的就能渲染"）
+    if (testCase.html) {
+      for (const source of [md, rendered]) {
+        const html = renderToStaticMarkup(React.createElement(MarkdownRenderer, { content: source }));
+        const issue = testCase.html(html, source);
+        if (issue) problems.push(`${issue}${source === rendered ? "（往返后）" : ""}`);
+      }
+    }
+  } catch (error) {
+    problems.push(`异常：${error.message}`);
+  }
+
+  if (problems.length > 0) {
     failed += 1;
-    console.log(`✗ ${name}  结构等价=${same} 幂等=${stable}`);
-    console.log(`  原文: ${JSON.stringify(md)}`);
-    console.log(`  往返: ${JSON.stringify(once)}`);
+    console.log(`✗ ${name}`);
+    for (const problem of problems) console.log(`   ${problem}`);
+    console.log(`   原文: ${JSON.stringify(md)}`);
   } else {
+    passed += 1;
     console.log(`✓ ${name}`);
   }
 }
 
-/** 缩进容器里每个子项都应成为 jsxBlock，而不是 code */
-const tree = parse(CASES["Files 缩进 4"]).tree;
-const folder = tree.children[0]?.children?.[0];
-const filesOk = folder?.name === "Folder" && folder.children.every((child) => child.type === "jsxBlock");
-if (!filesOk) {
-  failed += 1;
-  console.log("✗ Files 缩进 4：Folder 子项未全部识别为 jsxBlock");
-}
-
 if (failed > 0) {
-  console.log(`\n${failed} 项未通过`);
+  console.log(`\n${failed} 项未通过，${passed} 项通过`);
   process.exit(1);
 }
-console.log(`\n全部 ${Object.keys(CASES).length} 项通过`);
+console.log(`\n全部 ${passed} 项通过`);

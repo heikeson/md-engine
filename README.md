@@ -58,9 +58,9 @@ export default function Article() {
 import { parse, serialize, roundtrip, normalizeMarkdown } from "@heikeson/md-engine";
 
 const { tree, blocks, diagnostics } = parse(md);
-const same = serialize(tree);   // md → AST → md，逐字一致
+const same = serialize(tree);   // md → AST → md：形态（行内 / 块）与空行按原文保形
 const again = roundtrip(md);     // 等价写法
-const tidy = normalizeMarkdown(md); // 只整理排版（空行、围栏），不管语法正确性
+const tidy = normalizeMarkdown(md); // 需要统一排版时用它（补空行、收敛空行），serialize 不替你改
 ```
 
 `blocks` 是带全文 offset 的扁平块索引，可用来做目录、定位或分屏滚动同步。
@@ -144,8 +144,10 @@ export default function EditorPage() {
 
 书写约束：
 
-- 属性只接受字符串（`a="b"`）与裸布尔（`a`），不支持 `{…}` 表达式、数组、对象。
-- 容器**顶格**书写；放进列表时对齐内容列（`- ` 后 2 空格、`1. ` 后 3 空格），再多缩进 4 空格会变成缩进代码块。
+- 属性只接受字符串（`a="b"`）与裸布尔（`a`），不支持 `{…}` 表达式、数组、对象；属性值里可以有 `>`。
+- 子项可以**同行书写**（`<Tab value="npm">npm install</Tab>`），也可以展开成块；子项内容里可以有空行（按跨段落处理）。保存时按原形态写回，不会强行加空行或展开。
+- 容器**顶格**书写；子项可按层缩进（行首是已知标签时会自动归位）。**正文行**缩进 ≥4 空格仍按 CommonMark 判成缩进代码块，代码请用围栏。
+- 放进列表时对齐内容列（`- ` 后 2 空格、`1. ` 后 3 空格）。
 - 容器嵌套上限 3 层（子项不计层），超限那一层整块降级为原文。
 - 只有 `Image`、`Card`、`File` 等叶子允许 `<X />`，其余容器必须写 `</X>`。
 
@@ -233,6 +235,7 @@ Markdown
 ```bash
 npm run dev        # Vite playground，http://127.0.0.1:5180（渲染 + 编辑器联调）
 npm run snapshot   # 静态快照 dev/.out/preview.html + 往返与诊断自检
+npm run selfcheck  # 构建后跑解析 / 渲染 / 序列化断言套件（dev/selfcheck.mjs）
 npm run typecheck  # tsc --noEmit
 npm run build      # tsup → dist（JS + .d.ts + sourcemap）+ build:css → dist/styles.css
 npm run build:css  # 只打包样式：esbuild 内联 styles/*.css → dist/styles.css

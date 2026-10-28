@@ -2,11 +2,12 @@
  * @file 行内子项的收拢（mdast 层）
  * @description 词法层的 flow 构造只在「整行就是标签」时触发，`<Tab value="a">A</Tab>` 这种
  *   标签与内容同行的写法会退化成一串 inline html，父容器按 `Children.toArray` 取子项时
- *   读不到任何 props（表现为 label 为空、多个子项合并成一个）。本模块在 mdast 层把
- *   「开标签 + 内容 + 闭标签」的段落序列还原成 `jsxBlock`（data.inline 标记），
- *   渲染与序列化都按原写法处理，避免"看着能写、存下来就散了"。
+ *   读不到任何 props（表现为 label 为空、多个子项合并成一个）。
+ *   本模块在 mdast 层把「开标签 + 内容 + 闭标签」还原成 `jsxBlock`：
+ *   同段落内收拢的节点标记 `data.inline`（按行内形态写回）；跨段落收拢的节点按块形态写回。
+ *   开标签解析复用 `parseOpenTag`，不再另写正则——两份实现是属性含 `>` 时 props 丢失的根因。
  * @created 2026-10-28 03:40
- * @updated 2026-10-28 03:40
+ * @updated 2026-10-28 11:40 折叠粒度由「段落内」提升到「父节点子序列」；标签解析统一走 parseOpenTag
  */
 
 import type { Paragraph, Root, RootContent, Text } from "mdast";
@@ -14,8 +15,6 @@ import type { Processor } from "unified";
 import { COMPONENTS } from "../registry";
 import { parseOpenTag, type JsxBlock } from "./jsx-mdast";
 
-/** 行内开标签：`<Name ...>` 或 `<Name ... />` */
-const OPEN_TAG_RE = /^<([A-Za-z][\w]*)([^>]*?)(\/?)>$/;
 /** 行内闭标签：`</Name>` */
 const CLOSE_TAG_RE = /^<\/([A-Za-z][\w]*)\s*>$/;
 
@@ -35,34 +34,41 @@ function isBlank(node: RootContent): boolean {
   return node.type === "text" && !String((node as Text).value).trim();
 }
 
+/** 节点序列是否全为空白（空序列也算） */
+function allBlank(nodes: RootContent[]): boolean {
+  return nodes.every((node) => isBlank(node));
+}
+
 /**
- * 用开标签与闭标签节点拼出覆盖两端的 position
- * @param open 开标签节点
- * @param close 闭标签节点（自闭合时与 open 相同）
+ * 用首尾节点拼出覆盖两端的 position
+ * @param first 首节点
+ * @param last 尾节点（只有一个节点时与 first 相同）
  * @returns 合并后的 position；任一缺失时返回 undefined
  */
-function spanPosition(open: RootContent, close: RootContent): NonNullable<RootContent["position"]> | undefined {
-  const start = open.position?.start;
-  const end = close.position?.end;
+function spanPosition(first: RootContent | undefined, last: RootContent | undefined): NonNullable<RootContent["position"]> | undefined {
+  const start = first?.position?.start;
+  const end = last?.position?.end;
   if (!start || !end) return undefined;
   return { start, end };
 }
 
 /**
- * 生成行内子项节点
+ * 生成子项节点
  * @param name 子项名
  * @param raw 开标签原文
  * @param selfClosing 是否自闭合
- * @param children 子节点（行内子项为单个 paragraph）
+ * @param children 子节点（同段落收拢时为单个 paragraph）
+ * @param inline 是否按行内形态写回
  * @param open 开标签节点
- * @param close 闭标签节点
+ * @param close 闭标签节点（自闭合时与 open 相同）
  * @returns jsxBlock 节点
  */
-function makeInlineItem(
+function makeItem(
   name: string,
   raw: string,
   selfClosing: boolean,
   children: RootContent[],
+  inline: boolean,
   open: RootContent,
   close: RootContent,
 ): JsxBlock {
@@ -73,86 +79,167 @@ function makeInlineItem(
     attributes,
     selfClosing,
     children,
-    data: { closed: true, inline: true },
   };
+  node.data = inline ? { closed: true, inline: true } : { closed: true };
   const position = spanPosition(open, close);
   if (position) node.position = position;
   return node;
 }
 
 /**
- * 收拢单个段落里的行内子项
- * @param paragraph 段落
- * @param allowed 允许的子项名（由父容器声明决定）
- * @returns 收拢后的节点序列；段落内没有可收拢的子项时返回 null
+ * 把一段行内节点包装成段落
+ * @param nodes 行内节点
+ * @param fallback 位置回退（无首尾位置时使用）
+ * @returns 段落；全为空白时返回 null
  */
-function foldParagraph(paragraph: Paragraph, allowed: readonly string[]): RootContent[] | null {
-  const nodes = paragraph.children;
-  const out: RootContent[] = [];
-  let index = 0;
-  let converted = false;
+function toParagraph(
+  nodes: RootContent[],
+  fallback: Paragraph["position"],
+): Paragraph | null {
+  if (nodes.length === 0 || allBlank(nodes)) return null;
+  const position = spanPosition(nodes[0], nodes[nodes.length - 1]) ?? fallback;
+  const paragraph: Paragraph = { type: "paragraph", children: nodes as Paragraph["children"] };
+  if (position) paragraph.position = position;
+  return paragraph;
+}
 
-  while (index < nodes.length) {
-    const node = nodes[index] as RootContent;
-    if (node.type !== "html") {
-      out.push(node);
-      index += 1;
-      continue;
-    }
-    const raw = String(node.value).trim();
-    const open = OPEN_TAG_RE.exec(raw);
-    if (!open || !allowed.includes(open[1])) {
-      out.push(node);
-      index += 1;
-      continue;
-    }
-    const name = open[1];
-    // 自闭合子项（`<Card … />`、`<File … />`）
-    if (open[3] === "/") {
-      out.push(makeInlineItem(name, raw, true, [], node, node));
-      converted = true;
-      index += 1;
-      continue;
-    }
-    // 非自闭合：在同一段落里找同名闭标签
-    let closeIndex = -1;
-    for (let probe = index + 1; probe < nodes.length; probe += 1) {
-      const candidate = nodes[probe] as RootContent;
-      if (candidate.type !== "html") continue;
-      const close = CLOSE_TAG_RE.exec(String(candidate.value).trim());
-      if (close && close[1] === name) {
-        closeIndex = probe;
-        break;
-      }
-    }
-    // 未闭合：保持原样，交给 policy 产 UNCLOSED_TAG，不在这里猜
-    if (closeIndex === -1) {
-      out.push(node);
-      index += 1;
-      continue;
-    }
-    const inner = nodes.slice(index + 1, closeIndex).filter((n) => !isBlank(n as RootContent));
-    const children: RootContent[] =
-      inner.length > 0
-        ? [
-            {
-              type: "paragraph",
-              children: inner as Paragraph["children"],
-              position: paragraph.position,
-            },
-          ]
-        : [];
-    out.push(
-      makeInlineItem(name, raw, false, children, node, nodes[closeIndex] as RootContent),
-    );
-    converted = true;
-    index = closeIndex + 1;
+/** 折叠结果：替换掉 consume 个子节点，换成 nodes */
+interface FoldResult {
+  nodes: RootContent[];
+  consume: number;
+  /** 折出的子项在 nodes 中的下标（用于让扫描跳过它、继续处理残留段落） */
+  itemOffset: number;
+}
+
+/**
+ * 段落里从 index 起的第一个非空白节点
+ * @param nodes 段落子节点
+ * @param from 起始下标
+ * @returns 下标；没有时返回 -1
+ */
+function firstMeaningful(nodes: RootContent[], from: number): number {
+  for (let index = from; index < nodes.length; index += 1) {
+    if (!isBlank(nodes[index] as RootContent)) return index;
+  }
+  return -1;
+}
+
+/**
+ * 从节点序列的 index 起找同名闭标签
+ * @param nodes 子节点
+ * @param from 起始下标
+ * @param name 子项名
+ * @returns 闭标签下标；未找到返回 -1
+ */
+function findClose(nodes: RootContent[], from: number, name: string): number {
+  for (let index = from; index < nodes.length; index += 1) {
+    const candidate = nodes[index] as RootContent;
+    if (candidate.type !== "html") continue;
+    const match = CLOSE_TAG_RE.exec(String(candidate.value).trim());
+    if (match && match[1] === name) return index;
+  }
+  return -1;
+}
+
+/**
+ * 尝试在 children[index] 处折叠一个子项
+ * @param children 父节点子节点
+ * @param index 起始下标
+ * @param allowed 允许的子项名
+ * @returns 折叠结果；此处不是可折叠的行内子项时返回 null
+ */
+function tryFoldAt(children: RootContent[], index: number, allowed: readonly string[]): FoldResult | null {
+  const paragraph = children[index];
+  if (paragraph.type !== "paragraph") return null;
+
+  const nodes = paragraph.children as RootContent[];
+  const openIndex = firstMeaningful(nodes, 0);
+  if (openIndex === -1) return null;
+
+  const openNode = nodes[openIndex] as RootContent;
+  if (openNode.type !== "html") return null;
+
+  const parsed = parseOpenTag(String(openNode.value).trim());
+  if (!parsed.name || !allowed.includes(parsed.name)) return null;
+
+  // 自闭合子项（`<Card … />`、`<File … />`）：就地变成一个节点
+  if (parsed.selfClosing) {
+    const head = toParagraph(nodes.slice(0, openIndex), paragraph.position);
+    const tail = toParagraph(nodes.slice(openIndex + 1), paragraph.position);
+    const item = makeItem(parsed.name, String(openNode.value).trim(), true, [], true, openNode, openNode);
+    return { nodes: [...(head ? [head] : []), item, ...(tail ? [tail] : [])], consume: 1, itemOffset: head ? 1 : 0 };
   }
 
-  if (!converted) return null;
-  // 子项之间的换行/空格在块级层面没有意义，丢掉；段落里还有正文时保留原文
-  const hasContent = out.some((n) => n.type !== "jsxBlock" && !isBlank(n));
-  return hasContent ? out : out.filter((n) => n.type === "jsxBlock");
+  // 同段落内闭合：行内形态
+  const inlineClose = findClose(nodes, openIndex + 1, parsed.name);
+  if (inlineClose !== -1) {
+    const inner = toParagraph(nodes.slice(openIndex + 1, inlineClose), paragraph.position);
+    const head = toParagraph(nodes.slice(0, openIndex), paragraph.position);
+    const tail = toParagraph(nodes.slice(inlineClose + 1), paragraph.position);
+    const closeNode = nodes[inlineClose] as RootContent;
+    const item = makeItem(parsed.name, String(openNode.value).trim(), false, inner ? [inner] : [], true, openNode, closeNode);
+    return { nodes: [...(head ? [head] : []), item, ...(tail ? [tail] : [])], consume: 1, itemOffset: head ? 1 : 0 };
+  }
+
+  // 跨段落：向后扫兄弟节点，只接受段落；遇到其它类型立即放弃（不做跨结构猜测）
+  for (let probe = index + 1; probe < children.length; probe += 1) {
+    const sibling = children[probe];
+    if (sibling.type !== "paragraph") return null;
+    const siblingNodes = sibling.children as RootContent[];
+    const closeIndex = findClose(siblingNodes, 0, parsed.name);
+    const inner: RootContent[] = [];
+
+    const firstBody = toParagraph(nodes.slice(openIndex + 1), paragraph.position);
+    if (firstBody) inner.push(firstBody);
+    for (let middle = index + 1; middle < probe; middle += 1) inner.push(children[middle]);
+
+    const head = toParagraph(nodes.slice(0, openIndex), paragraph.position);
+
+    if (closeIndex !== -1) {
+      const lastBody = toParagraph(siblingNodes.slice(0, closeIndex), sibling.position);
+      if (lastBody) inner.push(lastBody);
+      const tail = toParagraph(siblingNodes.slice(closeIndex + 1), sibling.position);
+      const item = makeItem(
+        parsed.name,
+        String(openNode.value).trim(),
+        false,
+        inner,
+        false,
+        openNode,
+        siblingNodes[closeIndex] as RootContent,
+      );
+      return {
+        nodes: [...(head ? [head] : []), item, ...(tail ? [tail] : [])],
+        consume: probe - index + 1,
+        itemOffset: head ? 1 : 0,
+      };
+    }
+  }
+
+  // 未闭合：保持原样，交给 policy 产 UNCLOSED_TAG，不在这里猜
+  return null;
+}
+
+/**
+ * 收拢一个父节点下的行内子项
+ * @param parent 当前节点（根或任意 jsxBlock）
+ */
+function foldChildren(parent: Root | JsxBlock): void {
+  const allowed = parent.type === "jsxBlock" ? itemsOf(parent.name) : [];
+  if (allowed.length === 0) return;
+
+  const children = parent.children as RootContent[];
+  let index = 0;
+  while (index < children.length) {
+    const folded = tryFoldAt(children, index, allowed);
+    if (!folded) {
+      index += 1;
+      continue;
+    }
+    children.splice(index, folded.consume, ...folded.nodes);
+    // 只跳过折出来的子项本身：它后面的残留段落里可能还有下一个子项
+    index += folded.itemOffset + 1;
+  }
 }
 
 /**
@@ -160,20 +247,9 @@ function foldParagraph(paragraph: Paragraph, allowed: readonly string[]): RootCo
  * @param parent 当前节点（根或任意父节点）
  */
 function walk(parent: Root | RootContent): void {
+  if (parent.type === "root" || parent.type === "jsxBlock") foldChildren(parent as Root | JsxBlock);
   const children = (parent as { children?: RootContent[] }).children;
   if (!children) return;
-
-  const allowed = parent.type === "jsxBlock" ? itemsOf((parent as JsxBlock).name) : [];
-  if (allowed.length > 0) {
-    for (let i = 0; i < children.length; i += 1) {
-      const child = children[i];
-      if (child.type !== "paragraph") continue;
-      const folded = foldParagraph(child, allowed);
-      if (!folded) continue;
-      children.splice(i, 1, ...folded);
-      i += folded.length - 1;
-    }
-  }
   for (const child of children) walk(child);
 }
 

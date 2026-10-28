@@ -5,7 +5,7 @@
  *   之所以写在词法层：CommonMark 的 HTML block 规则要求标签前后有空行，且标签紧贴上一段时
  *   开标签会被吞进段落；只有 flow 构造能绕开这些限制（详见 docs/markdown/03-引擎设计.md）。
  * @created 2026-10-24 20:16
- * @updated 2026-10-24 20:16
+ * @updated 2026-10-28 11:32 内容区增加围栏状态感知：围栏代码块内的 `</Name>` 与同名 `<Name` 不再参与闭合/嵌套判定
  */
 
 import type {
@@ -31,6 +31,8 @@ const DQUOTE = 34; // "
 const SQUOTE = 39; // '
 const SPACE = 32; // 空格
 const TAB = 9; // 制表符
+const BTICK = 96; // `
+const TILDE = 126; // ~
 
 /**
  * 判断标签名是否受支持（容器组件或子项组件）
@@ -136,6 +138,20 @@ function tokenizeJsxBlock(
   const openConstruct: Construct = { tokenize: tokenizeOpenProbe, partial: true };
   /** 行首缩进探测：缩进 + 已知标签名时，把缩进移出内容区（见 lineStart） */
   const indentConstruct: Construct = { tokenize: tokenizeIndentTag, partial: true };
+  /** 围栏开启探测：`[ ]{0,3}` + 三个及以上的 ` 或 ~ */
+  const fenceOpenConstruct: Construct = { tokenize: tokenizeFenceOpen, partial: true };
+  /** 围栏收尾探测：同字符且不少于开启长度 */
+  const fenceCloseConstruct: Construct = { tokenize: tokenizeFenceClose, partial: true };
+
+  /** 围栏字符（0 表示不在围栏内），与 `fenceSize` 组成当前围栏状态 */
+  let fenceMarker = 0;
+  /** 开启围栏的字符个数，收尾行需要不少于这个数 */
+  let fenceSize = 0;
+  /** 探测到的围栏字符/长度（只在探测成功时写回上面两个变量） */
+  let probedMarker = 0;
+  let probedSize = 0;
+  /** 当前行是否为围栏收尾行（行尾统一收尾） */
+  let closingFenceLine = false;
 
   return start;
 
@@ -257,14 +273,48 @@ function tokenizeJsxBlock(
   }
 
   /**
-   * 行首：先探测闭合标签形态，再决定是"本层闭合"还是"属于内层、并入内容"
+   * 行首：围栏优先，其次闭合标签，最后同名开标签
    * @description 容器内容由 `chunkDocument` 在**后处理阶段**作为子文档解析，tokenize 阶段
    *   看不到里面的嵌套块，因此必须自己数同名深度，否则会把内层的 `</Name>` 当成本层闭合。
+   *   围栏代码块（``` / ~~~）里的 `</Name>`、`<Name` 属于代码内容，一律不参与上述判定，
+   *   否则代码块里出现闭合标签就会把容器提前关掉、内容被吃掉（见 docs/PR1解析修复优化/）。
    */
   function lineStart(code: Code): State | undefined {
-    // 缩进排版：容器内再缩进 4 空格会被 CommonMark 判成缩进代码块（README 的 Files 示例即如此），
-    // 因此行首若为「缩进 + 已知标签」就把缩进移出内容区，标签回到列 0 再判定闭合/开标签。
-    // 只对标签生效：缩进代码块（缩进后是普通文本）、未知标签（如 <div>）一律不受影响。
+    if (fenceMarker !== 0) return fenceLine(code);
+    return effects.check(fenceOpenConstruct, fenceOpened, indentedLineStart)(code);
+  }
+
+  /**
+   * 行首是围栏开启行：记住围栏状态，整行原样进内容区
+   * @description 开启行本身不做收尾判定——无信息串时开启行的字符序列与收尾行同形，
+   *   交给 fenceLine 会被自己立刻"收尾"，围栏状态当场失效（内容随之被误判）。
+   */
+  function fenceOpened(code: Code): State | undefined {
+    fenceMarker = probedMarker;
+    fenceSize = probedSize;
+    closingFenceLine = false;
+    return chunkStart(code);
+  }
+
+  /** 围栏内的一行：整行原样进内容区，只额外判断是否为本围栏的收尾行 */
+  function fenceLine(code: Code): State | undefined {
+    closingFenceLine = false;
+    return effects.check(fenceCloseConstruct, markFenceClose, chunkStart)(code);
+  }
+
+  /** 本行是收尾行：行尾时清空围栏状态 */
+  function markFenceClose(code: Code): State | undefined {
+    closingFenceLine = true;
+    return chunkStart(code);
+  }
+
+  /**
+   * 非围栏行的缩进处理
+   * @description 容器内再缩进 4 空格会被 CommonMark 判成缩进代码块（README 的 Files 示例即如此），
+   *   因此行首若为「缩进 + 已知标签」就把缩进移出内容区，标签回到列 0 再判定闭合/开标签。
+   *   只对标签生效：缩进后是普通文本、或未知标签（如 <div>）一律不受影响。
+   */
+  function indentedLineStart(code: Code): State | undefined {
     return effects.check(indentConstruct, indentDetected, plainLineStart)(code);
   }
 
@@ -329,6 +379,7 @@ function tokenizeJsxBlock(
     if (code === null) {
       const t = effects.exit("chunkDocument");
       self.parser.lazy[t.start.line] = false;
+      resetFenceLine();
       return afterContent(code);
     }
     if (markdownLineEnding(code)) {
@@ -346,7 +397,20 @@ function tokenizeJsxBlock(
     effects.consume(code);
     const t = effects.exit("chunkDocument");
     self.parser.lazy[t.start.line] = false;
+    resetFenceLine();
     return lineStart;
+  }
+
+  /**
+   * 行结束时结算围栏状态
+   * @description 收尾行只在行尾生效：本行本身仍要整行进内容区，
+   *   这样嵌套文档才能看到完整的围栏（含收尾行），代码块内容不会被截断。
+   */
+  function resetFenceLine(): void {
+    if (!closingFenceLine) return;
+    fenceMarker = 0;
+    fenceSize = 0;
+    closingFenceLine = false;
   }
 
 
@@ -540,6 +604,89 @@ function tokenizeJsxBlock(
       }
       effects2.exit("jsxBlockIndent");
       return isKnownName(probe) ? ok2(code) : nok2(code);
+    }
+  }
+
+  /**
+   * 围栏开启探测：`[空格]{0,3}` + 三个及以上的 ` 或 ~
+   * @description 用 `check` 调用，事件整体回滚；探测结果写进 probedMarker / probedSize，
+   *   只有 ok 分支才会写回真正的围栏状态，避免失败的探测污染状态。
+   */
+  function tokenizeFenceOpen(effects2: Effects, ok2: State, nok2: State): State {
+    let spaces = 0;
+    let marker = 0;
+    let size = 0;
+    return fenceStart;
+
+    /** 前导空格（最多 3 个，第 4 个空格起属于缩进代码块） */
+    function fenceStart(code: Code): State | undefined {
+      if (code === SPACE && spaces < 3) {
+        spaces += 1;
+        effects2.consume(code);
+        return fenceStart;
+      }
+      if (code === BTICK || code === TILDE) {
+        marker = code;
+        return fenceRun(code);
+      }
+      return nok2(code);
+    }
+
+    /** 数同一字符的连续个数，≥3 才成围栏 */
+    function fenceRun(code: Code): State | undefined {
+      if (code === marker) {
+        size += 1;
+        effects2.consume(code);
+        return fenceRun;
+      }
+      if (size < 3) return nok2(code);
+      probedMarker = marker;
+      probedSize = size;
+      return ok2(code);
+    }
+  }
+
+  /**
+   * 围栏收尾探测：`[空格]{0,3}` + 不少于开启长度的同字符 + 行尾（允许尾随空格）
+   * @description 同样用 `check` 调用，不消费任何字符。
+   */
+  function tokenizeFenceClose(effects2: Effects, ok2: State, nok2: State): State {
+    const marker = fenceMarker;
+    const need = fenceSize;
+    let spaces = 0;
+    let size = 0;
+    return closeStart;
+
+    /** 前导空格（最多 3 个） */
+    function closeStart(code: Code): State | undefined {
+      if (code === SPACE && spaces < 3) {
+        spaces += 1;
+        effects2.consume(code);
+        return closeStart;
+      }
+      if (code === marker) return closeRun(code);
+      return nok2(code);
+    }
+
+    /** 同字符连续个数需不少于开启长度 */
+    function closeRun(code: Code): State | undefined {
+      if (code === marker) {
+        size += 1;
+        effects2.consume(code);
+        return closeRun;
+      }
+      if (size < need) return nok2(code);
+      return closeTail(code);
+    }
+
+    /** 收尾行只允许尾随空格 */
+    function closeTail(code: Code): State | undefined {
+      if (code === null || markdownLineEnding(code)) return ok2(code);
+      if (code === SPACE) {
+        effects2.consume(code);
+        return closeTail;
+      }
+      return nok2(code);
     }
   }
 

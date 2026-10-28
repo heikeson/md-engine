@@ -23,6 +23,7 @@ import type { Root } from "mdast";
 import { mdxComponents } from "./components";
 import remarkJsxBlocks from "./syntax/jsx-remark";
 import remarkInlineItems from "./syntax/jsx-inline";
+import remarkHtmlAsText from "./syntax/html-text";
 import { promoteBlockMath } from "./syntax/math-block";
 import { rehypeSafeUrls } from "./rehype-safe-urls";
 import { rehypeSafeAnchors } from "./rehype-safe-anchors";
@@ -114,6 +115,8 @@ function createProcessor(
     // 与 parse() 保持同一套 mdast 后处理：行内子项收拢，
     // 否则渲染与解析对同一段内容的理解会分叉（渲染侧丢标签）
     .use(remarkInlineItems)
+    // 未识别的 HTML（白名单外标签）按文本显示：否则 remark-rehype 会直接丢掉整段内容
+    .use(remarkHtmlAsText)
     .use(extraRemark ?? [])
     .use(remarkRehype, { handlers: { jsxBlock: jsxBlockToHast as never } })
     // 紧跟 remark-rehype：此刻所有节点的 href/src 都在，一次清洗即可覆盖

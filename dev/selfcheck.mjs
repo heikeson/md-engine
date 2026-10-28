@@ -297,6 +297,24 @@ const CASES = [
       codesList.includes("INDENT_AS_CODE") ? null : `诊断缺失：${codesList.join(",") || "无"}`,
   },
   {
+    name: "div 是合法容器（属性透传）",
+    md: "<div class=\"note\" id=\"a\">\n正文 **粗**\n</div>\n",
+    identical: true,
+    structure: (tree) => (findBlock(tree, "div") ? null : "div 未解析成容器"),
+    html: (html) => (html.includes("class=\"note\"") && html.includes("<strong>") ? null : "div 未渲染出属性或正文"),
+  },
+  {
+    name: "未知标签：内容按文本显示，不再丢",
+    md: "<section>\n正文\n</section>\n",
+    html: (html) => (html.includes("section") && html.includes("正文") ? null : "未知标签的内容被丢弃"),
+  },
+  {
+    name: "未闭合容器照容器渲染、内容不吞",
+    md: "<Callout type=\"tip\">\n正文\n",
+    diagnostics: (codesList) => (codesList.includes("UNCLOSED_TAG") ? null : `诊断缺失：${codesList.join(",")}`),
+    html: (html) => (html.includes("callout-tip") && html.includes("正文") ? null : "未闭合容器未按容器渲染"),
+  },
+  {
     name: "超限嵌套：降级但仍往返等价",
     md: "<Callout type=\"tip\">\n<Callout type=\"tip\">\n<Callout type=\"tip\">\n<Callout type=\"tip\">\n四层\n</Callout>\n</Callout>\n</Callout>\n</Callout>\n",
     identical: true,

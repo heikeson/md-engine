@@ -118,6 +118,7 @@ export default function EditorPage() {
 | `Files` | — | `Folder`：`name`、`defaultOpen`（布尔）；`File`：`name`、`href`、`icon`（可自闭合） |
 | `TypeTable` | — | `TypeItem`：`name`、`type`、`default`、`required`（布尔） |
 | `Image` | `src` / `alt` / `align`（默认 `center`）/ `width` / `caption` / `zoom`（布尔） | 自闭合叶子 |
+| `div` | `class` / `id` | 正文（属性透传到 DOM，用于局部样式或锚点） |
 
 示例：
 
@@ -145,6 +146,7 @@ export default function EditorPage() {
 书写约束：
 
 - 属性只接受字符串（`a="b"`）与裸布尔（`a`），不支持 `{…}` 表达式、数组、对象；属性值里可以有 `>`。
+- 白名单外的标签（如 `<section>`、`<Foo>`）连同正文**按文本原样显示**，不会丢内容、也不执行 HTML；需要一层可挂 `class` / `id` 的分块用 `div`。
 - 子项可以**同行书写**（`<Tab value="npm">npm install</Tab>`），也可以展开成块；子项内容里可以有空行（按跨段落处理）。保存时按原形态写回，不会强行加空行或展开。
 - 容器**顶格**书写；子项可按层缩进（行首是已知标签时会自动归位）。**正文行**缩进 ≥4 空格（或 tab）仍按 CommonMark 判成缩进代码块，此时 `parse` 会给出 `INDENT_AS_CODE` 提示，内容不会被改写；要写代码请用围栏。
 - 放进列表时对齐内容列（`- ` 后 2 空格、`1. ` 后 3 空格）。

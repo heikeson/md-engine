@@ -86,6 +86,9 @@ export const COMPONENTS: Readonly<Record<string, ComponentSpec>> = {
     boolAttrs: ["zoom"],
     defaultAttrs: { align: "center" },
   },
+  // 通用分块容器：作者需要一层可挂 class / id 的 div 做局部样式或锚点时用它；
+  // 属性原样透传到 DOM（不套组件），内容照常按 Markdown 解析。
+  div: { name: "div", mode: "visual", attrs: ["class", "id"] },
 };
 
 /**

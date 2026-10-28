@@ -24,7 +24,7 @@ export interface JsxBlock extends Parent {
   selfClosing: boolean;
   children: RootContent[];
   /** closed=false 表示未闭合到文件末尾（由 policy 决定是否降级） */
-  data?: Data & { closed?: boolean };
+  data?: Data & { closed?: boolean; inline?: boolean };
 }
 
 /** 开标签解析结果 */
@@ -162,6 +162,13 @@ function handleJsxBlock(
 ): string {
   const attrs = serializeAttributes(node.attributes ?? {});
   if (node.selfClosing) return `<${node.name}${attrs} />`;
+  // 行内子项（原写法与内容同一行）：按行内序列化还原，不展开成多行块，
+  // 否则 `<Tab value="a">A</Tab>` 会被写成块形态，往返即变形
+  if (node.data?.inline) {
+    const first = node.children[0];
+    const body = first ? state.containerPhrasing(first as never, info as never) : "";
+    return `<${node.name}${attrs}>${body}</${node.name}>`;
+  }
   const inner = state.containerFlow(node, info as never);
   // 原文未闭合时不补闭合标签：内容原样保留，不在保存时"顺手修好"用户内容
   if (node.data?.closed === false) return `<${node.name}${attrs}>\n\n${inner}`;

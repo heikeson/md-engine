@@ -87,33 +87,15 @@ function codes(diagnostics) {
  * }>}
  */
 const CASES = [
-  // ---------- D1：围栏代码块里的标签不参与判定 ----------
+  // ---------- 契约口径：行首 </Name> 即闭合，代码块里也一样 ----------
   {
-    name: "围栏里写闭合标签（Callout）",
+    name: "代码块里的行首 </Name> 仍然闭合容器",
     md: "<Callout type=\"tip\">\n\n```md\n</Callout>\n```\n\n</Callout>\n",
-    identical: true,
-    structure: (tree) => (codeValues(tree)[0] === "</Callout>" ? null : `代码块内容丢失：${JSON.stringify(codeValues(tree))}`),
-  },
-  {
-    name: "波浪围栏里写闭合标签",
-    md: "<Callout type=\"tip\">\n\n~~~\n</Callout>\n~~~\n\n</Callout>\n",
-    structure: (tree) => (codeValues(tree)[0] === "</Callout>" ? null : `代码块内容丢失：${JSON.stringify(codeValues(tree))}`),
-  },
-  {
-    name: "围栏里写同名开标签",
-    md: "<Callout type=\"tip\">\n\n```md\n<Callout>\n</Callout>\n```\n\n</Callout>\n",
-    identical: true,
-    structure: (tree) => (codeValues(tree)[0] === "<Callout>\n</Callout>" ? null : `代码块内容被污染：${JSON.stringify(codeValues(tree))}`),
-  },
-  {
-    name: "围栏里缩进 + 闭合标签（Tab）",
-    md: "<Tabs>\n<Tab value=\"a\">\n\n```md\n    </Tab>\n```\n\n</Tab>\n</Tabs>\n",
-    identical: true,
     structure: (tree) => {
-      const tabs = findBlock(tree, "Tabs");
-      const tab = items(tabs)[0];
-      const values = tab ? codeValues(tab) : [];
-      return values[0] === "    </Tab>" ? null : `代码块内容丢失：${JSON.stringify(values)}`;
+      const callout = findBlock(tree, "Callout");
+      if (!callout) return "容器丢失";
+      // 容器在代码块内的 </Callout> 处闭合，其后的 ``` 与 </Callout> 落在顶层
+      return tree.children.length === 2 ? null : `顶层节点数 ${tree.children.length}，期望 2（容器 + 后续片段）`;
     },
   },
 

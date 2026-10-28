@@ -3,8 +3,9 @@
 > @file update.md
 > @description `@heikeson/md-engine` 的版本更新记录，倒序累积。每次发版在此一次性写清「更新内容 + 修复内容」，不记录操作步骤。
 > @created 2026-10-26 23:37
-> @updated 2026-10-27 19:10
+> @updated 2026-10-28 10:27 只读标注收敛为文件头一行
 > @status 0.3.0 已记录
+> @readonly 由维护者（@heikeson）维护，请勿直接编辑；变更请提 issue
 
 ---
 

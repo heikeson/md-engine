@@ -261,8 +261,6 @@ styles/*.css                  原生 CSS 分片（按组件拆分，index.css �
 导出函数写中文注释（功能 / 参数 / 返回值）；单文件 ≤ 200 行、单函数 ≤ 40 行；
 纯逻辑层（registry / policy / parse / serialize / format）不得依赖 React 与 DOM。
 
-更多细节见 [`docs/项目结构.md`](./docs/项目结构.md)、[`docs/构建与发布.md`](./docs/构建与发布.md)。
-
 ## 版本与兼容
 
 发版内容记录在 [`update.md`](./update.md)。

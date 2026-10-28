@@ -1,0 +1,87 @@
+# @file publish.yml
+# @description 发布 @heikeson/md-engine 到 npm 的 GitHub Actions 工作流。
+#   触发：推送 v* tag（主路径）或手动 workflow_dispatch 指定 tag。
+#   认证：npm Trusted Publishing（OIDC），不使用长期 NPM_TOKEN。
+#   门禁：tag 与 package.json version 一致 → typecheck → build → 主入口隔离 → pack 清单 → 发布。
+# @created 2026-10-28 12:30
+# @updated 2026-10-28 12:30
+
+name: publish-npm
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "要发布的 tag（例如 v0.3.1）"
+        required: true
+        type: string
+
+# 同一时间只允许一次发布，避免并发把两个版本挤在一起
+concurrency:
+  group: npm-publish
+  cancel-in-progress: false
+
+# OIDC 换取 npm 短期凭证所需；contents 只读，工作流不改仓库
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    name: 构建校验并发布
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出 tag 对应的提交
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      # Node 24 自带 npm 11.x，满足 Trusted Publishing 的 npm >= 11.5.1 / Node >= 22.14.0
+      - name: 准备 Node 环境
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 校验 tag 与 package.json version 一致
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          TAG="${{ inputs.tag || github.ref_name }}"
+          echo "package.json=$VERSION tag=$TAG"
+          if [ "v$VERSION" != "$TAG" ]; then
+            echo "::error::tag（$TAG）与 package.json 版本（$VERSION）不一致，拒绝发布"
+            exit 1
+          fi
+
+      - name: 类型检查
+        run: npm run typecheck
+
+      - name: 构建产物
+        run: npm run build
+
+      - name: 校验产物齐全
+        run: |
+          for f in dist/index.js dist/index.d.ts dist/editor/index.js dist/components/index.js dist/styles.css; do
+            [ -f "$f" ] || { echo "::error::缺少产物 $f"; exit 1; }
+          done
+
+      # 契约：主入口不得引入编辑器代码，否则阅读页会连带加载 CodeMirror
+      - name: 校验主入口不含编辑器代码
+        run: |
+          HITS=$(grep -l -e 'codemirror' -e 'EditorView' dist/*.js 2>/dev/null || true)
+          if [ -n "$HITS" ]; then
+            echo "::error::主入口或共享 chunk 含编辑器代码：$HITS"
+            exit 1
+          fi
+
+      - name: 核对发布清单
+        run: npm pack --dry-run
+
+      # 前面已显式跑过 typecheck 与 build，这里 --ignore-scripts 避免 prepublishOnly 重复构建
+      - name: 发布到 npm
+        run: npm publish --access public --ignore-scripts

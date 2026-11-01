@@ -62,6 +62,9 @@
     "snapshot": "vite build --config dev/snapshot.vite.config.ts && vite build --config dev/snapshot.css.vite.config.ts && node dev/.out/snapshot.mjs",
     "selfcheck": "npm run build && node dev/selfcheck.mjs",
     "typecheck": "tsc --noEmit",
+    "site:dev": "vite --config site/vite.config.ts",
+    "site:build": "vite build --config site/vite.config.ts && vite build --config site/vite.config.ts --ssr src/entry-server.tsx --outDir .ssr && node site/scripts/prerender.mjs",
+    "site:preview": "vite preview --config site/vite.config.ts",
     "prepublishOnly": "npm run build && npm run typecheck"
   },
   "dependencies": {

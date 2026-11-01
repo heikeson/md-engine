@@ -1,0 +1,252 @@
+/**
+ * @file 文档页样式
+ * @description 左目录、右目录都随滚动吸附；正文宽度压在 720px 内，
+ *   容器类组件（Tabs、Cards、Files）在窄栏里会显得拥挤，所以正文卡片的边距单独放宽一点。
+ * @created 2026-11-02 01:28
+ * @updated 2026-11-02 01:28
+ */
+
+.docs-sidebar {
+  position: sticky;
+  top: 86px;
+  padding-right: 8px;
+}
+
+.side-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 20px;
+}
+
+.side-group-title {
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  padding-left: 10px;
+}
+
+.side-link {
+  position: relative;
+  padding: 6px 10px;
+  border-radius: 7px;
+  font-size: 13.5px;
+  color: var(--fg-soft);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.side-link:hover {
+  background: var(--bg-sink);
+  color: var(--fg);
+}
+
+.side-link.is-active {
+  color: var(--fg);
+  background: var(--bg-sink);
+  font-weight: 500;
+}
+
+/* ---- 正文 ---- */
+.doc-main {
+  min-width: 0;
+  max-width: 720px;
+}
+
+.doc-head {
+  padding-bottom: 20px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--line);
+}
+
+.doc-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.doc-title {
+  margin-top: 6px;
+  font-size: clamp(24px, 3vw, 32px);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+.doc-summary {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 14.5px;
+}
+
+.doc-prose {
+  font-size: 15px;
+  line-height: 1.76;
+}
+
+.doc-prose > h2 {
+  margin-top: 2.1em;
+  margin-bottom: 0.6em;
+  padding-top: 0.1em;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* 锚点跳转给吸附顶栏留位置 */
+.doc-prose h2,
+.doc-prose h3,
+.doc-prose h4 {
+  scroll-margin-top: 84px;
+}
+
+.doc-prose > h3 {
+  margin-top: 1.7em;
+  margin-bottom: 0.5em;
+  font-size: 17.5px;
+  font-weight: 600;
+}
+
+.doc-prose > p {
+  margin: 0.85em 0;
+  color: var(--fg-soft);
+}
+
+.doc-prose > ul,
+.doc-prose > ol {
+  color: var(--fg-soft);
+  padding-left: 1.35em;
+}
+
+.doc-prose > ul li,
+.doc-prose > ol li {
+  margin: 0.35em 0;
+}
+
+.doc-prose a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+
+.doc-prose .code-block {
+  margin: 1.1em 0;
+}
+
+.doc-prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.1em 0;
+  font-size: 14px;
+}
+
+.doc-prose th,
+.doc-prose td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.doc-prose th {
+  font-weight: 500;
+  color: var(--muted);
+  font-size: 12.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.doc-prose td {
+  color: var(--fg-soft);
+}
+
+.doc-prose td code {
+  font-size: 12.5px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--bg-sink);
+}
+
+/* ---- 右侧目录 ---- */
+.doc-toc {
+  position: sticky;
+  top: 86px;
+  padding-left: 4px;
+}
+
+.toc-title {
+  display: block;
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.toc-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-left: 1px solid var(--line);
+}
+
+.toc-item a {
+  display: block;
+  padding: 4px 0 4px 12px;
+  margin-left: -1px;
+  border-left: 1px solid transparent;
+  font-size: 12.5px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.toc-item a:hover {
+  color: var(--accent);
+  border-left-color: var(--accent);
+}
+
+.toc-level-3 a {
+  padding-left: 22px;
+  font-size: 12px;
+}
+
+/* ---- 上下篇 ---- */
+.doc-pager {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 56px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+
+.pager-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  transition: border-color 0.15s ease;
+}
+
+.pager-card:hover {
+  border-color: var(--line-strong);
+  background: var(--bg-soft);
+}
+
+.pager-next {
+  text-align: right;
+  align-items: flex-end;
+}
+
+.pager-label {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.pager-title {
+  font-size: 14.5px;
+  font-weight: 500;
+}

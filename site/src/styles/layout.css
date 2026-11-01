@@ -1,0 +1,216 @@
+/**
+ * @file 布局：顶栏、页脚、文档三栏
+ * @description 顶栏只做两件事：标识和导航，右侧不再挂推广按钮。
+ *   页脚压成一条与三列链接，不写品牌简介——没人读。
+ * @created 2026-11-02 01:12
+ * @updated 2026-11-02 01:40 顶栏收窄，页脚去简介
+ */
+
+/* ---- 顶栏 ---- */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  border-bottom: 1px solid var(--line);
+  /* 纯色底，不用毛玻璃：半透明加模糊是 SaaS 落地页的做派，文档站压一个实色就够 */
+  background: var(--bg);
+}
+
+.header-inner {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  max-width: var(--site-max);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+  height: 54px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--r-sm);
+  background: var(--fg);
+  color: var(--bg);
+}
+
+.brand-version {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--muted);
+  padding-left: 2px;
+}
+
+.site-nav {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-left: 8px;
+}
+
+.nav-link {
+  font-size: 13.5px;
+  color: var(--fg-soft);
+  padding: 4px 0;
+  border-bottom: 1px solid transparent;
+}
+
+.nav-link:hover {
+  color: var(--fg);
+}
+
+.nav-link.is-active {
+  color: var(--fg);
+  border-bottom-color: var(--fg);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.icon-btn {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-sm);
+  color: var(--muted);
+}
+
+.icon-btn:hover {
+  color: var(--fg);
+  background: var(--bg-sink);
+}
+
+/* 主题图标：由祖先 .dark 决定显隐，JS 不参与 */
+.icon-moon {
+  display: none;
+}
+
+.dark .icon-sun {
+  display: none;
+}
+
+.dark .icon-moon {
+  display: block;
+}
+
+/* ---- 页脚 ---- */
+.site-footer {
+  margin-top: clamp(64px, 8vw, 104px);
+  border-top: 1px solid var(--line);
+}
+
+.footer-inner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 48px;
+  justify-content: space-between;
+  max-width: var(--site-max);
+  margin: 0 auto;
+  padding: 28px var(--gutter);
+}
+
+.footer-cols {
+  display: flex;
+  gap: 48px;
+}
+
+.footer-col {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 13px;
+}
+
+.footer-col a {
+  color: var(--fg-soft);
+  width: fit-content;
+}
+
+.footer-col a:hover {
+  color: var(--fg);
+}
+
+.footer-col-title {
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-bottom: 1px;
+}
+
+.footer-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.footer-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.footer-meta code {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+/* ---- 文档三栏 ---- */
+.docs-shell {
+  display: grid;
+  grid-template-columns: 188px minmax(0, 1fr) 168px;
+  gap: 48px;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 36px var(--gutter) 0;
+  align-items: start;
+}
+
+@media (max-width: 1080px) {
+  .docs-shell {
+    grid-template-columns: 178px minmax(0, 1fr);
+    gap: 32px;
+  }
+
+  .doc-toc {
+    display: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .docs-shell {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 22px;
+  }
+
+  .docs-sidebar {
+    position: static;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 14px;
+  }
+
+  .footer-cols {
+    gap: 32px;
+  }
+
+  .nav-link {
+    font-size: 13px;
+  }
+}

@@ -1,0 +1,198 @@
+/**
+ * @file Playground 样式
+ * @description 编辑器根元素是 height:100%，所以从 .playground 到它之间每一层都必须有确定高度，
+ *   否则 CodeMirror 会塌成一行。工具条压到 44px，把高度留给正文。
+ * @created 2026-11-02 01:34
+ * @updated 2026-11-02 02:34 工具条收窄，状态改为文字徽标
+ */
+
+.playground {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 54px);
+  min-height: 480px;
+}
+
+.pg-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  min-height: 44px;
+  padding: 6px var(--gutter);
+  border-bottom: 1px solid var(--line);
+}
+
+.pg-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pg-label {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.pg-select {
+  height: 28px;
+  padding: 0 8px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line-strong);
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 12.5px;
+  font-family: inherit;
+}
+
+.pg-views {
+  padding: 2px;
+  border-radius: var(--r-sm);
+  background: var(--bg-sink);
+}
+
+.pg-view {
+  padding: 3px 10px;
+  border-radius: 3px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.pg-view:hover {
+  color: var(--fg);
+}
+
+.pg-view.is-active {
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.pg-actions {
+  margin-left: auto;
+}
+
+.pg-status {
+  font-size: 11.5px;
+  font-family: var(--font-mono);
+  padding: 2px 7px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  color: var(--muted);
+}
+
+.pg-status.is-ok {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+  background: var(--accent-soft);
+}
+
+.pg-status.is-warn {
+  color: #9a5b18;
+  border-color: #e8d5b8;
+  background: #fdf7ec;
+}
+
+.dark .pg-status.is-warn {
+  color: #d6a25f;
+  border-color: #3a2f1d;
+  background: #1d1810;
+}
+
+.pg-notice {
+  padding: 6px var(--gutter);
+  font-size: 12.5px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-bottom: 1px solid var(--line);
+}
+
+.pg-stage {
+  flex: 1;
+  min-height: 0;
+  padding: 12px var(--gutter) 14px;
+}
+
+.pg-editor {
+  height: 100%;
+  min-height: 0;
+}
+
+/* ---- 未挂载时的骨架 ---- */
+.pg-skeleton {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  height: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--line);
+  overflow: hidden;
+}
+
+.pg-skeleton-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 22px 18px;
+  background: var(--bg);
+}
+
+.pg-skeleton-line {
+  height: 10px;
+  border-radius: 3px;
+  background: var(--bg-sink);
+}
+
+.pg-skeleton-line.short {
+  width: 54%;
+}
+
+.pg-skeleton-hint {
+  position: absolute;
+  inset: auto 0 22px 0;
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.pg-loading {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* ---- 404 ---- */
+.notfound {
+  max-width: var(--site-max);
+  margin: 0 auto;
+  padding: clamp(72px, 11vw, 132px) var(--gutter);
+}
+
+.nf-code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+}
+
+.nf-title {
+  margin-top: 8px;
+  font-size: clamp(24px, 3.4vw, 34px);
+  font-weight: 600;
+}
+
+.nf-sub {
+  margin-top: 8px;
+  color: var(--fg-soft);
+  font-size: 14.5px;
+}
+
+.nf-links {
+  display: flex;
+  gap: 8px;
+  margin-top: 22px;
+  flex-wrap: wrap;
+}

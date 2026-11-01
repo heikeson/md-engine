@@ -1,0 +1,58 @@
+/**
+ * @file 站点令牌
+ * @description 配色刻意收得很窄：几乎黑白，只留一个低饱和的青色给链接与选中态。
+ *   强调色不作为按钮底色、不铺背景——开发者站的辨识度来自排版，不来自色块。
+ * @created 2026-11-02 01:05
+ * @updated 2026-11-02 01:40 去掉阴影与渐变色阶，圆角收敛，主色改为中性
+ */
+
+:root {
+  --site-max: 1080px;
+  --gutter: clamp(20px, 4.5vw, 44px);
+
+  --bg: #ffffff;
+  --bg-soft: #fafafa;
+  --bg-sink: #f4f4f5;
+
+  --fg: #18181b;
+  --fg-soft: #52525b;
+  --muted: #8b8b93;
+
+  --line: #e7e7e9;
+  --line-strong: #d6d6da;
+
+  --accent: #0d6b63;
+  --accent-soft: #eaf5f3;
+
+  --code-bg: #fafafa;
+  --code-bar: #ffffff;
+
+  --r-sm: 4px;
+  --r: 6px;
+  --r-lg: 10px;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+}
+
+.dark,
+[data-theme="dark"] {
+  --bg: #0b0c0d;
+  --bg-soft: #121415;
+  --bg-sink: #191b1d;
+
+  --fg: #ececee;
+  --fg-soft: #a6a6ae;
+  --muted: #74747c;
+
+  --line: #232527;
+  --line-strong: #333638;
+
+  --accent: #4fd1c5;
+  --accent-soft: #102523;
+
+  --code-bg: #0f1112;
+  --code-bar: #0b0c0d;
+}

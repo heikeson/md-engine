@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="zh-CN" class="theme-light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>md-engine · React 的 Markdown 内容引擎</title>
+    <meta
+      name="description"
+      content="把 <Callout>、<Tabs> 这类尖括号容器解析成 mdast 节点，渲染成 React 组件，写回时逐字还原。"
+    />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="stylesheet" href="/src/styles/site.css" />
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem("md-engine-theme");
+          var dark = saved
+            ? saved === "dark"
+            : window.matchMedia("(prefers-color-scheme: dark)").matches;
+          var root = document.documentElement;
+          root.classList.toggle("dark", dark);
+          root.classList.toggle("theme-light", !dark);
+          root.style.colorScheme = dark ? "dark" : "light";
+        } catch (error) {
+          /* 隐私模式下 localStorage 不可用，退回亮色 */
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/entry-client.tsx"></script>
+  </body>
+</html>

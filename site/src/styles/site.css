@@ -1,0 +1,16 @@
+/**
+ * @file 站点样式汇总
+ * @description 包内样式是原生 CSS，直接按相对路径引入，不经过包名解析——
+ *   这样开发态改 styles/ 立刻生效，构建产物也自带一份完整样式，不依赖 node_modules。
+ * @created 2026-11-02 01:05
+ * @updated 2026-11-02 01:05
+ */
+
+@import "../../../styles/index.css";
+@import "./tokens.css";
+@import "./base.css";
+@import "./layout.css";
+@import "./code.css";
+@import "./home.css";
+@import "./docs.css";
+@import "./playground.css";

@@ -1,0 +1,34 @@
+/**
+ * @file TS 配置
+ * @description 独立于引擎源码的编译口径：仅覆盖 site/src，包名走 paths 映射到仓库源码，
+ *   以免为了写页面先构建一次 dist。本配置不并入根 typecheck，避免影响发版校验。
+ * @created 2026-11-01 23:30
+ * @updated 2026-11-01 23:30
+ */
+
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noUnusedLocals": false,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "allowImportingTsExtensions": true,
+    "types": ["vite/client", "node"],
+    "baseUrl": ".",
+    "paths": {
+      "@heikeson/md-engine": ["../src/index.ts"],
+      "@heikeson/md-engine/editor": ["../src/editor/index.ts"],
+      "@heikeson/md-engine/components": ["../src/components/index.ts"],
+      "@heikeson/md-engine/mermaid": ["../src/mermaid/index.tsx"],
+      "@site/*": ["./src/*"]
+    }
+  },
+  "include": ["src", "vite.config.ts", "scripts"]
+}

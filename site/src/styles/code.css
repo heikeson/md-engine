@@ -1,0 +1,111 @@
+/**
+ * @file 代码块与着色
+ * @description 代码块只有边框和一层极浅的底，没有阴影。着色用低饱和的五六种颜色，
+ *   暗色下单独一套，保证在白底和黑底上都读得清而不刺眼。
+ * @created 2026-11-02 01:16
+ * @updated 2026-11-02 02:30 去掉演示面板样式，圆角与底色收敛
+ */
+
+.code-block {
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--code-bg);
+  overflow: hidden;
+}
+
+.code-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: 32px;
+  padding: 0 12px;
+  background: var(--code-bar);
+  border-bottom: 1px solid var(--line);
+}
+
+.code-title {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.copy-btn {
+  flex: none;
+  font-size: 11px;
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line-strong);
+  color: var(--muted);
+  background: transparent;
+  transition: color 0.14s ease, border-color 0.14s ease;
+}
+
+.copy-btn:hover {
+  color: var(--fg);
+  border-color: var(--fg-soft);
+}
+
+.code-body {
+  margin: 0;
+  padding: 14px 16px;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 12.8px;
+  line-height: 1.72;
+  color: var(--fg-soft);
+  tab-size: 2;
+}
+
+.code-body code {
+  font-size: inherit;
+  background: none;
+  padding: 0;
+}
+
+/* ---- 着色 ---- */
+.tok-comment {
+  color: #9a9aa3;
+  font-style: italic;
+}
+
+.tok-string {
+  color: #0d6b63;
+}
+
+.tok-keyword {
+  color: #8b3a62;
+}
+
+.tok-number {
+  color: #9a5b18;
+}
+
+.tok-tag {
+  color: #2b5aa8;
+}
+
+.dark .tok-comment {
+  color: #5f6166;
+}
+
+.dark .tok-string {
+  color: #63d3c7;
+}
+
+.dark .tok-keyword {
+  color: #d38bb4;
+}
+
+.dark .tok-number {
+  color: #d6a25f;
+}
+
+.dark .tok-tag {
+  color: #8ab4f8;
+}

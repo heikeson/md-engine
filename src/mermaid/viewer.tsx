@@ -6,6 +6,7 @@
  * @updated 2026-11-01 22:29 改为「顶部工具栏 + 右下角缩放条」的卡片式布局
  * @updated 2026-11-01 22:37 标题并入工具栏；暗色与取色按图表容器判定；手势仅在出图后启用
  * @updated 2026-11-01 22:51 导出 PNG 底色改走 resolveChartTokens
+ * @updated 2026-11-01 23:18 height 未指定 / 空 / auto 一律自动高度
  */
 
 "use client";
@@ -19,20 +20,20 @@ import { useIsDark } from "./use-dark";
 import { resolveChartTokens, useMermaidRender } from "./use-render";
 import { usePanZoom } from "./use-zoom";
 
-/** 默认视口高度上限（px） */
-const DEFAULT_HEIGHT = 420;
-
 /** 进入视口前预留的余量，提前触发加载 */
 const PRELOAD_MARGIN = "200px 0px";
 
 /**
- * 把 height 属性解析成图表区高度上限
- * @param height 容器属性值
- * @returns `{n}px`，非法值回落默认
+ * 解析图表区高度上限
+ * @param height 容器属性（数字 / "auto" / 空）
+ * @returns 正数返回 `{n}px`；未指定、空、`"auto"` 或非法值返回 undefined（不限高，随内容自适应）
+ * @description 缺省即自动高度：大图不再被 420px 裁掉，超长交给页面滚动。
  */
-function viewportHeight(height?: string): string {
-  const value = Number(height);
-  return Number.isFinite(value) && value > 0 ? `${Math.round(value)}px` : `${DEFAULT_HEIGHT}px`;
+function viewportHeight(height?: string): string | undefined {
+  const raw = (height ?? "").trim().toLowerCase();
+  if (!raw || raw === "auto") return undefined;
+  const numeric = Number(raw);
+  return Number.isFinite(numeric) && numeric > 0 ? `${Math.round(numeric)}px` : undefined;
 }
 
 /**

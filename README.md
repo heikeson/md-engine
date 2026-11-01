@@ -138,7 +138,7 @@ const components = { ...mdxComponents, ...mermaidComponents };
 | `TypeTable` | — | `TypeItem`：`name`、`type`、`default`、`required`（布尔） |
 | `Image` | `src` / `alt` / `align`（默认 `center`）/ `width` / `caption` / `zoom`（布尔） | 自闭合叶子 |
 | `div` | `class` / `id` | 正文（属性透传到 DOM，用于局部样式或锚点） |
-| `Mermaid` | `title` / `height`（默认 `420`） | **原始文本**：容器体不按 Markdown 解析，整段是图表源码 |
+| `Mermaid` | `title` / `height`（默认自动高度；给数字才限高） | **原始文本**：容器体不按 Markdown 解析，整段是图表源码 |
 
 示例：
 

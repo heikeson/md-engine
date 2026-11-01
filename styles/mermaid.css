@@ -9,6 +9,7 @@
  * @created 2026-11-01 21:34
  * @updated 2026-11-01 22:49 改为内置亮暗两套配色，去掉对宿主语义变量的依赖
  * @updated 2026-11-01 22:51 内置亮/暗两套配色，零宿主变量依赖
+ * @updated 2026-11-01 23:18 图表区去掉 min-height，默认按内容自适应
  */
 
 @layer lkes.components {
@@ -140,11 +141,12 @@
   }
 
   /* ---- 图表区 / 源码区 ---- */
+  /* 不设 min-height：默认按内容自适应（图表多高就多高），
+     只有显式写了 height 才由内联 maxHeight 限高并裁切 */
   .lkes-mermaid-body {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 15rem;
     padding: 1rem;
     overflow: hidden;
     background: var(--lkes-chart-bg, #ffffff);

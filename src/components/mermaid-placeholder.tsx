@@ -6,12 +6,10 @@
  * @created 2026-11-01 21:12
  * @updated 2026-11-01 22:29 改为卡片式骨架（与交互视图同布局），内联源码图标以保持主入口零图表依赖
  * @updated 2026-11-01 22:37 标题并入工具栏左侧，与交互视图同布局
+ * @updated 2026-11-01 23:18 height 未指定 / 空 / auto 一律自动高度（不再固定 420px）
  */
 
 import type { ReactElement } from "react";
-
-/** 默认视口高度上限（px） */
-const DEFAULT_HEIGHT = 420;
 
 /**
  * 图表组件 props（占位骨架与 `/mermaid` 入口的交互组件共用同一签名）
@@ -33,13 +31,17 @@ export interface MermaidProps {
 }
 
 /**
- * 把 height 属性解析成图表区高度上限
- * @param height 容器属性值（数字字符串）
- * @returns 合法的正数返回 `{n}px`，否则返回默认高度
+ * 解析图表区高度上限
+ * @param height 容器属性（数字 / "auto" / 空）
+ * @returns 正数返回 `{n}px`；未指定、空、`"auto"` 或非法值返回 undefined（不限高，随内容自适应）
+ * @description 缺省即自动高度：图表多高就多高，超长时由页面滚动接管，
+ *   不再用一个写死的 420px 把大图裁掉。
  */
-function viewportHeight(height?: string): string {
-  const value = Number(height);
-  return Number.isFinite(value) && value > 0 ? `${Math.round(value)}px` : `${DEFAULT_HEIGHT}px`;
+function viewportHeight(height?: string): string | undefined {
+  const raw = (height ?? "").trim().toLowerCase();
+  if (!raw || raw === "auto") return undefined;
+  const numeric = Number(raw);
+  return Number.isFinite(numeric) && numeric > 0 ? `${Math.round(numeric)}px` : undefined;
 }
 
 /**

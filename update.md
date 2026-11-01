@@ -21,6 +21,7 @@
 | 图表 UI | 卡片式：顶部工具栏（源码视图切换、复制源码、下载 SVG / PNG）+ 右下角药丸缩放条（放大 / 缩小 / 重置）；标题并入工具栏 |
 | 编辑器预览支持交互图表 | `EditorConfig.rendererConfig` 整体透传给预览渲染器：传 `{ components: mermaidComponents }` 后，编辑器分屏里的 `<Mermaid>` 也是可缩放/可导出的图表；不传则显示源码骨架。`sourcePositions` 由编辑器强制开启，调用方无需关心 |
 | 分屏滚动同步改为区间插值 | 原实现"贴到最近锚点顶部"，源码滚到两块之间时预览会跳到前一个块（常常是标题）。现改为：只保留最内层锚点、`posAtCoords` 取精确字符位置、相邻锚点间线性插值，预览 → 源码用 `lineBlockAt` 直接设 `scrollTop`（不再用 `scrollIntoView` 硬顶） |
+| 图表高度默认自适应 | `height` 未指定 / 空串 / `auto` 一律自动高度（图表多高就多高，超长交给页面滚动），不再用固定的 420px 裁切；只有显式给正数才限高 |
 | 图表配色（自带两套） | **不读宿主任何 CSS 变量**。亮/暗两套内置在 `styles/mermaid.css` 的组件作用域（`--lkes-chart-*`，祖先带 `.dark` 自动切暗）；换色用 `configureChartTheme({ light, dark })` 或覆盖同名变量，取色优先级「JS 配置 → CSS 变量 → 内置」 |
 
 ### 修复内容（暗色）

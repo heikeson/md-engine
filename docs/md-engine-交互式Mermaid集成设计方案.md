@@ -4,7 +4,7 @@
 > @description 为 `@heikeson/md-engine` 增加 `<Mermaid>` 一等容器与 `/mermaid` 交互入口的完整方案，
 >   含语法层（rawBody 两条路线）、渲染隔离、客户端交互、主题令牌、导出、与宿主现有围栏方案的共存迁移。
 > 创建时间：2026-11-01 20:53
-> 更新时间：2026-11-01 22:37（v7 图表配色全部改为跟随宿主语义变量；暗色判定改为最近 `.dark` 祖先 + 元素级取色；标题并入工具栏；修复 mermaid 注释写法与缩放重锚）
+> 更新时间：2026-11-01 22:51（v8 图表配色改为**引擎自带亮/暗两套**，不再依赖宿主任何变量；提供 `configureChartTheme` 配置入口）
 > 状态：已实施（M0–M5）·M6 待发布（放行语："可以，按文档开始开发" / 2026-11-01 21:07）
 > 适用范围：`@heikeson/md-engine` **0.3.1 → 0.4.0**（一次性发布，M0–M6 全部完成后）
 > 关联仓库：`blog-heikeson2026`（宿主，M6 阶段收敛，范围见 9.6）
@@ -293,12 +293,13 @@ import { mermaidComponents } from '@heikeson/md-engine/mermaid';
 |------|------|---------------------|
 | `--lkes-chart-bg` | 图表底板 | `--card` |
 | `--lkes-chart-fg` | 图表文字 | `--foreground` |
-| `--lkes-chart-node` | 节点/分支面 | `--muted` → `--card`（跟随主题；不写死品牌色） |
-| `--lkes-chart-node-border` | 节点描边 | `--border` → `--muted-foreground` |
-| `--lkes-chart-line` | 连线 | `--muted-foreground` → `--border` |
+| `--lkes-chart-node` | 节点/分支面 | 内置薄荷 `#e7f0ea` / 暗 `#1e3037` |
+| `--lkes-chart-node-border` | 节点描边 | `#c9d8cf` / `#2f4a52` |
+| `--lkes-chart-line` | 连线 | `#9aa8a0` / `#7a8a92` |
 
-> **取值一律落在 var() 链上**（`--card` / `--foreground` / `--muted` / `--border` / `--muted-foreground`），
-> 宿主切换 `.dark` 时自动跟随，不写死任何品牌色。暗色块 `html.dark` 只给"宿主连这些变量都没提供"的场景兜底。
+> **引擎自带亮暗两套，禁止依赖宿主**：`--lkes-chart-*` 定义在组件作用域（`.lkes-mermaid` 亮色、
+> `.dark .lkes-mermaid` 暗色），安装后不配置即可用；换色走 `configureChartTheme({light,dark})`
+> 或覆盖同名 CSS 变量。取色优先级：**JS 配置 → CSS 变量 → 内置**。
 | `--lkes-chart-series-1..6` | 扇区/分支序列色 | 取宿主 12 档 `CHART_PALETTE` 的偶数位，保证两套观感一致 |
 
 ### 6.2 ★必须显式覆盖的 mermaid 变量（清单直接平移宿主实现）
@@ -320,17 +321,15 @@ import { mermaidComponents } from '@heikeson/md-engine/mermaid';
 > **教训不变**：先去渲染器源码确认变量名再改。ER 读 `rowOdd/rowEven`，不是只看 `attributeBackgroundColor*`。
 > 差异只能从源码得到答案。随 mermaid 大版本升级时按此清单回归。
 
-### 6.3 亮暗切换的取值时机
+### 6.3 亮暗切换与取色
 
-不使用框架主题上下文的解析值（未就绪时为空，会退化成亮色渲染）。两条硬要求：
-
-1. **判定**：`useIsDark(elementRef)` 从图表元素**向上找最近的 `.dark`**，而不是只看 `<html>`。
-   站点可能把主题类挂在 body、布局容器或局部区域上（`dev/` 就是 `<div class="dark">`），
-   只看 `documentElement` 会永远判成亮色。class 变化用**一个共享 MutationObserver**（`subtree: true`）订阅，
-   不要每张图各建一个。
-2. **取色**：`getComputedStyle(图表元素)`，不是 `documentElement`——变量可能在容器作用域里被覆盖，
-   读根元素拿到的是亮色值。`--lkes-chart-*` 是 `var()` 链，若浏览器返回未替换的 token 文本，
-   再按「`--muted` → `--card` → 内置」逐级回落；遇到 `oklch()` / `hsl()` 用临时元素归一成 `rgb()`。
+1. **判定**：`useIsDark(elementRef)` 从图表元素**向上找最近的 `.dark`**（也认 `[data-theme="dark"]`），
+   不看 `<html>`——主题类可能挂在布局容器或局部区域（`dev/` 就是 `<div class="dark">`）。
+   class 变化用**一个共享 MutationObserver**（`subtree: true`）订阅，不要每张图各建一个。
+2. **取色**：`resolveChartTokens(dark, 图表元素)`，优先级「JS 配置 → 组件自带的 `--lkes-chart-*` → 内置」。
+   **不读宿主任何语义变量**（`--card` / `--foreground` / `--muted` / `--border` / `--primary`）；
+   遇到 `oklch()` / `hsl()` 用临时元素归一成 `rgb()`（mermaid 只认 hex / rgb）。
+3. **字体**：用内置字体栈，不继承宿主 `font-family`（SVG 文字不支持 inherit，取错会回落到衬线体）。
 
 ### 6.4 配色值的合法性校验
 
@@ -558,6 +557,7 @@ import { mermaidComponents } from '@heikeson/md-engine/mermaid';
 | 22 | `dev/fixtures/mermaid.md` 用 `#` 写"mermaid 注释" | mermaid 的注释是 `%%`，`#` 行会让整块报 `No diagram type detected`，表现为一进页面就是错误卡片 | 改 `%%`；错误提示加中文前缀「图表渲染失败：」并保留源码降级 |
 | 23 | 图表配色写成 `--lkes-chart-node: var(--muted)` 这类链 | **自定义属性里的 var() 在声明处（:root）就完成替换并固化**，子元素继承的是当时的亮色值——`.dark` 之后再改 `--muted` 不影响它。所以"改成读元素 computed style"也救不回来，这是暗色失效的真正根因 | 5 个颜色令牌**不再在 `:root` 定义**；`readChartTokens` 在图表元素上直接读 `--card` / `--foreground` / `--muted` / `--border` / `--muted-foreground`（元素级解析），CSS 兜底同样改为元素级 var 链；`--lkes-chart-*` 退化为"显式覆盖入口" |
 | 24 | 未关 `htmlLabels` | mermaid 默认把节点文字放进 `<foreignObject>` 的 HTML 里，DOMPurify 的 svg profile 会清空这部分 HTML → **图有线没字**；且 Canvas 不绘制 foreignObject，导出 PNG 必空白 | 全图表 `htmlLabels: false`，文字改走 SVG `<text>` |
+| 25 | 图表配色靠宿主语义变量（连续三轮修补仍不彻底） | 宿主变量可能缺失、可能在容器作用域被覆盖，自定义属性还会在 `:root` 固化；本质问题是**图表颜色不该由宿主决定** | **改为引擎自带亮/暗两套**：CSS 在组件作用域定义 `--lkes-chart-*`（`.dark` / `[data-theme=dark]` 祖先自动切暗），JS 侧 `configureChartTheme({light,dark})` 整体可换；取色优先级「JS 配置 → CSS 变量 → 内置」。`mermaid.css` 中宿主变量引用实测 **0 处** |
 
 > 本文档状态为「已定稿·待放行」。按流程，未获明确放行语前不动 `src/**`、`styles/**`、
 > 配置文件，也不动宿主 `blog-heikeson2026` 的任何文件。

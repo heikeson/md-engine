@@ -1,51 +1,50 @@
 /**
  * @file 主题令牌（独立命名空间 --lkes-*）
  * @description 颜色配置的唯一出口，不依赖任何宿主主题、也不依赖 Tailwind。
- *   默认值写在 @layer lkes.tokens 中：分层声明优先级低于未分层声明，
- *   因此宿主只要在普通样式（不写 @layer）里重新声明同名变量即可覆盖，
- *   写在 :root、.dark 还是容器上都生效，无需抢样式引入顺序。
- *   每个默认值优先读宿主已有的变量（--border / --muted / --primary …），
- *   宿主没有这些变量时回落到内置中性色，故本包可脱离宿主独立使用。
+ *   **引擎自带亮/暗两套字面量**：
+ *   - 亮色定义在 `:root`；
+ *   - 暗色定义在 `.dark` / `[data-theme="dark"]` 祖先作用域——组件样式里的 `var(--lkes-*)`
+ *     在元素上解析，所以祖先一加 `.dark`，全部组件（Callout / Tabs / Steps / Cards /
+ *     Accordion / Files / TypeTable / Image / 编辑器）同时切暗色，无需每个组件各写一份。
+ *   两套值都是**字面量**而不是 `var(--宿主变量)`：自定义属性里的 var() 会在声明处
+ *   （:root）就被替换并固化，宿主之后再改 `.dark` 也影响不到，这是"暗色不生效"的根源。
+ *   要换色：在普通样式（不写 @layer）里重新声明同名变量即可，写在 :root、.dark 或
+ *   正文容器上都生效——分层声明优先级低于未分层声明，无需抢引入顺序。
  * @created 2026-10-27 13:43
- * @updated 2026-10-27 13:49
- * @updated 2026-11-01 21:34 追加 --lkes-chart-* 图表令牌（只增不改）
- * @updated 2026-11-01 22:37 图表令牌改回 var() 链，跟随宿主语义变量与暗色
+ * @updated 2026-11-01 22:58 改为引擎自带亮/暗两套字面量，去掉对宿主语义变量的依赖
  */
 
 @layer lkes.tokens {
+  /* ---- 亮色（默认） ---- */
   :root {
     /* 面 / 文字 */
-    --lkes-bg: var(--background, #ffffff);
-    --lkes-fg: var(--foreground, #1f2937);
-    --lkes-muted: var(--muted-foreground, #6b7280);
+    --lkes-bg: #ffffff;
+    --lkes-fg: #1f2937;
+    --lkes-muted: #6b7280;
 
     /* 填充（浅底块：表头、代码、内联代码） */
-    --lkes-fill: var(--muted, #f3f4f6);
+    --lkes-fill: #f3f4f6;
 
     /* 线 / 强调 */
-    --lkes-border: var(--border, #e5e7eb);
-    --lkes-accent: var(--primary, #0f766e);
-    --lkes-ring: var(--ring, var(--primary, #0f766e));
+    --lkes-border: #e5e7eb;
+    --lkes-accent: #0f766e;
+    --lkes-ring: #0f766e;
 
     /* 形状与遮罩 */
-    --lkes-radius: var(--radius, 0.5rem);
+    --lkes-radius: 0.5rem;
     --lkes-overlay: rgb(0 0 0 / 0.8);
-
-    /* 图表（mermaid）：只增不改，上面 9 个令牌语义不变。
-       这里**故意不定义** --lkes-chart-bg / -fg / -node / -node-border / -line。
-       原因：自定义属性里的 var() 会在声明处（:root）就替换成当时的值再继承下去，
-       宿主切到 .dark 后子元素拿到的仍是亮色——这就是"暗色不生效"的经典坑。
-       图表改为在**图表元素**上直接读宿主的 --card / --foreground / --muted /
-       --border / --muted-foreground；要固定某个颜色，自己声明同名 --lkes-chart-* 即可覆盖。 */
-    /* 序列色：固定品牌序列，按序取用，饼图按 6 色错位循环铺满 12 扇区 */
-    --lkes-chart-series-1: #19d3c5;
-    --lkes-chart-series-2: #38bdf8;
-    --lkes-chart-series-3: #818cf8;
-    --lkes-chart-series-4: #c084fc;
-    --lkes-chart-series-5: #f472b6;
-    --lkes-chart-series-6: #fb923c;
   }
 
-  /* 暗色不需要在这里补：图表在元素上读宿主变量，宿主切 .dark 时自然跟着变；
-     宿主连 --card / --muted 都没有时，组件按内置的亮/暗两套兜底色取值。 */
+  /* ---- 暗色：祖先带 .dark（或 data-theme="dark"）即生效 ---- */
+  .dark,
+  [data-theme="dark"] {
+    --lkes-bg: #0f1419;
+    --lkes-fg: #e8eef2;
+    --lkes-muted: #9aa8b0;
+    --lkes-fill: #1a222a;
+    --lkes-border: #232c34;
+    --lkes-accent: #19d3c5;
+    --lkes-ring: #19d3c5;
+    --lkes-overlay: rgb(0 0 0 / 0.85);
+  }
 }

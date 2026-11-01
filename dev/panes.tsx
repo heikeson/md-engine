@@ -57,7 +57,12 @@ export function RenderPane({ source, onSourceChange }: PaneProps): ReactElement 
 export function EditorPane({ source, onSourceChange }: PaneProps): ReactElement {
   return (
     <div className="h-full p-4">
-      <MarkdownEditor value={source} onChange={onSourceChange} view="split" />
+      <MarkdownEditor
+        value={source}
+        onChange={onSourceChange}
+        view="split"
+        config={{ rendererConfig: { components: PREVIEW_COMPONENTS } }}
+      />
     </div>
   );
 }

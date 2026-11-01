@@ -6,6 +6,7 @@
  * @created 2026-11-01 21:24
  * @updated 2026-11-01 21:24
  * @updated 2026-11-01 22:37 令牌三级回落（引擎令牌→宿主语义变量→内置）+ oklch/hsl 归一；取色改按图表元素
+ * @updated 2026-11-01 22:51 取色改为「JS 配置 → 组件自带 --lkes-chart-* → 内置」，不再读宿主变量
  */
 
 "use client";
@@ -13,7 +14,7 @@
 import { useEffect, useState, type RefObject } from "react";
 import DOMPurify from "dompurify";
 import type { ChartTokens } from "./tokens";
-import { DARK_TOKENS, LIGHT_TOKENS, buildMermaidConfig, tokenFingerprint } from "./tokens";
+import { buildMermaidConfig, getChartTheme, hasCustomChartTheme, tokenFingerprint } from "./tokens";
 
 /** mermaid 模块的最小接口（不引 mermaid 类型：它是可选 peer，未装也能构建） */
 interface MermaidLike {
@@ -143,89 +144,32 @@ function normalizeColor(value: string): string {
 }
 
 /**
- * 把颜色解析成 RGB 三元组
- * @param color hex 或 rgb(a) 字符串
- * @returns [r, g, b]（0–255）；无法解析返回 null
- */
-function toTriplet(color: string): [number, number, number] | null {
-  const hex = /^#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.exec(color);
-  if (hex) {
-    const value = hex[1] as string;
-    // #RGB / #RGBA 先展开成 6/8 位；带 alpha 的只取前 6 位
-    const full = value.length <= 4 ? value.split("").map((ch) => ch + ch).join("") : value;
-    return [
-      Number.parseInt(full.slice(0, 2), 16),
-      Number.parseInt(full.slice(2, 4), 16),
-      Number.parseInt(full.slice(4, 6), 16),
-    ];
-  }
-  const rgb = /^rgba?\(([^)]+)\)$/i.exec(color);
-  if (rgb) {
-    const parts = (rgb[1] as string).split(/[\s,/]+/).map(Number).filter((n) => !Number.isNaN(n));
-    if (parts.length >= 3) return [parts[0] as number, parts[1] as number, parts[2] as number];
-  }
-  return null;
-}
-
-/**
- * 两色混合
- * @param from 起始色（底板）
- * @param to 目标色（主色）
- * @param weight 目标色占比（0–1）
- * @returns `rgb(...)`；解析失败返回空串
- */
-function mixColor(from: string, to: string, weight: number): string {
-  const a = toTriplet(from);
-  const b = toTriplet(to);
-  if (!a || !b) return "";
-  const out = a.map((value, index) => Math.round(value + ((b[index] as number) - value) * weight));
-  return `rgb(${out[0]}, ${out[1]}, ${out[2]})`;
-}
-
-/**
- * 从根元素读取图表令牌实际取值
+ * 解析当前生效的图表配色
  * @param dark 是否暗色
- * @returns 令牌取值；未定义或非颜色时回落内置值
- * @description 每个色值按「引擎令牌 → 宿主语义变量 → 内置」三级回落：
- *   `--lkes-chart-*` 在包内是 `var(--card)` 这类链，若浏览器返回的是未替换的 token 文本，
- *   就直接读宿主的 `--card` / `--muted` / `--border` 等，保证跟着宿主主题（含暗色）走。
+ * @param element 图表元素（用于读取 CSS 层的 `--lkes-chart-*` 覆盖）
+ * @returns 该明暗下的完整配色
+ * @description 优先级：**JS 配置**（`configureChartTheme`）→ 包自带的 `--lkes-chart-*` → 内置默认。
+ *   全程不读宿主的 `--card` / `--foreground` / `--muted` 等语义变量：
+ *   装完即可用，宿主换主题也不会让图表串色。
  */
-export function readChartTokens(dark: boolean, element?: HTMLElement | null): ChartTokens {
-  const base = dark ? DARK_TOKENS : LIGHT_TOKENS;
-  if (typeof window === "undefined") return base;
-  // 取色必须基于图表元素本身：主题可能挂在某个容器上（`<div class="dark">`），
-  // 此时根元素上读到的仍是亮色变量。
+export function resolveChartTokens(dark: boolean, element?: HTMLElement | null): ChartTokens {
+  const theme = getChartTheme();
+  const base = dark ? theme.dark : theme.light;
+  if (hasCustomChartTheme() || typeof window === "undefined") return base;
   const style = getComputedStyle(element ?? document.documentElement);
-  const read = (names: readonly string[], fallback: string): string => {
-    for (const name of names) {
-      const value = style.getPropertyValue(name).trim();
-      if (!value) continue;
-      const color = normalizeColor(value);
-      if (color) return color;
-    }
-    return fallback;
+  const read = (name: string, fallback: string): string => {
+    const value = style.getPropertyValue(name).trim();
+    if (!value) return fallback;
+    return normalizeColor(value) || fallback;
   };
-  const series = base.series.map((fallback, index) =>
-    read([`--lkes-chart-series-${index + 1}`], fallback),
-  );
-  const bg = read(["--lkes-chart-bg", "--card", "--background"], base.bg);
-  const fg = read(["--lkes-chart-fg", "--foreground"], base.fg);
-  // 主色：图表节点必须以它着色。全用 --muted / --card 会让整块 UI 灰成一片、没有层次
-  const primary = read(["--primary", "--lkes-accent"], dark ? "#19d3c5" : "#0f766e");
-  // 节点面：显式覆盖优先；否则「底板 + 主色 12%」——亮色是薄荷，暗色是深青，都带品牌色
-  const nodeExplicit = read(["--lkes-chart-node"], "");
-  const node = nodeExplicit || mixColor(bg, primary, 0.12) || base.node;
-  // 节点描边：显式覆盖优先；否则「底板 + 主色 32%」，比节点面深一档、边界清晰
-  const borderExplicit = read(["--lkes-chart-node-border"], "");
-  const nodeBorder = borderExplicit || mixColor(bg, primary, 0.32) || base.nodeBorder;
   return {
-    bg,
-    fg,
-    node,
-    nodeBorder,
-    line: read(["--lkes-chart-line", "--muted-foreground", "--border"], base.line),
-    series,
-    fontFamily: style.getPropertyValue("font-family").trim() || base.fontFamily,
+    bg: read("--lkes-chart-bg", base.bg),
+    fg: read("--lkes-chart-fg", base.fg),
+    node: read("--lkes-chart-node", base.node),
+    nodeBorder: read("--lkes-chart-node-border", base.nodeBorder),
+    line: read("--lkes-chart-line", base.line),
+    series: base.series.map((fallback, index) => read(`--lkes-chart-series-${index + 1}`, fallback)),
+    fontFamily: base.fontFamily,
   };
 }
 
@@ -273,7 +217,7 @@ export function useMermaidRender(
     setState((prev) => (prev.status === "ready" ? prev : { ...prev, status: "loading", error: "" }));
     void (async () => {
       try {
-        const svg = await renderChart(source, readChartTokens(dark, elementRef?.current ?? null));
+        const svg = await renderChart(source, resolveChartTokens(dark, elementRef?.current ?? null));
         if (!cancelled) setState({ status: "ready", svg, error: "" });
       } catch (error) {
         if (!cancelled) {

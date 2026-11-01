@@ -6,6 +6,7 @@
  * @created 2026-11-01 21:20
  * @updated 2026-11-01 22:31 兜底色值改为薄荷系（与 styles/tokens.css 默认值一致）
  * @updated 2026-11-01 22:37 兜底色值改为跟随宿主语义色（不再写死薄荷）
+ * @updated 2026-11-01 22:51 内置亮/暗两套配色 + configureChartTheme（零宿主依赖）
  */
 
 /** 图表可用的设计令牌（由调用方从 `--lkes-chart-*` 计算值取来） */
@@ -29,27 +30,80 @@ export interface ChartTokens {
 /** mermaid 配置（不引 mermaid 类型，避免可选依赖在类型层也被强制安装） */
 export type MermaidConfigLike = Record<string, unknown>;
 
-/** 令牌色回落的兜底值（宿主连语义变量都没提供时使用；与 styles/tokens.css 一致） */
+/** 内置亮色配色（引擎自带，不读宿主任何变量） */
 export const LIGHT_TOKENS: ChartTokens = {
   bg: "#ffffff",
   fg: "#1f2937",
-  node: "#f3f6f5",
-  nodeBorder: "#d7e0dc",
-  line: "#8a98a3",
-  series: ["#19d3c5", "#38bdf8", "#818cf8", "#c084fc", "#f472b6", "#fb923c"],
-  fontFamily: "system-ui, sans-serif",
+  node: "#e7f0ea",
+  nodeBorder: "#c9d8cf",
+  line: "#9aa8a0",
+  series: ["#01c4b6", "#38bdf8", "#818cf8", "#c084fc", "#f472b6", "#fb923c"],
+  fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
 };
 
-/** 暗色兜底值 */
+/** 内置暗色配色（引擎自带） */
 export const DARK_TOKENS: ChartTokens = {
   bg: "#161c22",
-  fg: "#c7d0d6",
-  node: "#1c242b",
-  nodeBorder: "#2c343a",
-  line: "#8a98a3",
+  fg: "#e8eef2",
+  node: "#1e3037",
+  nodeBorder: "#2f4a52",
+  line: "#7a8a92",
   series: ["#19d3c5", "#38bdf8", "#818cf8", "#c084fc", "#f472b6", "#fb923c"],
-  fontFamily: "system-ui, sans-serif",
+  fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
 };
+
+/** 亮暗两套配色 */
+export interface ChartTheme {
+  /** 亮色 */
+  light: ChartTokens;
+  /** 暗色 */
+  dark: ChartTokens;
+}
+
+/** 默认配色：安装后不配置也能直接用 */
+export const DEFAULT_CHART_THEME: ChartTheme = { light: LIGHT_TOKENS, dark: DARK_TOKENS };
+
+/** 使用方显式配置的配色；null 表示使用内置默认 */
+let configuredTheme: ChartTheme | null = null;
+
+/**
+ * 配置图表配色（安装时调一次即可）
+ * @param theme 只想改其中一项时只传那一项，其余沿用默认
+ * @returns 合并后的完整配色
+ * @description JS 侧配置优先级最高；配置后再改 CSS 变量不会影响图表 SVG 的取色。
+ */
+export function configureChartTheme(theme: Partial<ChartTheme>): ChartTheme {
+  configuredTheme = {
+    light: { ...DEFAULT_CHART_THEME.light, ...(theme.light ?? {}) },
+    dark: { ...DEFAULT_CHART_THEME.dark, ...(theme.dark ?? {}) },
+  };
+  return configuredTheme;
+}
+
+/**
+ * 取当前生效的配色
+ * @returns 使用方配置的或内置默认的完整配色
+ */
+export function getChartTheme(): ChartTheme {
+  return configuredTheme ?? DEFAULT_CHART_THEME;
+}
+
+/**
+ * 是否已由使用方显式配置
+ * @returns 配置过返回 true
+ * @description 供取色逻辑决定"以 JS 配置为准"还是"读 CSS 变量"。
+ */
+export function hasCustomChartTheme(): boolean {
+  return configuredTheme !== null;
+}
+
+/**
+ * 复位为内置默认配色
+ * @returns 无
+ */
+export function resetChartTheme(): void {
+  configuredTheme = null;
+}
 
 /** 令牌键 → mermaid 变量名（页面/节点/文字/线四类） */
 const VAR_TOKENS: Record<string, keyof Omit<ChartTokens, "series" | "fontFamily">> = {

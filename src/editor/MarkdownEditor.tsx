@@ -5,12 +5,13 @@
  *   声明顺序按「refs → 动作 → 编辑器实例 → 派生状态」组织，避免在声明前引用。
  * @created 2026-10-24 21:12
  * @updated 2026-10-24 21:10 补齐图片上传、修复 hook 依赖与声明顺序
+ * @updated 2026-11-01 23:02 EditorConfig 增加 rendererConfig：预览区可透传组件覆盖（如 mermaidComponents）
  */
 
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import MarkdownRenderer from "../render";
+import MarkdownRenderer, { type RenderConfig } from "../render";
 import { parse } from "../parse";
 import { normalizeMarkdown } from "../format";
 import {
@@ -30,6 +31,13 @@ export interface EditorConfig {
   uploadImage?: (file: File) => Promise<string>;
   placeholder?: string;
   readOnly?: boolean;
+  /**
+   * 预览侧渲染配置（整体透传给 `MarkdownRenderer`）
+   * @description 想在内置预览里看到交互式图表，传 `{ components: mermaidComponents }` 即可；
+   *   `sourcePositions` 由编辑器强制开启（滚动同步依赖它），调用方无需传。
+   *   编辑器入口不直接依赖 `/mermaid`，否则 CodeMirror 入口会连带 mermaid 一起进产物。
+   */
+  rendererConfig?: RenderConfig;
 }
 
 /** 视图 */
@@ -263,11 +271,12 @@ export default function MarkdownEditor({
         {viewMode !== "preview" && <div ref={hostRef} className="md-editor-source" />}
         {viewMode !== "source" && (
           <div ref={previewRef} className="md-editor-preview">
-            {/* sourcePositions：给块级元素写 data-src-start，供滚动同步按内容对齐 */}
+            {/* sourcePositions：给块级元素写 data-src-start，供滚动同步按内容对齐；
+                components 由宿主注入（传 mermaidComponents 后图表在编辑器里也是交互视图） */}
             <MarkdownRenderer
               content={value}
               className="prose-site"
-              config={{ sourcePositions: true }}
+              config={{ ...config?.rendererConfig, sourcePositions: true }}
             />
           </div>
         )}

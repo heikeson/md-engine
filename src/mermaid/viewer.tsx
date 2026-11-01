@@ -5,6 +5,7 @@
  * @created 2026-11-01 21:30
  * @updated 2026-11-01 22:29 改为「顶部工具栏 + 右下角缩放条」的卡片式布局
  * @updated 2026-11-01 22:37 标题并入工具栏；暗色与取色按图表容器判定；手势仅在出图后启用
+ * @updated 2026-11-01 22:51 导出 PNG 底色改走 resolveChartTokens
  */
 
 "use client";
@@ -15,7 +16,7 @@ import { downloadPng, downloadSvg } from "./export";
 import MermaidHeader from "./header";
 import { ResetIcon, ZoomInIcon, ZoomOutIcon } from "./icons";
 import { useIsDark } from "./use-dark";
-import { readChartTokens, useMermaidRender } from "./use-render";
+import { resolveChartTokens, useMermaidRender } from "./use-render";
 import { usePanZoom } from "./use-zoom";
 
 /** 默认视口高度上限（px） */
@@ -90,7 +91,7 @@ export default function MermaidChart({ raw, code, title, height, tooLarge }: Mer
         title={title}
         onToggleView={() => setShowSource((prev) => !prev)}
         onExportSvg={() => downloadSvg(svg)}
-        onExportPng={() => void downloadPng(svg, readChartTokens(dark, frameRef.current).bg)}
+        onExportPng={() => void downloadPng(svg, resolveChartTokens(dark, frameRef.current).bg)}
       />
       <div ref={frameRef} className="lkes-mermaid-body" style={{ maxHeight: viewportHeight(height) }}>
         {ready ? (

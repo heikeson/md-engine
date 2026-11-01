@@ -18,7 +18,16 @@
 | 新增 `<Mermaid>` 容器 | 容器体是**原始文本**（`rawBody`），不按 Markdown 解析：`#`、`\|`、`-->`、行首 `-` 全部原样保留，`md → AST → md` 逐字一致 |
 | 新增 `/mermaid` 入口 | 交互式图表：进入视口才懒加载、缩放拖动、源码/图表切换、SVG/PNG 导出。主入口零引用，不用图表的页面不承担 mermaid 体积 |
 | 图表令牌 | 新增 `--lkes-chart-bg` / `-fg` / `-node` / `-node-border` / `-line` / `-series-1..6`，既有 9 个令牌语义不变 |
-| 图表 UI | 卡片式：顶部工具栏（源码视图切换、复制源码、下载 SVG / PNG）+ 右下角药丸缩放条（放大 / 缩小 / 重置）；标题并入工具栏；配色全部走宿主语义变量（`--card` / `--foreground` / `--muted` / `--border`），暗色按最近的 `.dark` 祖先自动跟随 |
+| 图表 UI | 卡片式：顶部工具栏（源码视图切换、复制源码、下载 SVG / PNG）+ 右下角药丸缩放条（放大 / 缩小 / 重置）；标题并入工具栏 |
+| 编辑器预览支持交互图表 | `EditorConfig.rendererConfig` 整体透传给预览渲染器：传 `{ components: mermaidComponents }` 后，编辑器分屏里的 `<Mermaid>` 也是可缩放/可导出的图表；不传则显示源码骨架。`sourcePositions` 由编辑器强制开启，调用方无需关心 |
+| 分屏滚动同步改为区间插值 | 原实现"贴到最近锚点顶部"，源码滚到两块之间时预览会跳到前一个块（常常是标题）。现改为：只保留最内层锚点、`posAtCoords` 取精确字符位置、相邻锚点间线性插值，预览 → 源码用 `lineBlockAt` 直接设 `scrollTop`（不再用 `scrollIntoView` 硬顶） |
+| 图表配色（自带两套） | **不读宿主任何 CSS 变量**。亮/暗两套内置在 `styles/mermaid.css` 的组件作用域（`--lkes-chart-*`，祖先带 `.dark` 自动切暗）；换色用 `configureChartTheme({ light, dark })` 或覆盖同名变量，取色优先级「JS 配置 → CSS 变量 → 内置」 |
+
+### 修复内容（暗色）
+
+| 问题 | 修复 |
+|---|---|
+| 暗色页面下 Accordion 白底、TypeTable 内联块白底、Cards/Steps 白边、Files 文字偏暗 | 根因在令牌层：`--lkes-*` 曾在 `:root` 用 `var(--宿主变量, 兜底)` 定义，`var()` 在声明处替换并固化，`.dark` 之后改宿主变量无效。现改为**包内自带亮/暗两套字面量**（亮在 `:root`，暗在 `.dark` / `[data-theme="dark"]` 祖先作用域），一处改动覆盖全部组件 |
 | 2 个诊断码 | `MERMAID_EMPTY`（容器体为空）、`MERMAID_TOO_LARGE`（源码 > 20 KB，改为显示源码） |
 | 块索引 | 图表块按 `source` + `reason: "mermaid"` 暴露，编辑器按源码块处理，不做结构化编辑 |
 | 主入口新导出 | `MermaidPlaceholder`、`MermaidProps`、`sliceRawBody`、`MERMAID_MAX_BYTES`、`Diagnostic` / `DiagnosticCode` 类型 |

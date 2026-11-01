@@ -5,6 +5,7 @@
  *   本文件只做导出，不执行任何副作用（不注册全局、不带 'use client' 之外的语句）。
  * @created 2026-11-01 21:32
  * @updated 2026-11-01 21:32
+ * @updated 2026-11-01 22:51 导出配色配置 API（configureChartTheme / getChartTheme / DEFAULT_CHART_THEME）
  */
 
 "use client";
@@ -30,13 +31,24 @@ export const mermaidComponents: Record<string, ComponentType<MermaidProps>> = {
   Mermaid: MermaidChart as ComponentType<MermaidProps>,
 };
 
-/** 主题映射（纯函数，宿主可用于自定义配色） */
-export { buildMermaidConfig, buildThemeVariables, tokenFingerprint, DARK_TOKENS, LIGHT_TOKENS } from "./tokens";
-export type { ChartTokens, MermaidConfigLike } from "./tokens";
+/** 配色：内置亮暗两套，`configureChartTheme` 可在安装时整体替换 */
+export {
+  buildMermaidConfig,
+  buildThemeVariables,
+  configureChartTheme,
+  DEFAULT_CHART_THEME,
+  DARK_TOKENS,
+  getChartTheme,
+  hasCustomChartTheme,
+  LIGHT_TOKENS,
+  resetChartTheme,
+  tokenFingerprint,
+} from "./tokens";
+export type { ChartTheme, ChartTokens, MermaidConfigLike } from "./tokens";
 
-/** 导出能力（宿主也可以自己做按钮时直接调用） */
+/** 导出能力（使用方也可以自己做按钮时直接调用） */
 export { downloadPng, downloadSvg, prepareSvg, svgToPngBlob } from "./export";
 
-/** 令牌读取与明暗订阅 */
-export { readChartTokens } from "./use-render";
+/** 配色解析与明暗订阅 */
+export { resolveChartTokens } from "./use-render";
 export { useIsDark } from "./use-dark";

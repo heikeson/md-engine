@@ -4,6 +4,7 @@
  *   禁止在别处硬编码 `<Callout` 之类的字符串。
  * @created 2026-10-24 21:12
  * @updated 2026-10-24 21:58 容器子项支持数组（Files 混用 Folder / File）
+ * @updated 2026-11-01 21:47 图表片段：rawBody 容器给流程图骨架，可插入列表加 Mermaid
  */
 
 import { COMPONENTS } from "../registry";
@@ -29,6 +30,12 @@ const FILES_SNIPPET = `<Files>
 export function blockSnippet(name: string): string {
   const spec = COMPONENTS[name];
   if (!spec) return "";
+
+  // 图表容器：容器体是原始文本（不走 Markdown 解析），给一段可直接改的流程图骨架。
+  // 必须在 selfClosing 分支之前——Mermaid 允许 `<Mermaid />`，但骨架不能是自闭合形态。
+  if (spec.rawBody) {
+    return `<${name} title="图表标题">\ngraph TD\n  A[开始] --> B{判断}\n  B -->|是| C[执行]\n</${name}>\n`;
+  }
 
   if (spec.selfClosing) {
     return `<${name} src="" alt="" />\n`;
@@ -74,4 +81,5 @@ export const INSERTABLE_BLOCKS = [
   "Files",
   "TypeTable",
   "Image",
+  "Mermaid",
 ] as const;

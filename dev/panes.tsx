@@ -7,7 +7,11 @@
 
 import type { ReactElement } from "react";
 import { MarkdownRenderer } from "../src/index";
+import { mermaidComponents } from "../src/mermaid/index";
 import { MarkdownEditor } from "../src/editor/index";
+
+/** 预览用的组件覆写表：把图表骨架升级成可缩放导出的交互图表 */
+const PREVIEW_COMPONENTS = mermaidComponents as never;
 
 /** 两种视图共用的数据契约：受控文本 */
 export interface PaneProps {
@@ -35,7 +39,11 @@ export function RenderPane({ source, onSourceChange }: PaneProps): ReactElement 
         />
       </section>
       <section className="min-h-0 flex-1 overflow-y-auto p-6">
-        <MarkdownRenderer content={source} className="prose-site mx-auto max-w-3xl" />
+        <MarkdownRenderer
+          content={source}
+          className="prose-site mx-auto max-w-3xl"
+          config={{ components: PREVIEW_COMPONENTS }}
+        />
       </section>
     </div>
   );

@@ -28,6 +28,7 @@
 :root {
   --background: #ffffff;
   --foreground: #0f1419;
+  --card: #ffffff;
   --muted: #f3f6f7;
   --muted-foreground: #5b6b78;
   --border: #e6ebed;
@@ -35,9 +36,11 @@
   --ring: #01c4b6;
 }
 
+/* 与宿主一致的 .dark 语义变量（图表卡片/节点会读它们，缺少会让暗色退化） */
 .dark {
   --background: #0f1419;
   --foreground: #e8eef2;
+  --card: #161c22;
   --muted: #1a222a;
   --muted-foreground: #8a98a3;
   --border: #232c34;

@@ -1,0 +1,224 @@
+/**
+ * @file 图表样式（`<Mermaid>` 骨架与交互视图）
+ * @description 卡片结构：顶部工具栏 + 图表区 + 右下角悬浮缩放条。
+ *   只消费 `--lkes-*` 令牌，不依赖 Tailwind 与宿主主题类名。
+ *   末尾是"变量管不到的表现属性"兜底：甘特任务条、序列图棒状箭头、ER 关系圆
+ *   在 mermaid 源码里是硬编码颜色（默认蓝 / black / white），只能靠 CSS 覆盖。
+ * @created 2026-11-01 21:34
+ * @updated 2026-11-01 22:29 改为卡片式布局：顶部工具栏 + 右下角药丸缩放条
+ * @updated 2026-11-01 22:37 标题并入工具栏（.lkes-mermaid-title），移除独立题注块
+ */
+
+@layer lkes.components {
+  .lkes-mermaid {
+    position: relative;
+    margin: 1.5rem 0;
+    overflow: hidden;
+    border: 1px solid var(--border, var(--lkes-border, #e5e7eb));
+    border-radius: 0.75rem;
+    background: var(--lkes-chart-bg, var(--card, var(--background, #ffffff)));
+  }
+
+  /* 左区：模式按钮 + 标题。标题并入工具栏，不单独占一行、不加底色 */
+  .lkes-mermaid-leading {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
+  .lkes-mermaid-title {
+    overflow: hidden;
+    color: var(--foreground, var(--lkes-fg, #1f2937));
+    font-weight: 500;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* ---- 顶部工具栏 ---- */
+  .lkes-mermaid-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--border, var(--lkes-border, #e5e7eb));
+    color: var(--muted-foreground, var(--lkes-muted, #6b7280));
+    font-size: 0.8125rem;
+    line-height: 1.4;
+  }
+
+  .lkes-mermaid-mode {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.25rem 0.375rem;
+    border: 0;
+    border-radius: 0.375rem;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: default;
+  }
+
+  /* 只有交互视图里的按钮才给可点反馈；占位骨架用 span，不误导点击 */
+  button.lkes-mermaid-mode {
+    cursor: pointer;
+  }
+
+  button.lkes-mermaid-mode:hover {
+    background: var(--muted, var(--lkes-fill, #f3f4f6));
+    color: var(--primary, var(--lkes-accent, #0f766e));
+  }
+
+  .lkes-mermaid-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.125rem;
+  }
+
+  .lkes-mermaid-actions button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3125rem;
+    padding: 0.25rem 0.5rem;
+    border: 0;
+    border-radius: 0.375rem;
+    background: transparent;
+    color: var(--muted-foreground, var(--lkes-muted, #6b7280));
+    font: inherit;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+  }
+
+  .lkes-mermaid-actions button:hover:not(:disabled) {
+    background: var(--muted, var(--lkes-fill, #f3f4f6));
+    color: var(--primary, var(--lkes-accent, #0f766e));
+  }
+
+  .lkes-mermaid-actions button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  /* ---- 图表区 / 源码区 ---- */
+  .lkes-mermaid-body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 15rem;
+    padding: 1rem;
+    overflow: hidden;
+    background: var(--lkes-chart-bg, var(--card, var(--background, #ffffff)));
+  }
+
+  /* 变换层：缩放以左上角为原点，与 use-zoom 的换算口径一致 */
+  .lkes-mermaid-canvas {
+    width: 100%;
+    transform-origin: 0 0;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+  }
+
+  .lkes-mermaid-canvas:active {
+    cursor: grabbing;
+  }
+
+  /* 图底透明：卡片底即图底，避免出现与卡片不同色的矩形 */
+  .lkes-mermaid-canvas svg {
+    display: block;
+    margin-inline: auto;
+    max-width: 100%;
+    height: auto;
+    background: transparent;
+  }
+
+  .lkes-mermaid-source {
+    margin: 0;
+    width: 100%;
+    max-height: 100%;
+    overflow: auto;
+    color: var(--foreground, var(--lkes-fg, #1f2937));
+    font-size: 0.8125rem;
+    line-height: 1.7;
+    white-space: pre;
+  }
+
+  .lkes-mermaid-hint,
+  .lkes-mermaid-error {
+    margin: 0;
+    padding: 0 0.875rem 0.625rem;
+    font-size: 0.75rem;
+    text-align: center;
+  }
+
+  .lkes-mermaid-hint {
+    color: var(--muted-foreground, var(--lkes-muted, #6b7280));
+  }
+
+  .lkes-mermaid-error {
+    color: var(--destructive, var(--lkes-accent, #b91c1c));
+  }
+
+  /* ---- 右下角悬浮缩放条 ---- */
+  /* 不在变换层内：缩放时不会跟着缩小或移出视野 */
+  .lkes-mermaid-zoom {
+    position: absolute;
+    right: 0.875rem;
+    bottom: 0.875rem;
+    display: flex;
+    align-items: center;
+    gap: 0.125rem;
+    padding: 0.25rem;
+    border: 1px solid var(--border, var(--lkes-border, #e5e7eb));
+    border-radius: 9999px;
+    /* 用 --muted 而不是 --card：与卡片底拉开一档，否则药丸"融"在卡片里看不出来 */
+    background: var(--muted, var(--card, var(--background, var(--lkes-bg, #ffffff))));
+    box-shadow: 0 2px 6px rgb(0 0 0 / 0.12);
+  }
+
+  .lkes-mermaid-zoom button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.875rem;
+    height: 1.875rem;
+    border: 0;
+    border-radius: 9999px;
+    background: transparent;
+    color: var(--foreground, var(--lkes-fg, #1f2937));
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+  }
+
+  .lkes-mermaid-zoom button:hover {
+    background: var(--muted, var(--lkes-fill, #f3f4f6));
+    color: var(--primary, var(--lkes-accent, #0f766e));
+  }
+
+  /* ---- 变量管不到的硬编码色：只能用 CSS 覆盖 ---- */
+  /* 甘特：taskBkgColor 等变量在部分版本不生效，任务条/分区/今天线会退回默认蓝 */
+  .lkes-mermaid-canvas svg rect.task,
+  .lkes-mermaid-canvas svg rect.taskTextOutside,
+  .lkes-mermaid-canvas svg rect.section,
+  .lkes-mermaid-canvas svg rect.today {
+    fill: var(--muted, #f3f6f5) !important;
+  }
+
+  .lkes-mermaid-canvas svg rect.task[class*="active"],
+  .lkes-mermaid-canvas svg rect.activeTask {
+    fill: var(--muted, #f3f6f5) !important;
+  }
+
+  /* 序列图「棒状箭头」marker 的 stroke="black"：暗色底上不可见 */
+  .lkes-mermaid-canvas svg marker[id$="-stickTopArrowHead"] path,
+  .lkes-mermaid-canvas svg marker[id$="-stickBottomArrowHead"] path {
+    stroke: var(--muted-foreground, #8a98a3);
+  }
+
+  /* ER 关系「零或一」marker 的 <circle fill="white">：填成图底才是空心圆 */
+  .lkes-mermaid-canvas svg marker.er circle {
+    fill: var(--lkes-chart-bg, var(--card, var(--background, #ffffff)));
+  }
+}

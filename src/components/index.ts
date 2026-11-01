@@ -4,6 +4,7 @@
  *   新增组件时：先在 registry 声明，再在此登记组件实现。
  * @created 2026-10-24 20:10
  * @updated 2026-10-24 21:58 文件树改为 Files / Folder / File
+ * @updated 2026-11-01 21:47 登记 Mermaid 占位组件
  */
 
 import AccItem from "./acc-item";
@@ -15,6 +16,7 @@ import File from "./file";
 import Files from "./files";
 import Folder from "./folder";
 import MdImage from "./image";
+import MermaidPlaceholder from "./mermaid-placeholder";
 import Step from "./step";
 import Steps from "./steps";
 import Tab from "./tab";
@@ -42,6 +44,9 @@ export const mdxComponents = {
   TypeTable,
   TypeItem,
   Image: MdImage,
+  // 图表：主入口只出源码骨架；交互由 `/mermaid` 入口通过 components 覆写替换
+  Mermaid: MermaidPlaceholder,
 };
 
-export { AccItem, Accordion, Callout, Card, Cards, File, Files, Folder, MdImage, Step, Steps, Tab, Tabs, TypeItem, TypeTable };
+export { AccItem, Accordion, Callout, Card, Cards, File, Files, Folder, MdImage, MermaidPlaceholder, Step, Steps, Tab, Tabs, TypeItem, TypeTable };
+export type { MermaidProps } from "./mermaid-placeholder";

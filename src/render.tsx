@@ -5,6 +5,7 @@
  *   保证"能解析的就能渲染"。
  * @created 2026-10-24 20:24
  * @updated 2026-10-24 20:24
+ * @updated 2026-11-01 21:47 rawBody 容器把源码以 props 交给组件；渲染侧同步 collectMermaid 标记
  */
 
 import { useMemo, type ComponentType, type ReactElement } from "react";
@@ -28,7 +29,7 @@ import { promoteBlockMath } from "./syntax/math-block";
 import { rehypeSafeUrls } from "./rehype-safe-urls";
 import { rehypeSafeAnchors } from "./rehype-safe-anchors";
 import type { JsxBlock } from "./syntax/jsx-mdast";
-import { enforceMaxDepth } from "./policy";
+import { collectMermaid, enforceMaxDepth } from "./policy";
 import { rehypeCodeMeta } from "./rehype-code-meta";
 import { rehypeSourcePositions } from "./rehype-source-positions";
 
@@ -87,6 +88,13 @@ function jsxBlockToHast(state: HastState, node: JsxBlock): Element {
   const properties: Properties = {};
   for (const [key, value] of Object.entries(node.attributes ?? {})) {
     properties[key] = value;
+  }
+  // rawBody 容器（Mermaid）：源码以 props 交给组件，不落 DOM 属性——
+  // 源码里的 `<`、`&` 若变成 HTML 属性会被解析/转义，且会撑大首屏标记
+  if (typeof node.data?.rawBody === "string") {
+    properties.raw = node.data.rawBody;
+    properties.code = node.data.rawBody;
+    if (node.data.mermaidTooLarge) properties.tooLarge = true;
   }
   return {
     type: "element",
@@ -157,6 +165,9 @@ export default function MarkdownRenderer({
     // 而 unified 的 runSync(tree) 会新建空 vfile，插件里读不到 source
     promoteBlockMath(mdast, source);
     enforceMaxDepth(mdast, source);
+    // 与 parse() 同一口径：空源码 / 超限的标记必须在渲染侧也生效，
+    // 否则会出现"编辑器提示超限、页面照样出图"的分叉。诊断本身在渲染侧用不上，只取副作用
+    collectMermaid(mdast);
     const hast = processor.runSync(mdast) as HastRoot;
     return toJsxRuntime(hast, {
       Fragment,

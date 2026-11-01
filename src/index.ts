@@ -20,8 +20,11 @@ export type { ComponentMode, ComponentSpec, ItemSpec } from "./registry";
 
 export { jsxBlocks } from "./syntax/jsx-flow";
 export { default as remarkJsxBlocks } from "./syntax/jsx-remark";
-export { jsxFromMarkdown, jsxToMarkdown, parseOpenTag } from "./syntax/jsx-mdast";
+export { jsxFromMarkdown, jsxToMarkdown, parseOpenTag, sliceRawBody } from "./syntax/jsx-mdast";
 export type { JsxBlock } from "./syntax/jsx-mdast";
+
+export { MERMAID_MAX_BYTES } from "./policy";
+export type { Diagnostic, DiagnosticCode } from "./policy";
 
 export { parse } from "./parse";
 export type { ParseOptions, ParseResult } from "./parse";
@@ -34,4 +37,5 @@ export { normalizeMarkdown } from "./format";
 export { default as MarkdownRenderer } from "./render";
 export type { MarkdownRendererProps, RenderConfig } from "./render";
 
-export { mdxComponents } from "./components";
+export { mdxComponents, MermaidPlaceholder } from "./components";
+export type { MermaidProps } from "./components";

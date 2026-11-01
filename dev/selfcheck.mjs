@@ -331,6 +331,44 @@ const CASES = [
       return folder ? null : "Files 下找不到 Folder 子项";
     },
   },
+
+  // ---------- Mermaid 图表容器（rawBody） ----------
+  {
+    name: "Mermaid：容器体按原始文本保留，往返逐字一致",
+    md: "<Mermaid title=\"请求流程\" height=\"480\">\n# 不是标题\n- 不是列表\n---\ngraph TD\n  A[开始] --> B{判断}\n  B -->|是| C[执行]\n</Mermaid>\n",
+    identical: true,
+    structure: (tree) => {
+      const chart = findBlock(tree, "Mermaid");
+      if (!chart) return "图表容器丢失";
+      if ((chart.children ?? []).length !== 0) return "容器体被当成 Markdown 解析了";
+      const raw = chart.data?.rawBody ?? "";
+      return raw.includes("# 不是标题") && raw.includes("B -->|是| C")
+        ? null
+        : `源码被改写：${JSON.stringify(raw)}`;
+    },
+    blocks: (list) => (hasSourceReason(list, "mermaid") ? null : "块索引里没有 mermaid 源码块"),
+    html: (html) =>
+      html.includes("lkes-mermaid") && html.includes("graph TD") ? null : "SSR 未输出源码骨架",
+  },
+  {
+    name: "Mermaid：空源码产 MERMAID_EMPTY",
+    md: "<Mermaid />\n",
+    identical: true,
+    diagnostics: (codesList) =>
+      codesList.includes("MERMAID_EMPTY") ? null : `诊断缺失：${codesList.join(",")}`,
+    html: (html) => (html.includes('data-state="empty"') ? null : "空源码未标记 empty"),
+  },
+  {
+    name: "Mermaid：超出体积上限产 MERMAID_TOO_LARGE 并保留原文",
+    md: `<Mermaid>\ngraph TD\n  A[${"x".repeat(21000)}]\n</Mermaid>\n`,
+    structure: (tree) => {
+      const chart = findBlock(tree, "Mermaid");
+      return chart?.data?.mermaidTooLarge === true ? null : "未标记 mermaidTooLarge";
+    },
+    diagnostics: (codesList) =>
+      codesList.includes("MERMAID_TOO_LARGE") ? null : `诊断缺失：${codesList.join(",")}`,
+    html: (html) => (html.includes('data-state="too-large"') ? null : "超限未降级为源码"),
+  },
 ];
 
 let failed = 0;

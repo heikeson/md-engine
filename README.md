@@ -1,7 +1,7 @@
 # @heikeson/md-engine
 
 > @file README.md
-> @description React Markdown 内容引擎：尖括号容器语法的解析、渲染、序列化、格式化与 CodeMirror 6 编辑器内核，单一 npm 包四个入口。
+> @description React Markdown 内容引擎：尖括号容器语法的解析、渲染、序列化、格式化与 CodeMirror 6 编辑器内核，单一 npm 包五个入口。
 > @created 2026-10-24 19:57
 > @updated 2026-10-27 19:10 版本口径对齐 0.3.0（样式原生 CSS + 令牌，样式目录改分片）
 > @status v0.3.0
@@ -106,6 +106,25 @@ export default function EditorPage() {
 />
 ```
 
+### 图表（`/mermaid` 入口）
+
+`<Mermaid>` 默认只渲染**源码骨架**（不加载 mermaid）。要变成可缩放、可导出的图表，在**客户端组件**里合并覆写表：
+
+```tsx
+"use client";
+import { MarkdownRenderer, mdxComponents } from "@heikeson/md-engine";
+import { mermaidComponents } from "@heikeson/md-engine/mermaid";
+import "@heikeson/md-engine/styles.css";
+
+const components = { ...mdxComponents, ...mermaidComponents };
+
+<MarkdownRenderer content={md} config={{ components }} />;
+```
+
+- `mermaid` 是**可选 peer**（未装则不打包、运行时降级为源码）；`dompurify` 为直接依赖。
+- 键必须是 `Mermaid`（大写开头）：写成小写不报错，只会静默停留在骨架。
+- 解析、渲染、序列化在主入口全部可用，与本入口无关；未接入时 `parse` / `roundtrip` 行为完全一致。
+
 ## 容器语法
 
 | 容器 | 属性 | 子项 |
@@ -119,6 +138,7 @@ export default function EditorPage() {
 | `TypeTable` | — | `TypeItem`：`name`、`type`、`default`、`required`（布尔） |
 | `Image` | `src` / `alt` / `align`（默认 `center`）/ `width` / `caption` / `zoom`（布尔） | 自闭合叶子 |
 | `div` | `class` / `id` | 正文（属性透传到 DOM，用于局部样式或锚点） |
+| `Mermaid` | `title` / `height`（默认 `420`） | **原始文本**：容器体不按 Markdown 解析，整段是图表源码 |
 
 示例：
 
@@ -151,7 +171,8 @@ export default function EditorPage() {
 - 容器**顶格**书写；子项可按层缩进（行首是已知标签时会自动归位）。**正文行**缩进 ≥4 空格（或 tab）仍按 CommonMark 判成缩进代码块，此时 `parse` 会给出 `INDENT_AS_CODE` 提示，内容不会被改写；要写代码请用围栏。
 - 放进列表时对齐内容列（`- ` 后 2 空格、`1. ` 后 3 空格）。
 - 容器嵌套上限 3 层（子项不计层），超限那一层整块降级为原文。
-- 只有 `Image`、`Card`、`File` 等叶子允许 `<X />`，其余容器必须写 `</X>`。
+- 只有 `Image`、`Card`、`File` 等叶子允许 `<X />`，其余容器必须写 `</X>`；`<Mermaid />` 是特例：等价于空源码（产 `MERMAID_EMPTY`）。
+- `Mermaid` 的容器体是**原始文本**：里面的 `#`、`|`、`-->`、行首 `-` 都不会被当成 Markdown 语法，保存时逐字写回。
 
 ## API
 
@@ -229,6 +250,8 @@ Markdown
 | 未闭合容器 | 渲染到文末，序列化不补闭合标签 | `UNCLOSED_TAG` |
 | 嵌套超过 3 层 | 超限那层整块降级为原文 | `DEPTH_EXCEEDED` |
 | 非白名单协议的 `href` / `src` | `href` → `#`、`src` 移除 | `UNSAFE_HREF` |
+| `<Mermaid>` 容器体为空 | 渲染为源码块 + 提示，不白屏 | `MERMAID_EMPTY` |
+| `<Mermaid>` 源码 > 20 KB | 不渲染图表，原样显示源码 | `MERMAID_TOO_LARGE` |
 
 协议白名单为 `http(s)` / `mailto` / `tel`，以及任意无 scheme 的引用（相对路径、`//host`、`#锚点`、`?查询`）。
 
@@ -256,7 +279,8 @@ src/
 ├─ render.tsx / serialize.ts / format.ts
 ├─ rehype-*.ts                URL 闸门 / 锚点还原 / 代码元信息 / 源码位置
 ├─ syntax/                    micromark 尖括号扩展（词法 → mdast → remark 注入）
-├─ components/                8 容器 + 7 子项 + 映射
+├─ components/                容器组件 + 子项 + 映射（含图表占位骨架）
+├─ mermaid/                   /mermaid 入口：交互视图、渲染队列、令牌映射、导出
 ├─ internal/                  cn、isSafeHref
 └─ editor/                    CodeMirror 封装、文本动作、滚动同步、工具栏
 styles/*.css                  原生 CSS 分片（按组件拆分，index.css 汇总；engine.css 为旧路径转发）

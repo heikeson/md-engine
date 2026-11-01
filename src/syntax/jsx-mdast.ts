@@ -5,11 +5,13 @@
  *   `md → mdast → md` 要逐字一致。
  * @created 2026-10-24 20:16
  * @updated 2026-10-28 11:40 序列化改为保形：按原文行距写回换行/空行，不再统一加空行；行内形态由 data.inline 决定
+ * @updated 2026-11-01 21:10 rawBody 容器（Mermaid）：exitBlock 用 token 原文切片覆盖子节点，序列化逐字回写
  */
 
 import type { Data, Parent, RootContent } from "mdast";
 // 副作用导入：注册 jsxBlock 节点类型（dts 构建必须能沿依赖图找到它）
 import "./jsx-types";
+import { COMPONENTS } from "../registry";
 import type { CompileContext, Extension as FromMarkdownExtension, Token } from "mdast-util-from-markdown";
 import type { Handle, Options as ToMarkdownExtension, State } from "mdast-util-to-markdown";
 
@@ -27,7 +29,16 @@ export interface JsxBlock extends Parent {
    * closed=false 表示未闭合到文件末尾（由 policy 决定是否降级）；
    * degraded=true 表示嵌套超限被降级：渲染与块索引按源码块，序列化原样输出 `degradedText`
    */
-  data?: Data & { closed?: boolean; inline?: boolean; degraded?: boolean; degradedText?: string };
+  data?: Data & {
+    closed?: boolean;
+    inline?: boolean;
+    degraded?: boolean;
+    degradedText?: string;
+    /** rawBody 容器的容器体原文（不按 Markdown 解析，序列化时逐字回写） */
+    rawBody?: string;
+    /** 图表源码超出体积上限：渲染层据此只出源码块，不加载图表引擎 */
+    mermaidTooLarge?: boolean;
+  };
 }
 
 /** 开标签解析结果 */
@@ -127,11 +138,58 @@ function exitOpenTag(this: CompileContext, token: Token): void {
  */
 
 /**
+ * 找开标签的结束 `>`（跳过引号内的 `>`，属性值里可能出现）
+ * @param raw 块原文
+ * @returns `>` 的下标；找不到返回 -1
+ */
+function openTagEnd(raw: string): number {
+  let quote = "";
+  for (let i = 0; i < raw.length; i += 1) {
+    const ch = raw[i];
+    if (quote) {
+      if (ch === quote) quote = "";
+      continue;
+    }
+    if (ch === '"' || ch === "'") quote = ch;
+    else if (ch === ">") return i;
+  }
+  return -1;
+}
+
+/**
+ * 从块原文中切出容器体（原始文本）
+ * @param raw 块原文（含开闭标签）
+ * @param name 组件名
+ * @param selfClosing 是否自闭合写法
+ * @returns 容器体原文；自闭合或无开标签时返回空串
+ * @description 只认**结尾处**的 `</Name>`：源码体内行内出现的同名闭合字面量不参与截断，
+ *   否则 mermaid 文本里的 `</Mermaid>` 字样会把图表截短。
+ */
+export function sliceRawBody(raw: string, name: string, selfClosing: boolean): string {
+  if (selfClosing) return "";
+  const openEnd = openTagEnd(raw);
+  if (openEnd < 0) return "";
+  const bodyStart = openEnd + 1;
+  const close = new RegExp(`</${name}\\s*>\\s*$`).exec(raw);
+  if (!close) return raw.slice(bodyStart);
+  return raw.slice(bodyStart, close.index);
+}
+
+/**
  * 退出块节点
  * @param this 编译上下文
  * @param token jsxBlock token
+ * @description rawBody 容器（如 Mermaid）在此时丢弃已按 Markdown 解析出来的子节点，
+ *   改用 token 原文切片重建 `data.rawBody`。容器体在词法阶段已作为子文档被消费，
+ *   这是改动面最小、且不影响其他容器行为的落点（方案 2.4 路线 B）。
  */
 function exitBlock(this: CompileContext, token: Token): void {
+  const node = this.stack[this.stack.length - 1] as unknown as JsxBlock;
+  if (node && COMPONENTS[node.name]?.rawBody) {
+    node.children = [];
+    const rawBody = sliceRawBody(this.sliceSerialize(token), node.name, node.selfClosing);
+    node.data = { ...(node.data ?? {}), rawBody };
+  }
   this.exit(token);
 }
 
@@ -192,6 +250,12 @@ function handleJsxBlock(
   // 超限降级：原样吐回原文，不重新拼装、不做转义（降级是显示口径，不是改写用户内容）
   if (node.data?.degraded && typeof node.data.degradedText === "string") return node.data.degradedText;
   if (node.selfClosing) return `<${node.name}${attrs} />`;
+  // rawBody 容器：开标签按属性重建，容器体逐字回写（不转义、不重排、不增删空行），
+  // 原文未闭合时不补闭合标签——与普通容器的保形口径一致
+  if (typeof node.data?.rawBody === "string") {
+    const closing = node.data.closed === false ? "" : `</${node.name}>`;
+    return `${open}${node.data.rawBody}${closing}`;
+  }
 
   const children = node.children ?? [];
   // 空容器：开闭标签必须各占一行，写成 `<X></X>` 会退回行内 html（flow 构造要求开标签后换行）

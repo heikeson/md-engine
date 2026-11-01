@@ -5,7 +5,7 @@
  *   禁止在别处再硬编码组件名或属性名。改动本文件即改动内容语法，须同步
  *   `docs/markdown/02-语法规范.md` 与引擎对接契约。
  * @created 2026-10-24 20:07
- * @updated 2026-10-24 20:07
+ * @updated 2026-11-01 21:10 新增 Mermaid 图表容器与 rawBody（容器体按原始文本保留）声明
  */
 
 /** 组件的编辑形态：visual 允许结构化编辑；source 只按源码块保留 */
@@ -27,6 +27,13 @@ export interface ComponentSpec {
   readonly selfClosing?: boolean;
   /** 属性缺省值 */
   readonly defaultAttrs?: Readonly<Record<string, string | boolean>>;
+  /**
+   * 容器体是否为**原始文本**（不按 Markdown 解析）
+   * @description 默认 false，既有容器行为不变。设为 true 时容器体整体作为一个字符串
+   *   保存在节点 `data.rawBody`，子节点为空——用于 Mermaid 源码这类不能被 Markdown
+   *   解释的内容（`#`、`|`、`-->`、行首 `-` 都会被误判）。
+   */
+  readonly rawBody?: boolean;
 }
 
 /** 子项声明（Tab / Step / Card / AccItem / Folder / File） */
@@ -89,6 +96,17 @@ export const COMPONENTS: Readonly<Record<string, ComponentSpec>> = {
   // 通用分块容器：作者需要一层可挂 class / id 的 div 做局部样式或锚点时用它；
   // 属性原样透传到 DOM（不套组件），内容照常按 Markdown 解析。
   div: { name: "div", mode: "visual", attrs: ["class", "id"] },
+  // 图表容器：容器体是 mermaid 源码，必须原样保留（rawBody），否则 `#`、`|`、`-->`
+  // 与行首 `-` 会被当成 Markdown 语法。mode=source：编辑器里只按源码块处理，不做结构化编辑。
+  // 渲染与交互不在本仓库主入口：主入口只出源码骨架，交互由 `/mermaid` 入口在客户端增强。
+  Mermaid: {
+    name: "Mermaid",
+    mode: "source",
+    attrs: ["title", "height"],
+    rawBody: true,
+    // `<Mermaid />` 等价于空源码（给 MERMAID_EMPTY 诊断）：允许自闭合，否则会被当成未知 HTML
+    selfClosing: true,
+  },
 };
 
 /**

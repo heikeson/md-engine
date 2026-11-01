@@ -10,6 +10,7 @@
 import containers from "./fixtures/containers.md?raw";
 import edgeCases from "./fixtures/edge-cases.md?raw";
 import kitchenSink from "./fixtures/kitchen-sink.md?raw";
+import mermaidFixture from "./fixtures/mermaid.md?raw";
 import realWorld from "./fixtures/real-world.md?raw";
 
 /** 往返预期 */
@@ -56,5 +57,12 @@ export const FIXTURES: readonly Fixture[] = [
     content: realWorld,
     roundtrip: "known-diff",
     note: "按自然写作习惯书写，容器内的空行会被序列化补全（内容不变）",
+  },
+  {
+    id: "mermaid",
+    label: "图表容器",
+    // 图表体是原始文本（不进 Markdown 解析），未闭合块也不补闭合标签，故往返逐字一致
+    content: mermaidFixture,
+    roundtrip: "strict",
   },
 ];

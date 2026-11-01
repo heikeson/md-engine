@@ -4,6 +4,7 @@
  *   渲染、序列化、编辑器块索引都基于这里产出的同一棵 mdast，避免重复解析。
  * @created 2026-10-24 20:24
  * @updated 2026-10-26 22:02
+ * @updated 2026-11-01 21:47 诊断链加入 collectMermaid（图表空源码 / 超限）
  */
 
 import { fromMarkdown } from "mdast-util-from-markdown";
@@ -16,7 +17,13 @@ import { jsxBlocks } from "./syntax/jsx-flow";
 import { jsxFromMarkdown } from "./syntax/jsx-mdast";
 import { foldInlineItems } from "./syntax/jsx-inline";
 import { promoteBlockMath } from "./syntax/math-block";
-import { collectIndentAsCode, collectUnclosed, enforceMaxDepth, type Diagnostic } from "./policy";
+import {
+  collectIndentAsCode,
+  collectMermaid,
+  collectUnclosed,
+  enforceMaxDepth,
+  type Diagnostic,
+} from "./policy";
 import { collectUnknownTags, collectUnsafeUrls } from "./policy-tags";
 import { extractBlocks, type Block } from "./blocks";
 
@@ -63,6 +70,9 @@ export function parse(md: string, options?: ParseOptions): ParseResult {
     ...collectUnsafeUrls(tree),
     ...collectUnknownTags(tree),
     ...collectIndentAsCode(tree, source),
+    // 图表容器：空源码 / 超限。必须在 enforceMaxDepth 之后——
+    // 被深度裁剪降级的图表块不再出图，也就不该再报图表自身的诊断
+    ...collectMermaid(tree),
   ];
   // 块索引必须在策略层裁剪之后提取，保证区间与最终渲染一致
   const blocks = extractBlocks(tree, source);

@@ -3,11 +3,39 @@
 > @file update.md
 > @description `@heikeson/md-engine` 的版本更新记录，倒序累积。每次发版在此一次性写清「更新内容 + 修复内容」，不记录操作步骤。
 > @created 2026-10-26 23:37
-> @updated 2026-10-28 12:47 记录 0.3.1
-> @status 0.3.1 已记录
+> @updated 2026-11-01 22:31 记录 0.4.0（含图表 UI 定稿）
+> @status 0.4.0 已记录
 > @readonly 由维护者（@heikeson）维护，请勿直接编辑；变更请提 issue
 
 ---
+
+## 0.4.0 — 2026-11-01
+
+### 更新内容
+
+| 内容 | 说明 |
+|---|---|
+| 新增 `<Mermaid>` 容器 | 容器体是**原始文本**（`rawBody`），不按 Markdown 解析：`#`、`\|`、`-->`、行首 `-` 全部原样保留，`md → AST → md` 逐字一致 |
+| 新增 `/mermaid` 入口 | 交互式图表：进入视口才懒加载、缩放拖动、源码/图表切换、SVG/PNG 导出。主入口零引用，不用图表的页面不承担 mermaid 体积 |
+| 图表令牌 | 新增 `--lkes-chart-bg` / `-fg` / `-node` / `-node-border` / `-line` / `-series-1..6`，既有 9 个令牌语义不变 |
+| 图表 UI | 卡片式：顶部工具栏（源码视图切换、复制源码、下载 SVG / PNG）+ 右下角药丸缩放条（放大 / 缩小 / 重置）；标题并入工具栏；配色全部走宿主语义变量（`--card` / `--foreground` / `--muted` / `--border`），暗色按最近的 `.dark` 祖先自动跟随 |
+| 2 个诊断码 | `MERMAID_EMPTY`（容器体为空）、`MERMAID_TOO_LARGE`（源码 > 20 KB，改为显示源码） |
+| 块索引 | 图表块按 `source` + `reason: "mermaid"` 暴露，编辑器按源码块处理，不做结构化编辑 |
+| 主入口新导出 | `MermaidPlaceholder`、`MermaidProps`、`sliceRawBody`、`MERMAID_MAX_BYTES`、`Diagnostic` / `DiagnosticCode` 类型 |
+
+### 修复内容
+
+| 问题 | 修复 |
+|---|---|
+| 容器体被 Markdown 解析（新增容器引入时） | `rawBody` 容器的子节点在 mdast 装配阶段丢弃，改用 token 原文切片；序列化逐字回写，不转义、不重排 |
+| 空容器渲染白屏 | 空源码/超限/渲染失败三种情况都降级为源码块，不出现空白区域 |
+
+### 说明
+
+- 围栏 ` ```mermaid ` 语义不变，仍是代码块，宿主既有的围栏渲染不受影响；两种写法可并存。
+- `/mermaid` 的产物**不含** `"use client"` 指令（打包器会剥离模块级指令），须由使用方的**客户端组件**引入。
+- 依赖：`mermaid` 为可选 peer（建议 11.x），`dompurify` 为直接依赖（随包安装）。
+- 诊断只做"空源码"与"超限"两条：源码里出现字面量 `</Mermaid>` 时行为已由"只认结尾处的闭合标签"约束，无需额外诊断码。
 
 ## 0.3.1 — 2026-10-28
 

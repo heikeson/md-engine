@@ -4,6 +4,7 @@
  *   与渲染实现解耦——将来换渲染方式，这里不用动。
  * @created 2026-10-24 20:24
  * @updated 2026-10-24 20:24
+ * @updated 2026-11-01 21:47 新增 MERMAID_EMPTY / MERMAID_TOO_LARGE 诊断与 MERMAID_MAX_BYTES
  */
 
 import type { Root, RootContent } from "mdast";
@@ -16,7 +17,12 @@ export type DiagnosticCode =
   | "DEPTH_EXCEEDED"
   | "UNKNOWN_TAG"
   | "UNSAFE_HREF"
-  | "INDENT_AS_CODE";
+  | "INDENT_AS_CODE"
+  | "MERMAID_EMPTY"
+  | "MERMAID_TOO_LARGE";
+
+/** Mermaid 源码体积上限（字节）：超限不渲染图表，原样显示源码 */
+export const MERMAID_MAX_BYTES = 20 * 1024;
 
 /** 一条诊断 */
 export interface Diagnostic {
@@ -201,6 +207,53 @@ export function collectUnclosed(tree: Root, source: string): Diagnostic[] {
           message: `<${block.name}> 未闭合，已按延伸到文末处理`,
           range: [block.position?.start.offset ?? 0, block.position?.end.offset ?? 0],
         });
+      }
+    }
+    const children = (node as { children?: RootContent[] }).children;
+    if (children) for (const child of children) visit(child);
+  };
+  visit(tree);
+  return diagnostics;
+}
+
+/**
+ * 收集图表容器的降级诊断（空源码 / 超出体积上限）
+ * @param tree mdast 根节点（原地标记超限）
+ * @returns 诊断列表
+ * @description 只判定与标记，不改写内容：空源码与超限都把原文原样留下，
+ *   渲染层据 `data.mermaidTooLarge` 决定出图还是出源码块。
+ *   前提：`rawBody` 容器的 `data.rawBody` 已由 jsx-mdast 的 exitBlock 填好。
+ */
+export function collectMermaid(tree: Root): Diagnostic[] {
+  const diagnostics: Diagnostic[] = [];
+  const visit = (node: Root | RootContent): void => {
+    if (node.type === "jsxBlock") {
+      const block = node as JsxBlock;
+      if (COMPONENTS[block.name]?.rawBody) {
+        const raw = block.data?.rawBody ?? "";
+        const line = block.position?.start.line ?? 1;
+        const range: [number, number] = [
+          block.position?.start.offset ?? 0,
+          block.position?.end.offset ?? 0,
+        ];
+        if (raw.trim() === "") {
+          diagnostics.push({
+            code: "MERMAID_EMPTY",
+            level: "warn",
+            line,
+            message: `<${block.name}> 容器体为空，未生成图表`,
+            range,
+          });
+        } else if (new TextEncoder().encode(raw).length > MERMAID_MAX_BYTES) {
+          block.data = { ...(block.data ?? {}), mermaidTooLarge: true };
+          diagnostics.push({
+            code: "MERMAID_TOO_LARGE",
+            level: "warn",
+            line,
+            message: `<${block.name}> 源码超过 ${MERMAID_MAX_BYTES / 1024} KB，已改为显示源码`,
+            range,
+          });
+        }
       }
     }
     const children = (node as { children?: RootContent[] }).children;

@@ -4,7 +4,7 @@
 > @description 为 `@heikeson/md-engine` 增加 `<Mermaid>` 一等容器与 `/mermaid` 交互入口的完整方案，
 >   含语法层（rawBody 两条路线）、渲染隔离、客户端交互、主题令牌、导出、与宿主现有围栏方案的共存迁移。
 > 创建时间：2026-11-01 20:53
-> 更新时间：2026-11-01 22:51（v8 图表配色改为**引擎自带亮/暗两套**，不再依赖宿主任何变量；提供 `configureChartTheme` 配置入口）
+> 更新时间：2026-11-01 23:07（v9 收尾：编辑器预览接入、滚动同步改区间插值、`height` 默认自适应、暗色全量修复，见附录 26–29）
 > 状态：已实施（M0–M5）·M6 待发布（放行语："可以，按文档开始开发" / 2026-11-01 21:07）
 > 适用范围：`@heikeson/md-engine` **0.3.1 → 0.4.0**（一次性发布，M0–M6 全部完成后）
 > 关联仓库：`blog-heikeson2026`（宿主，M6 阶段收敛，范围见 9.6）
@@ -476,6 +476,9 @@ import { mermaidComponents } from '@heikeson/md-engine/mermaid';
 | 打包 | `dist/mermaid/index.js` 与 `.d.ts` 存在；`import '@heikeson/md-engine/mermaid'` 可解析 |
 | 共存 | 同一页面围栏图与容器图并存时主题一致、互不干扰 |
 | 契约 | 三条铁律无违反；新令牌只增不改；类名由包提供 |
+| 编辑器 | 分屏预览里的 `<Mermaid>` 可交互（传 `rendererConfig.components`）；滚动同步连续跟随、不逐块跳到标题 |
+| 高度 | `height` 缺省 / 空 / `auto` 自动高度；正数才限高并裁切 |
+| 暗色 | 祖先加 `.dark` 后全部组件（含编辑器外壳）同时切暗，不需要宿主提供任何变量 |
 
 ---
 
@@ -558,6 +561,10 @@ import { mermaidComponents } from '@heikeson/md-engine/mermaid';
 | 23 | 图表配色写成 `--lkes-chart-node: var(--muted)` 这类链 | **自定义属性里的 var() 在声明处（:root）就完成替换并固化**，子元素继承的是当时的亮色值——`.dark` 之后再改 `--muted` 不影响它。所以"改成读元素 computed style"也救不回来，这是暗色失效的真正根因 | 5 个颜色令牌**不再在 `:root` 定义**；`readChartTokens` 在图表元素上直接读 `--card` / `--foreground` / `--muted` / `--border` / `--muted-foreground`（元素级解析），CSS 兜底同样改为元素级 var 链；`--lkes-chart-*` 退化为"显式覆盖入口" |
 | 24 | 未关 `htmlLabels` | mermaid 默认把节点文字放进 `<foreignObject>` 的 HTML 里，DOMPurify 的 svg profile 会清空这部分 HTML → **图有线没字**；且 Canvas 不绘制 foreignObject，导出 PNG 必空白 | 全图表 `htmlLabels: false`，文字改走 SVG `<text>` |
 | 25 | 图表配色靠宿主语义变量（连续三轮修补仍不彻底） | 宿主变量可能缺失、可能在容器作用域被覆盖，自定义属性还会在 `:root` 固化；本质问题是**图表颜色不该由宿主决定** | **改为引擎自带亮/暗两套**：CSS 在组件作用域定义 `--lkes-chart-*`（`.dark` / `[data-theme=dark]` 祖先自动切暗），JS 侧 `configureChartTheme({light,dark})` 整体可换；取色优先级「JS 配置 → CSS 变量 → 内置」。`mermaid.css` 中宿主变量引用实测 **0 处** |
+| 26 | 编辑器分屏里的图表全是源码视图 | `MarkdownEditor` 的预览写死 `config={{ sourcePositions: true }}`，没有任何透传入口；契约 §7 写着 `rendererConfig` 但实现里根本没有（文档与代码漂移） | `EditorConfig` 补 `rendererConfig`（整体透传、强制 `sourcePositions`），dev 编辑器传 `{ components: mermaidComponents }` 验证；契约 §7 补第 5/6 条 |
+| 27 | 分屏滚动同步"以标题为锚点" | 原实现"贴到最近锚点顶部"：源码滚到两块中间时命中前一个锚点（常是标题），表现为逐块跳；预览→源码用 `scrollIntoView(..., "start")` 硬顶 | 重写为**区间插值**：只保留最内层锚点、`posAtCoords` 取精确字符位置、相邻锚点线性插值；预览→源码用 `lineBlockAt` 直接设 `scrollTop` |
+| 28 | `height` 默认 420 会裁掉大图、小图又留白 | 固定上限把内容裁掉，`auto` 无处可写 | 未指定 / 空串 / `auto` 一律**自动高度**（随内容撑开）；仅显式正数限高；同步移除 `.lkes-mermaid-body` 的 `min-height: 15rem` |
+| 29 | 只有图表做了暗色，其余组件仍是亮色 | 组件都走 `var(--lkes-*)`，而令牌在 `:root` 用 `var(--宿主变量, 兜底)` 定义 → var() 在声明处固化，`.dark` 之后改宿主变量无效 | 令牌层改为**引擎自带亮/暗两套字面量**（`.dark` / `[data-theme=dark]` 祖先作用域），一处改动覆盖 Accordion / TypeTable / Cards / Steps / Files / Tabs / 编辑器外壳；详见 `docs/暗色适配全量分析.md` |
 
 > 本文档状态为「已定稿·待放行」。按流程，未获明确放行语前不动 `src/**`、`styles/**`、
 > 配置文件，也不动宿主 `blog-heikeson2026` 的任何文件。

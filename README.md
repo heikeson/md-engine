@@ -8,7 +8,8 @@
 > @updated 2026-11-02 20:50 版本口径对齐 0.5.0
 > @updated 2026-11-02 21:33 容器语法表标注 `TypeItem` 可自闭合
 > @updated 2026-11-02 21:40 版本口径对齐 0.5.1
-> @status v0.5.1
+> @updated 2026-11-02 23:14 版本口径对齐 0.5.2
+> @status v0.5.2
 
 一个面向 React 的 Markdown 内容引擎。在标准 Markdown（GFM + 数学公式）之上，把
 `<Callout>`、`<Cards><Card /></Cards>` 这类**尖括号容器**纳入解析流程，并保证

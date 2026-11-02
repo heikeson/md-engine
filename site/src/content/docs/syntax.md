@@ -39,7 +39,7 @@
   正文支持完整 Markdown，包括 `行内码` 与 [链接](https://example.com)。
 </Callout>
 
-<Callout type="important" title="别名不算新语法">
+<Callout type="important" title="别名不新增视觉分支">
   `warn`、`error`、`success`、`idea` 只是既有配色的别名，不新增视觉分支。
 </Callout>
 
@@ -76,14 +76,14 @@
 
 ```md
 <Cards>
-  <Card title="快速开始" description="五分钟跑通渲染" href="/docs/quick-start" />
-  <Card title="样式与令牌" description="改色只动变量" href="/docs/styling" />
+  <Card title="快速开始" description="完成首次渲染" href="/docs/quick-start" />
+  <Card title="样式与令牌" description="换色只需修改变量" href="/docs/styling" />
 </Cards>
 ```
 
 <Cards>
-  <Card title="快速开始" description="五分钟跑通渲染" href="/docs/quick-start" />
-  <Card title="样式与令牌" description="改色只动变量" href="/docs/styling" />
+  <Card title="快速开始" description="完成首次渲染" href="/docs/quick-start" />
+  <Card title="样式与令牌" description="换色只需修改变量" href="/docs/styling" />
 </Cards>
 
 ## Accordion
@@ -92,14 +92,14 @@
 
 ```md
 <Accordion>
-  <AccItem title="默认收起" type="close">点开才看得到。</AccItem>
-  <AccItem title="默认展开" type="open">一进来就是开的。</AccItem>
+  <AccItem title="默认收起" type="close">默认收起，点击展开。</AccItem>
+  <AccItem title="默认展开" type="open">默认展开。</AccItem>
 </Accordion>
 ```
 
 <Accordion>
-  <AccItem title="默认收起" type="close">点开才看得到。</AccItem>
-  <AccItem title="默认展开" type="open">一进来就是开的。</AccItem>
+  <AccItem title="默认收起" type="close">默认收起，点击展开。</AccItem>
+  <AccItem title="默认展开" type="open">默认展开。</AccItem>
 </Accordion>
 
 ## Files
@@ -170,7 +170,7 @@ flowchart LR
 
 ## 书写约束
 
-<Callout type="warning" title="这几条最容易踩">
+<Callout type="warning" title="书写时的常见约束">
   容器**顶格**书写；正文行缩进 4 空格以上会被 CommonMark 判成缩进代码块，引擎会给出 `INDENT_AS_CODE` 提示但不改写内容。要写代码请用围栏。
 </Callout>
 

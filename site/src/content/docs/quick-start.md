@@ -1,6 +1,6 @@
 # 快速开始
 
-把一个 `.md` 文件渲染成带组件的页面，需要三步：装包、引样式、给个类名。
+把一个 `.md` 文件渲染成带组件的页面只需三步：安装、引入样式、指定容器类名。
 
 <Callout type="note" title="版本口径">
   本文对应 `0.4.0`。React 需要 `>=19`（peer dependency），构建环境 Node `>=20`，运行时没有 Node 版本要求。
@@ -33,7 +33,7 @@ export default function Article() {
 }
 ```
 
-外层 `className` 建议带上 `prose-site`：包内样式的作用域挂在它上面，少了这个类，容器会渲染成裸文本。
+外层 `className` 建议带上 `prose-site`：包内样式的作用域挂在它上面，缺少该类时，容器会回退为纯文本。
 
 <Steps>
   <Step title="引入样式">`import "@heikeson/md-engine/styles.css"`，放在应用入口或页面模块顶部都行。</Step>
@@ -54,10 +54,10 @@ const again = roundtrip(md);          // 上一行的简写
 const tidy = normalizeMarkdown(md);   // 需要统一排版时才用
 ```
 
-`serialize` 只保证「不改内容」，不替你补空行、不展开行内子项。要规整排版是另一个函数，两件事分开。
+`serialize` 只保证内容不变：不补空行、不展开行内子项。统一排版由另一个函数负责，二者职责分离。
 
-<Callout type="tip" title="两件事别混用">
-  用户在编辑器里按了什么，保存后就应该还是什么。`serialize` 保形、`normalizeMarkdown` 改形，混用会让用户的排版在保存时被悄悄重写。
+<Callout type="tip" title="不要混用两个函数">
+  用户在编辑器中的排版，保存后仍保持一致。`serialize` 保形、`normalizeMarkdown` 改形，混用会在保存时改写用户的排版。
 </Callout>
 
 ## 什么时候该看下一节

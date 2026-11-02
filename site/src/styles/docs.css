@@ -12,6 +12,11 @@
   padding-right: 8px;
 }
 
+/* 折叠按钮仅移动端出现，桌面端始终展开侧栏 */
+.docs-nav-toggle {
+  display: none;
+}
+
 .side-group {
   display: flex;
   flex-direction: column;

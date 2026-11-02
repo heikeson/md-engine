@@ -6,7 +6,7 @@
  * @updated 2026-11-01 23:55 品牌版本号改读共享模块，去掉硬编码 0.4.0
  */
 
-import type { ReactElement } from "react";
+import { useEffect, useRef, useState, type ReactElement } from "react";
 import { Link, usePath } from "../router";
 import { toggleTheme } from "../theme";
 import { ENGINE_VERSION } from "../version";
@@ -44,9 +44,67 @@ function ThemeToggle(): ReactElement {
 export function Header(): ReactElement {
   const path = usePath();
   const isDocs = path.startsWith("/docs");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const headerRef = useRef<HTMLElement>(null);
+
+  // 菜单展开时：点击外部或按 Esc 关闭
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onPointer = (event: PointerEvent): void => {
+      if (headerRef.current && !headerRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    const onKey = (event: KeyboardEvent): void => {
+      if (event.key === "Escape") setMenuOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointer);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onPointer);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen]);
+
+  const navLinks = (
+    <>
+      <Link
+        href="/docs"
+        className={`nav-link${isDocs ? " is-active" : ""}`}
+        onClick={() => setMenuOpen(false)}
+      >
+        文档
+      </Link>
+      <Link
+        href="/playground"
+        className={`nav-link${path === "/playground" ? " is-active" : ""}`}
+        onClick={() => setMenuOpen(false)}
+      >
+        Playground
+      </Link>
+      <a
+        className="nav-link"
+        href="https://www.npmjs.com/package/@heikeson/md-engine"
+        target="_blank"
+        rel="noreferrer"
+        onClick={() => setMenuOpen(false)}
+      >
+        npm
+      </a>
+      <a
+        className="nav-link"
+        href="https://github.com/heikeson/md-engine"
+        target="_blank"
+        rel="noreferrer"
+        onClick={() => setMenuOpen(false)}
+      >
+        GitHub
+      </a>
+    </>
+  );
 
   return (
-    <header className="site-header">
+    <header className="site-header" ref={headerRef}>
       <div className="header-inner">
         <Link href="/" className="brand" aria-label="md-engine 首页">
           <span className="brand-mark" aria-hidden="true">
@@ -58,32 +116,29 @@ export function Header(): ReactElement {
           <span className="brand-version">{ENGINE_VERSION}</span>
         </Link>
 
-        <nav className="site-nav" aria-label="主导航">
-          <Link href="/docs" className={`nav-link${isDocs ? " is-active" : ""}`}>
-            文档
-          </Link>
-          <Link
-            href="/playground"
-            className={`nav-link${path === "/playground" ? " is-active" : ""}`}
-          >
-            Playground
-          </Link>
-          <a
-            className="nav-link"
-            href="https://www.npmjs.com/package/@heikeson/md-engine"
-            target="_blank"
-            rel="noreferrer"
-          >
-            npm
-          </a>
-          <a
-            className="nav-link"
-            href="https://github.com/heikeson/md-engine"
-            target="_blank"
-            rel="noreferrer"
-          >
-            GitHub
-          </a>
+        <button
+          type="button"
+          className="nav-toggle"
+          aria-label={menuOpen ? "关闭导航菜单" : "打开导航菜单"}
+          aria-expanded={menuOpen}
+          aria-controls="site-nav"
+          onClick={() => setMenuOpen((open) => !open)}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round">
+            {menuOpen ? (
+              <path d="M6 6l12 12M18 6 6 18" />
+            ) : (
+              <path d="M4 7h16M4 12h16M4 17h16" />
+            )}
+          </svg>
+        </button>
+
+        <nav
+          id="site-nav"
+          className={`site-nav${menuOpen ? " is-open" : ""}`}
+          aria-label="主导航"
+        >
+          {navLinks}
         </nav>
 
         <div className="header-actions">

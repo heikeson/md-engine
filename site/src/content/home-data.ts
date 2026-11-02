@@ -73,6 +73,6 @@ export const MDX_SAMPLE = [
 /** 这里的写法 */
 export const MD_SAMPLE = [
   '<Callout type="tip" title="提示">',
-  "  内容还是文本，存进数据库就是这段字符。",
+  "  内容为纯文本，存入数据库即为原始字符串。",
   "</Callout>",
 ].join("\n");

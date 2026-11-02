@@ -261,14 +261,41 @@
     border-top: 1px solid var(--line);
   }
 
-  .syntax-row {
-    grid-template-columns: 96px minmax(0, 1fr);
-    gap: 4px 12px;
+  /* 语法表改为纵向卡片：表头隐藏，字段以「列名：值」堆叠 */
+  .syntax-table {
+    border-top: 0;
   }
 
+  .syntax-head {
+    display: none;
+  }
+
+  .syntax-row {
+    display: block;
+    padding: 12px 2px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .syntax-tag {
+    display: block;
+    font-size: 14px;
+    margin-bottom: 6px;
+  }
+
+  .syntax-attrs,
   .syntax-items,
   .syntax-note {
-    display: none;
+    display: block;
+    margin-top: 3px;
+  }
+
+  .syntax-attrs::before,
+  .syntax-items::before,
+  .syntax-note::before {
+    content: attr(data-label) "：";
+    color: var(--muted);
+    font-family: var(--font-sans);
+    margin-right: 4px;
   }
 }
 

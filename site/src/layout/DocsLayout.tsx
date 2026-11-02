@@ -7,7 +7,7 @@
  * @updated 2026-11-02 00:12
  */
 
-import type { ReactElement } from "react";
+import { useState, type ReactElement } from "react";
 import { MarkdownRenderer } from "@heikeson/md-engine";
 import { SITE_RENDER_CONFIG } from "../components/render-config";
 import { DOCS, GROUP_ORDER, docNeighbors, type DocEntry } from "../content/docs";
@@ -22,11 +22,39 @@ import { Link } from "../router";
 export function DocsLayout({ doc }: { doc: DocEntry }): ReactElement {
   const toc = collectToc(doc.body);
   const { prev, next } = docNeighbors(doc.slug);
+  const [navOpen, setNavOpen] = useState(false);
 
   return (
     <div className="docs-shell">
       <aside className="docs-sidebar">
-        <nav aria-label="文档目录">
+        <button
+          type="button"
+          className="docs-nav-toggle"
+          aria-expanded={navOpen}
+          aria-controls="docs-nav"
+          onClick={() => setNavOpen((open) => !open)}
+        >
+          文档目录
+          <svg
+            className="docs-nav-caret"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M9 6l6 6-6 6" />
+          </svg>
+        </button>
+        <nav
+          id="docs-nav"
+          className={`docs-nav${navOpen ? " is-open" : ""}`}
+          aria-label="文档目录"
+        >
           {GROUP_ORDER.map((group) => {
             const items = DOCS.filter((item) => item.group === group);
             if (!items.length) return null;
@@ -38,6 +66,7 @@ export function DocsLayout({ doc }: { doc: DocEntry }): ReactElement {
                     key={item.slug}
                     href={`/docs/${item.slug}`}
                     className={`side-link${item.slug === doc.slug ? " is-active" : ""}`}
+                    onClick={() => setNavOpen(false)}
                   >
                     {item.title}
                   </Link>

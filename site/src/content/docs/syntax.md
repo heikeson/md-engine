@@ -45,16 +45,33 @@
 
 ## Tabs
 
-子项 `Tab` 的 `value` 是标签文案，`default` 指定初始选中项。
+`Tabs` 是容器，`Tab` 是子项。子项的 `value` 既是页签上显示的文案，也是这一页的身份；默认打开哪个页签由子项的布尔属性 `default` 决定。
+
+<TypeTable>
+  <TypeItem name="value" type="string" required />
+  <TypeItem name="default" type="boolean" default="第一项" />
+</TypeTable>
 
 ```md
 <Tabs>
   <Tab value="npm">npm install @heikeson/md-engine</Tab>
-  <Tab value="pnpm">pnpm add @heikeson/md-engine</Tab>
+  <Tab value="pnpm" default>pnpm add @heikeson/md-engine</Tab>
 </Tabs>
 ```
 
-子项也可以展开成块，内容里允许有空行，按跨段落处理。保存时按原形态写回，不会强行展开或加空行。
+渲染结果（默认停在 `pnpm`）：
+
+<Tabs>
+  <Tab value="npm">npm install @heikeson/md-engine</Tab>
+  <Tab value="pnpm" default>pnpm add @heikeson/md-engine</Tab>
+</Tabs>
+
+用法要点：
+
+- 不写 `default` 时打开第一项；写了多个时只认文档序第一个，其余忽略。
+- `default` 只决定首屏选中项，用户点到别的页签后不会被拉回默认项。
+- 键盘可用：聚焦页签后 ← / → 循环切换，Home / End 跳到首尾。
+- 子项也可以展开成块，内容里允许有空行，按跨段落处理。保存时按原形态写回，不会强行展开或加空行。
 
 ## Steps
 

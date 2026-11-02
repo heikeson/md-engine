@@ -4,7 +4,12 @@
  *   这样开发态改 styles/ 立刻生效，构建产物也自带一份完整样式，不依赖 node_modules。
  * @created 2026-11-02 01:05
  * @updated 2026-11-02 01:05
+ * @updated 2026-11-02 20:44 顶部声明层序（reset → lkes.tokens → lkes.components），站点重置进 reset 层，
+ *   否则未分层重置会压过包内 @layer lkes.components（Tabs 选中态失效即此因）
  */
+
+/* 层序必须在任何 @import 之前声明：先出现的层优先级更低，reset 必须垫在最底 */
+@layer reset, lkes.tokens, lkes.components;
 
 @import "../../../styles/index.css";
 @import "./tokens.css";

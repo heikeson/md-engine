@@ -45,16 +45,33 @@ Rendered:
 
 ## Tabs
 
-The `value` of each `Tab` is the label; `default` picks the initially selected tab.
+`Tabs` is the container and `Tab` its children. A child's `value` is both the label shown on the tab and the identity of that pane; the boolean `default` picks which tab is open first.
+
+<TypeTable>
+  <TypeItem name="value" type="string" required />
+  <TypeItem name="default" type="boolean" default="first tab" />
+</TypeTable>
 
 ```md
 <Tabs>
   <Tab value="npm">npm install @heikeson/md-engine</Tab>
-  <Tab value="pnpm">pnpm add @heikeson/md-engine</Tab>
+  <Tab value="pnpm" default>pnpm add @heikeson/md-engine</Tab>
 </Tabs>
 ```
 
-Children may also be expanded into blocks, and their bodies may contain blank lines, which are treated as paragraph breaks. Saving writes the original shape back — nothing is force-expanded and no blank lines are added.
+Rendered (opens on `pnpm`):
+
+<Tabs>
+  <Tab value="npm">npm install @heikeson/md-engine</Tab>
+  <Tab value="pnpm" default>pnpm add @heikeson/md-engine</Tab>
+</Tabs>
+
+Usage notes:
+
+- Without `default` the first tab opens; with several `default` attributes only the first in document order is used.
+- `default` only sets the initial selection — after the reader clicks another tab, it is not pulled back.
+- Keyboard: focus a tab, then ← / → cycle through tabs and Home / End jump to the ends.
+- Children may also be expanded into blocks, and their bodies may contain blank lines, which are treated as paragraph breaks. Saving writes the original shape back — nothing is force-expanded and no blank lines are added.
 
 ## Steps
 

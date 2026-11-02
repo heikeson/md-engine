@@ -34,13 +34,17 @@ function esc(text) {
 }
 
 /**
- * 替换标题与描述
+ * 替换标题、描述与文档语言
  * @param html 模板
  * @param meta 页面元信息
  * @returns 替换后的文档
+ * @description `<html lang>` 必须按页替换：模板里那一份属于中文首页，
+ *   英文页面若沿用 `zh-CN`，读屏器与搜索引擎会按中文处理。
  */
 function withMeta(html, meta) {
+  const lang = meta.lang ?? "zh-CN";
   return html
+    .replace(/<html([^>]*?)\slang="[^"]*"/, `<html$1 lang="${esc(lang)}"`)
     .replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(meta.title)}</title>`)
     .replace(
       /<meta\s+name="description"[\s\S]*?\/>/,

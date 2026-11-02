@@ -10,17 +10,17 @@
     margin: 1.25rem 0;
   }
 
+  /* align-* 按「起始 / 居中 / 末尾」理解：RTL 下 start 即右侧，随书写方向自动翻转 */
   .prose-site .image.align-left {
-    margin-right: auto;
+    margin-inline-end: auto;
   }
   .prose-site .image.align-center {
-    margin-left: auto;
-    margin-right: auto;
+    margin-inline: auto;
     text-align: center;
   }
   .prose-site .image.align-right {
-    margin-left: auto;
-    text-align: right;
+    margin-inline-start: auto;
+    text-align: end;
   }
 
   /* 限制最大宽度：窄屏下宽图不撑破正文容器 */

@@ -2,11 +2,15 @@
  * @file 代码块
  * @description 覆盖引擎默认的 `pre`：默认实现只有源码与语言属性，没有标题栏、复制与着色。
  *   源码从 `data-code-raw` 取——这正是 rehypeCodeMeta 存在的理由，宿主不必自己去解析子节点。
+ *   复制按钮文案走站点字典，随路由语言切换。
  * @created 2026-11-01 23:58
  * @updated 2026-11-01 23:58
+ * @updated 2026-11-02 19:32 复制/已复制文案走字典
  */
 
 import { useState, type HTMLAttributes, type ReactElement, type ReactNode } from "react";
+import { messagesOf } from "../i18n";
+import { useLocalePath } from "../router";
 import { highlight, langLabel } from "./highlight";
 
 /** 带 data-* 的 pre 属性 */
@@ -28,13 +32,16 @@ function textOf(node: ReactNode): string {
 
 /**
  * 复制按钮
- * @param props code 要复制的文本
+ * @param props code 要复制的文本；label 自定义文案（缺省取字典）
  * @returns 按钮
  */
-export function CopyButton({ code, label = "复制" }: { code: string; label?: string }): ReactElement {
+export function CopyButton({ code, label }: { code: string; label?: string }): ReactElement {
+  const { locale } = useLocalePath();
+  const messages = messagesOf(locale);
+  const idle = label ?? messages.copy;
   const [done, setDone] = useState(false);
 
-  /** 写入剪贴板；失败时退回选中文本，不抛错 */
+  /** 写入剪贴板；失败时退回未复制态，不抛错 */
   const copy = async (): Promise<void> => {
     try {
       await navigator.clipboard.writeText(code);
@@ -46,8 +53,8 @@ export function CopyButton({ code, label = "复制" }: { code: string; label?: s
   };
 
   return (
-    <button type="button" className="copy-btn" onClick={copy} aria-label={label}>
-      {done ? "已复制" : label}
+    <button type="button" className="copy-btn" onClick={copy} aria-label={idle}>
+      {done ? messages.copied : idle}
     </button>
   );
 }

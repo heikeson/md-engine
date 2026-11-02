@@ -3,10 +3,15 @@
  * @description 左源码（CodeMirror）右预览：编辑器只改 Markdown 文本，不做 HTML 中间态。
  *   容器块通过「工具栏插入 + 文本编辑」维护，没有第二套文档模型。
  *   声明顺序按「refs → 动作 → 编辑器实例 → 派生状态」组织，避免在声明前引用。
+ *
+ *   多语言：外壳只负责把 locale / 文案交给 Provider，真正的 UI 在 Provider 内部读取。
+ *   语言切换属于**热更新**——重建依赖只含结构性因素（视图、只读），占位提示走
+ *   CodeMirror 的 Compartment 重配，因此切语言不会丢光标、选区、滚动位置与撤销栈。
  * @created 2026-10-24 21:12
  * @updated 2026-10-24 21:10 补齐图片上传、修复 hook 依赖与声明顺序
  * @updated 2026-11-01 23:02 EditorConfig 增加 rendererConfig：预览区可透传组件覆盖（如 mermaidComponents）
  * @updated 2026-11-02 10:44 预览与诊断改用 useDeferredValue（长文输入不卡键）；新增 config.text 文案覆写；工具栏动作补快捷键
+ * @updated 2026-11-02 19:32 接入 locale/messages；字数与诊断走 ICU 复数；placeholder 接线并改为热更新
  */
 
 "use client";
@@ -15,7 +20,13 @@ import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } f
 import MarkdownRenderer, { type RenderConfig } from "../render";
 import { parse } from "../parse";
 import { normalizeMarkdown } from "../format";
-import { mergeUIText, UITextProvider, type UITextPatch } from "../internal/text";
+import {
+  MdEngineProvider,
+  useMessage,
+  useUIText,
+  type UITextPatch,
+} from "../internal/text";
+import { formatDiagnostic } from "../internal/diagnostics";
 import { useShallowStable } from "../internal/use-shallow-stable";
 import {
   insertBlockAt,
@@ -32,6 +43,10 @@ import { INSERTABLE_BLOCKS, blockSnippet } from "./snippets";
 export interface EditorConfig {
   /** 图片上传（宿主注入），返回可访问 URL */
   uploadImage?: (file: File) => Promise<string>;
+  /**
+   * 编辑器空文档时的占位提示
+   * @description 优先于 `messages.editorPlaceholder`
+   */
   placeholder?: string;
   readOnly?: boolean;
   /**
@@ -41,8 +56,17 @@ export interface EditorConfig {
    *   编辑器入口不直接依赖 `/mermaid`，否则 CodeMirror 入口会连带 mermaid 一起进产物。
    */
   rendererConfig?: RenderConfig;
-  /** UI 文案覆写（工具栏 / 状态栏 / 预览内组件文案，浅合并） */
+  /**
+   * UI 文案覆写（工具栏 / 状态栏 / 预览内组件文案，逐键浅合并）
+   * @deprecated 语义已由 `messages` 承接；两者同时给出时 `messages` 优先
+   */
   text?: UITextPatch;
+  /** 文案逐键覆写（优先于 `text` 与内置语言包） */
+  messages?: UITextPatch;
+  /** 语言标识（BCP-47）；不给时继承外层 `MdEngineProvider`，再退到 zh-CN */
+  locale?: string;
+  /** 目标语言未内置时的回退语言（默认 zh-CN） */
+  fallbackLocale?: string;
 }
 
 /** 视图 */
@@ -87,15 +111,41 @@ const LINE_ITEMS = [
  * Markdown 编辑器
  * @param props 文本、变更回调、视图与配置
  * @returns 编辑器元素
+ * @description 外壳只做配置解析与 Provider 挂载；UI 在 Provider 内部，才能读到生效语言。
  */
-export default function MarkdownEditor({
-  value,
-  onChange,
-  view = "split",
-  config,
-  fullscreen,
-  onToggleFullscreen,
-}: MarkdownEditorProps) {
+export default function MarkdownEditor(props: MarkdownEditorProps) {
+  const { config } = props;
+  const textPatch = useShallowStable(config?.text);
+  const messages = useShallowStable(config?.messages);
+
+  // 旧 `text` 与新 `messages` 合并，新字段优先；都未给时保持 undefined，避免无谓重建
+  const patch = useMemo<UITextPatch | undefined>(() => {
+    if (!textPatch) return messages;
+    if (!messages) return textPatch;
+    return { ...textPatch, ...messages };
+  }, [textPatch, messages]);
+
+  return (
+    <MdEngineProvider
+      locale={config?.locale}
+      fallbackLocale={config?.fallbackLocale}
+      messages={patch}
+    >
+      <EditorShell {...props} />
+    </MdEngineProvider>
+  );
+}
+
+/**
+ * 编辑器内部实现（运行在 Provider 之内，可读生效语言与文案）
+ * @param props 与 `MarkdownEditor` 相同
+ * @returns 编辑器元素
+ */
+function EditorShell({ value, onChange, view = "split", config, fullscreen, onToggleFullscreen }: MarkdownEditorProps) {
+  // 生效文案与消息格式化：随 Provider 的 locale 变化
+  const text = useUIText();
+  const t = useMessage();
+
   // 视图由内部状态持有，宿主只给初始值（编辑 / 分屏 / 预览）
   const [viewMode, setViewMode] = useState<EditorView>(view);
   const hostRef = useRef<HTMLDivElement>(null);
@@ -107,9 +157,8 @@ export default function MarkdownEditor({
   const imageHandlerRef = useRef<(file: File) => void>(() => {});
   const [selection, setSelection] = useState<Selection>({ start: 0, end: 0 });
 
-  // 文案：浅稳定化内联覆写对象，合并后同时供工具栏与预览子树（Provider）使用
-  const textPatch = useShallowStable(config?.text);
-  const text = useMemo(() => mergeUIText(textPatch), [textPatch]);
+  /** 占位提示：宿主显式值 > 文案表 */
+  const placeholder = config?.placeholder ?? text.editorPlaceholder;
 
   // 预览与诊断走延迟值：长文档每次按键全量 parse + 渲染会拖住输入，
   // useDeferredValue 让 React 优先保证输入流畅，重活在后台帧完成
@@ -178,7 +227,10 @@ export default function MarkdownEditor({
     };
   }, [handleImage]);
 
-  // 挂载 / 卸载编辑器（视图或只读变化时重建）
+  // 挂载 / 卸载编辑器（仅视图或只读变化时重建）
+  // 注意：`placeholder` 故意不放进重建依赖——语言变化只走下面的 setPlaceholder 热更新，
+  // 否则切语言会销毁实例，丢光标、选区、滚动位置与撤销栈。
+  // 重建发生时闭包总是当次渲染的，因此占位提示仍是最新值。
   useEffect(() => {
     if (viewMode === "preview") return;
     const host = hostRef.current;
@@ -191,6 +243,7 @@ export default function MarkdownEditor({
       onImage: (file) => imageHandlerRef.current(file),
       readOnly: config?.readOnly,
       wrapPlaceholder: text.editorWrapPlaceholder,
+      placeholder,
     });
     handleRef.current = handle;
     return () => {
@@ -198,6 +251,11 @@ export default function MarkdownEditor({
       handleRef.current = null;
     };
   }, [viewMode, config?.readOnly, text.editorWrapPlaceholder]);
+
+  // 占位提示随语言热更新（不重建实例）
+  useEffect(() => {
+    handleRef.current?.setPlaceholder(placeholder);
+  }, [placeholder]);
 
   // 分屏时建立"按内容对齐"的双向滚动同步（块级锚点，非比例映射）
   useEffect(() => {
@@ -226,7 +284,6 @@ export default function MarkdownEditor({
   }, []);
 
   return (
-    <UITextProvider text={textPatch}>
     <div className="md-editor">
       <div className="md-editor-toolbar">
         {WRAP_ITEMS.map((item) => (
@@ -259,6 +316,8 @@ export default function MarkdownEditor({
           <button
             key={name}
             type="button"
+            // 按钮文字是 Markdown 里的组件标识符，不翻译；提示文案本地化
+            title={t("editorInsertBlock", { name })}
             onClick={() => applyLive((doc, sel) => insertBlockAt(doc, sel.start, blockSnippet(name)))}
             disabled={config?.readOnly}
           >
@@ -292,28 +351,27 @@ export default function MarkdownEditor({
           <div ref={previewRef} className="md-editor-preview">
             {/* sourcePositions：给块级元素写 data-src-start，供滚动同步按内容对齐；
                 components 由宿主注入（传 mermaidComponents 后图表在编辑器里也是交互视图）；
-                content 用延迟值：输入帧先渲染旧预览，后台帧追上新内容 */}
+                locale 与文案继承外层 Provider，无需重复传；content 用延迟值：输入帧先渲染旧预览 */}
             <MarkdownRenderer
               content={deferredValue}
               className="prose-site"
-              config={{ ...config?.rendererConfig, sourcePositions: true, text: textPatch }}
+              config={{ ...config?.rendererConfig, sourcePositions: true }}
             />
           </div>
         )}
       </div>
 
       <div className="md-editor-status">
-        <span>
-          {value.length} {text.editorWordCountUnit}
-        </span>
+        <span>{t("editorWordCount", { n: value.length })}</span>
         {diagnostics.length > 0 && (
           <span className="md-editor-status-warn">
-            {diagnostics.length} {text.editorDiagnosticPrefix}
-            {diagnostics[0].message}
+            {t("editorDiagnostic", {
+              n: diagnostics.length,
+              first: formatDiagnostic(t, diagnostics[0]),
+            })}
           </span>
         )}
       </div>
     </div>
-    </UITextProvider>
   );
 }

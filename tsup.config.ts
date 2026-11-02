@@ -35,6 +35,8 @@ const external: Options["external"] = [
   "clsx",
   "tailwind-merge",
   "katex",
+  // ICU 消息运行时：外置避免与宿主已装的 formatjs 生态各持一份
+  "intl-messageformat",
   // 可选 peer：使用方自己安装，未安装时本入口的产物仍然可解析（运行时才失败并降级）
   "mermaid",
   "dompurify",
@@ -47,11 +49,15 @@ export default defineConfig({
     "components/index": "src/components/index.ts",
     // 图表入口独立产出：mermaid 与 dompurify 只从这条入口进入产物
     "mermaid/index": "src/mermaid/index.tsx",
+    // 语言包独立子路径：宿主可只引需要的语种，无需从主入口取
+    "locales/zh-CN": "src/locales/zh-CN.ts",
+    "locales/en-US": "src/locales/en-US.ts",
   },
   format: ["esm"],
   target: "es2022",
   dts: true,
-  clean: true,
+  // 清理交给 `dev/clean-dist.mjs`：与多入口 d.ts 并行会争抢同一批声明文件
+  clean: false,
   treeshake: true,
   sourcemap: true,
   external,

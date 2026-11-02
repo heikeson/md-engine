@@ -10,6 +10,8 @@
 import { Suspense, lazy, useEffect, useMemo, useState, type ReactElement } from "react";
 import { roundtrip } from "@heikeson/md-engine";
 import { CopyButton } from "../components/CodeBlock";
+import { messagesOf } from "../i18n";
+import { useLocalePath } from "../router";
 
 /** 懒加载编辑器：不进首屏 chunk */
 const MarkdownEditor = lazy(() =>
@@ -75,6 +77,65 @@ const SAMPLES = [
   },
 ] as const;
 
+/** 英文样例库（与中文样例一一对应，内容为英文） */
+const SAMPLES_EN = [
+  {
+    id: "overview",
+    name: "Overview",
+    body: [
+      "# Overview",
+      "",
+      '<Callout type="tip" title="Start editing">',
+      "  Edit on the left and the preview updates immediately. Try changing `type` to `warning`.",
+      "</Callout>",
+      "",
+      "<Tabs>",
+      '  <Tab value="Syntax">Containers start at column zero; children may share a line.</Tab>',
+      '  <Tab value="Rules">Attributes accept strings and bare booleans only.</Tab>',
+      "</Tabs>",
+      "",
+      "<Steps>",
+      '  <Step title="Write">Plain Markdown.</Step>',
+      '  <Step title="Store">Byte-for-byte identical.</Step>',
+      "</Steps>",
+    ].join("\n"),
+  },
+  {
+    id: "docs",
+    name: "Documentation snippet",
+    body: [
+      "# Integration note",
+      "",
+      "Merge the override map inside a client component so diagrams become interactive:",
+      "",
+      "```tsx",
+      'import { MarkdownRenderer, mdxComponents } from "@heikeson/md-engine";',
+      'import { mermaidComponents } from "@heikeson/md-engine/mermaid";',
+      "",
+      "const components = { ...mdxComponents, ...mermaidComponents };",
+      "```",
+      "",
+      '<Callout type="warning" title="Key names are case sensitive">',
+      "  Writing `mermaid` does not throw; the diagram silently stays in its source skeleton.",
+      "</Callout>",
+    ].join("\n"),
+  },
+  {
+    id: "edge",
+    name: "Fault tolerance",
+    body: [
+      "# Fault tolerance",
+      "",
+      "This container is never closed, and the engine does not swallow what follows:",
+      "",
+      '<Callout type="note" title="Unclosed">',
+      "  Everything after this still renders.",
+      "",
+      "The closing paragraph survives.",
+    ].join("\n"),
+  },
+] as const;
+
 /** 视图 */
 type View = "split" | "source" | "preview";
 
@@ -102,10 +163,15 @@ function decode(value: string): string {
  * @returns 编辑器页
  */
 export function Playground(): ReactElement {
+  const { locale } = useLocalePath();
+  const messages = messagesOf(locale);
+  // 两套样例的字面量类型不同，显式收窄成同一结构，避免 map / find 的联合类型不可调用
+  const sampleList: ReadonlyArray<{ id: string; name: string; body: string }> =
+    locale === "zh-CN" ? SAMPLES : SAMPLES_EN;
   const [mounted, setMounted] = useState(false);
-  const [sampleId, setSampleId] = useState<string>(SAMPLES[0].id);
+  const [sampleId, setSampleId] = useState<string>(sampleList[0].id);
   const [view, setView] = useState<View>("split");
-  const [value, setValue] = useState<string>(SAMPLES[0].body);
+  const [value, setValue] = useState<string>(sampleList[0].body);
   const [notice, setNotice] = useState("");
 
   useEffect(() => {
@@ -115,7 +181,7 @@ export function Playground(): ReactElement {
         setValue(decode(shared));
         setSampleId("shared");
       } catch {
-        setNotice("链接内容无法解析，已载入默认样例");
+        setNotice(messages.pgBadLink);
       }
     }
     setMounted(true);
@@ -131,44 +197,49 @@ export function Playground(): ReactElement {
 
   /** 切换样例 */
   const pickSample = (id: string): void => {
-    const sample = SAMPLES.find((item) => item.id === id);
+    const sample = sampleList.find((item) => item.id === id);
     if (!sample) return;
     setSampleId(sample.id);
     setValue(sample.body);
     setNotice("");
   };
 
-  /** 把当前内容写进地址栏 */
+  /**
+   * 把当前内容写进地址栏
+   * @description 路径取 `window.location.pathname`：英文站是 `/en/playground`，
+   *   写死 `/playground` 会把分享链接指回中文站。
+   */
   const share = (): void => {
-    const url = `${window.location.origin}/playground?s=${encode(value)}`;
-    window.history.replaceState({}, "", `/playground?s=${encode(value)}`);
+    const path = window.location.pathname;
+    const url = `${window.location.origin}${path}?s=${encode(value)}`;
+    window.history.replaceState({}, "", `${path}?s=${encode(value)}`);
     navigator.clipboard
       .writeText(url)
-      .then(() => setNotice("链接已复制，包含当前全文"))
-      .catch(() => setNotice("复制失败，地址栏已更新"));
+      .then(() => setNotice(messages.pgSharedNotice))
+      .catch(() => setNotice(messages.pgCopyFail));
   };
 
   return (
     <main className="playground">
       <div className="pg-bar">
         <div className="pg-group">
-          <span className="pg-label">样例</span>
+          <span className="pg-label">{messages.pgSamples}</span>
           <select
             className="pg-select"
             value={sampleId}
             onChange={(event) => pickSample(event.target.value)}
-            aria-label="选择样例"
+            aria-label={messages.pgPickSample}
           >
-            {SAMPLES.map((sample) => (
+            {sampleList.map((sample) => (
               <option key={sample.id} value={sample.id}>
                 {sample.name}
               </option>
             ))}
-            {sampleId === "shared" ? <option value="shared">分享内容</option> : null}
+            {sampleId === "shared" ? <option value="shared">{messages.pgShared}</option> : null}
           </select>
         </div>
 
-        <div className="pg-group pg-views" role="group" aria-label="视图">
+        <div className="pg-group pg-views" role="group" aria-label={messages.pgViews}>
           {(["split", "source", "preview"] as const).map((item) => (
             <button
               key={item}
@@ -176,19 +247,23 @@ export function Playground(): ReactElement {
               className={`pg-view${view === item ? " is-active" : ""}`}
               onClick={() => setView(item)}
             >
-              {item === "split" ? "分屏" : item === "source" ? "源码" : "预览"}
+              {item === "split"
+                ? messages.pgSplit
+                : item === "source"
+                  ? messages.pgSource
+                  : messages.pgPreview}
             </button>
           ))}
         </div>
 
         <div className="pg-group pg-actions">
           <span className={`pg-status${intact ? " is-ok" : " is-warn"}`}>
-            {intact ? "往返一致" : "存在差异"}
+            {intact ? messages.pgRoundtripOk : messages.pgRoundtripDiff}
           </span>
           <button type="button" className="btn btn-small" onClick={share}>
-            分享链接
+            {messages.pgShare}
           </button>
-          <CopyButton code={value} label="复制全文" />
+          <CopyButton code={value} label={messages.pgCopyAll} />
         </div>
       </div>
 
@@ -197,13 +272,13 @@ export function Playground(): ReactElement {
       <div className="pg-stage">
         {mounted ? (
           <div className="pg-editor">
-            <Suspense fallback={<div className="pg-loading">正在加载编辑器…</div>}>
+            <Suspense fallback={<div className="pg-loading">{messages.pgLoading}</div>}>
               <MarkdownEditor
                 key={view}
                 value={value}
                 onChange={setValue}
                 view={view}
-                config={{ placeholder: "开始写 Markdown，容器可以直接敲尖括号…", rendererConfig: {} }}
+                config={{ placeholder: messages.pgPlaceholder, rendererConfig: {} }}
               />
             </Suspense>
           </div>
@@ -218,7 +293,7 @@ export function Playground(): ReactElement {
               <span className="pg-skeleton-line" />
               <span className="pg-skeleton-line short" />
             </div>
-            <p className="pg-skeleton-hint">编辑器在浏览器里加载，首屏不承担 CodeMirror 的体积。</p>
+            <p className="pg-skeleton-hint">{messages.pgSkeletonHint}</p>
           </div>
         )}
       </div>

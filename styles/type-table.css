@@ -23,7 +23,7 @@
     padding: 0.5rem 0.75rem;
     border-bottom: 1px solid var(--lkes-border, #e5e7eb);
     background-color: color-mix(in oklab, var(--lkes-fill, #f3f4f6) 40%, transparent);
-    text-align: left;
+    text-align: start;
     font-weight: 500;
     color: var(--lkes-fg, #1f2937);
   }
@@ -57,7 +57,7 @@
 
   /* 必填标记：红色为语义常量，跟随正文色微调以适应亮暗 */
   .prose-site .type-required {
-    margin-left: 0.5rem;
+    margin-inline-start: 0.5rem;
     padding: 0.125rem 0.375rem;
     border-radius: calc(var(--lkes-radius, 0.5rem) / 2);
     background-color: color-mix(in oklab, #ef4444 10%, transparent);

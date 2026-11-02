@@ -46,13 +46,25 @@ function forEachNode(node: Root | RootContent, fn: (child: RootContent) => void)
 export function collectUnsafeUrls(tree: Root): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
 
-  /** 记一条 UNSAFE_HREF */
-  const report = (line: number, label: string, url: string): void => {
+  /**
+   * 记一条 UNSAFE_HREF
+   * @param line 行号
+   * @param kind 来源形态：容器属性 / 普通链接 / 普通图片（供文案分性别措辞）
+   * @param label 展示用标签（属性形态为 `<Callout href>` 这类标识符）
+   * @param url 被拒的地址
+   */
+  const report = (
+    line: number,
+    kind: "attribute" | "link" | "image",
+    label: string,
+    url: string,
+  ): void => {
     diagnostics.push({
       code: "UNSAFE_HREF",
       level: "warn",
       line,
       message: `${label} 的协议不受支持，已降级为不可点击：${url}`,
+      params: { kind, label, url },
     });
   };
 
@@ -63,14 +75,15 @@ export function collectUnsafeUrls(tree: Root): Diagnostic[] {
       for (const key of URL_ATTRS) {
         const value = block.attributes?.[key];
         if (typeof value === "string" && value.length > 0 && !isSafeHref(value)) {
-          report(line, `<${block.name} ${key}>`, value);
+          report(line, "attribute", `<${block.name} ${key}>`, value);
         }
       }
       return;
     }
     if (node.type === "link" || node.type === "image") {
       const url = (node as Link | MdImage).url;
-      if (!isSafeHref(url)) report(line, node.type === "link" ? "链接" : "图片", url);
+      const isLink = node.type === "link";
+      if (!isSafeHref(url)) report(line, isLink ? "link" : "image", isLink ? "链接" : "图片", url);
     }
   });
 
@@ -123,17 +136,19 @@ export function collectDuplicateIds(tree: Root): Diagnostic[] {
           const first = seen.get(id);
           if (headingSlugs.has(id)) {
             diagnostics.push({
-              code: "DUPLICATE_ID",
+              code: "DUPLICATE_ID_ANCHOR",
               level: "warn",
               line,
               message: `div id="${id}" 与标题生成的锚点重复，页面将出现两个同名 id`,
+              params: { id },
             });
           } else if (first !== undefined) {
             diagnostics.push({
-              code: "DUPLICATE_ID",
+              code: "DUPLICATE_ID_DIV",
               level: "warn",
               line,
               message: `div id="${id}" 与第 ${first} 行的 div 重复，页面将出现两个同名 id`,
+              params: { id, first },
             });
           } else {
             seen.set(id, line);
@@ -169,6 +184,7 @@ export function collectUnknownTags(tree: Root): Diagnostic[] {
       level: "warn",
       line: node.position?.start.line ?? 1,
       message: `<${name}> 不是已注册的组件，已按文本显示`,
+      params: { name },
     });
   });
 

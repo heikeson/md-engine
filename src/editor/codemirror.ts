@@ -10,8 +10,14 @@
 
 "use client";
 
-import { EditorState } from "@codemirror/state";
-import { EditorView, drawSelection, keymap, lineNumbers } from "@codemirror/view";
+import { Compartment, EditorState } from "@codemirror/state";
+import {
+  EditorView,
+  drawSelection,
+  keymap,
+  lineNumbers,
+  placeholder as placeholderExtension,
+} from "@codemirror/view";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { toggleLinePrefix, wrapSelection, type EditResult, type Selection } from "./actions";
@@ -71,6 +77,11 @@ export interface EditorHandle {
   apply(next: string, selection: Selection): void;
   /** 仅同步外部值（不改变选区语义） */
   setDoc(next: string): void;
+  /**
+   * 热替换占位提示（切换语言时调用，不重建实例）
+   * @param next 新占位文案
+   */
+  setPlaceholder(next: string): void;
   /** 聚焦 */
   focus(): void;
   /** 销毁 */
@@ -88,6 +99,8 @@ export interface CreateEditorOptions {
   readOnly?: boolean;
   /** 空选区包裹快捷键的占位文案（来自 UIText；缺省用「文本」） */
   wrapPlaceholder?: string;
+  /** 文档为空时的占位提示（来自 UIText / EditorConfig.placeholder） */
+  placeholder?: string;
 }
 
 /** 编辑器外观：全部引用 CSS 变量，随宿主主题走 */
@@ -131,7 +144,11 @@ const THEME = EditorView.theme({
  * @returns 句柄
  */
 export function createEditor(options: CreateEditorOptions): EditorHandle {
-  const { parent, value, onChange, onSelection, onImage, readOnly, wrapPlaceholder } = options;
+  const { parent, value, onChange, onSelection, onImage, readOnly, wrapPlaceholder, placeholder } =
+    options;
+
+  // 占位提示单独放在 Compartment 里：切换语言时只重配这一项，不重建实例（保住光标与撤销栈）
+  const placeholderCompartment = new Compartment();
 
   // 自定义快捷键放在 defaultKeymap 之前：同名组合（如 Mod-b）以本表为准
   const shortcutKeymap = keymap.of(
@@ -176,6 +193,7 @@ export function createEditor(options: CreateEditorOptions): EditorHandle {
             return true;
           },
         }),
+        placeholderCompartment.of(placeholderExtension(placeholder ?? "")),
         EditorState.readOnly.of(Boolean(readOnly)),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) onChange(update.state.doc.toString());
@@ -211,6 +229,11 @@ export function createEditor(options: CreateEditorOptions): EditorHandle {
       if (!change) return;
       // 外部同步同理：patch 而非重建，避免光标与滚动位置被打回开头
       view.dispatch({ changes: change });
+    },
+    setPlaceholder: (next) => {
+      view.dispatch({
+        effects: placeholderCompartment.reconfigure(placeholderExtension(next)),
+      });
     },
     focus: () => view.focus(),
     destroy: () => view.destroy(),

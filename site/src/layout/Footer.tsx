@@ -3,12 +3,15 @@
  * @description 版本与许可放左边，三列小链接放右边。不写品牌简介——
  *   页脚不是自我介绍的地方。版本号取自根 package.json（经共享模块），
  *   版权年份取「项目起始年–本年」区间，均避免写死后逐年/逐版过期。
+ *   链接标签走站点文案字典，随路由语言切换。
  * @created 2026-11-02 00:08
  * @updated 2026-11-01 23:55 版本走共享模块；版权改为 2026–本年 区间
+ * @updated 2026-11-02 19:32 文案走字典
  */
 
 import type { ReactElement } from "react";
-import { Link } from "../router";
+import { DEFAULT_SITE_LOCALE, messagesOf } from "../i18n";
+import { Link, useLocalePath } from "../router";
 import { ENGINE_VERSION } from "../version";
 
 /** 项目版权起始年，固定不变 */
@@ -20,39 +23,49 @@ const COPYRIGHT_RANGE: string =
     ? String(COPYRIGHT_BASE_YEAR)
     : `${COPYRIGHT_BASE_YEAR}–${new Date().getFullYear()}`;
 
-const COLUMNS = [
-  {
-    title: "文档",
-    links: [
-      { label: "快速开始", href: "/docs/quick-start" },
-      { label: "容器语法", href: "/docs/syntax" },
-      { label: "编辑器与图表", href: "/docs/editor" },
-      { label: "样式与令牌", href: "/docs/styling" },
-    ],
-  },
-  {
-    title: "资源",
-    links: [
-      { label: "npm", href: "https://www.npmjs.com/package/@heikeson/md-engine" },
-      { label: "GitHub", href: "https://github.com/heikeson/md-engine" },
-      
-      { label: "问题反馈", href: "https://github.com/heikeson/md-engine/issues" },
-    ],
-  },
-  {
-    title: "约定",
-    links: [
-      { label: "对接契约", href: "https://github.com/heikeson/md-engine/blob/main/%E5%AF%B9%E6%8E%A5%E5%A5%91%E7%BA%A6.md" },
-      { label: "MIT 许可", href: "https://github.com/heikeson/md-engine/blob/main/LICENSE" },
-    ],
-  },
-] as const;
-
 /**
  * 页脚
  * @returns 站点底部
  */
 export function Footer(): ReactElement {
+  const { locale } = useLocalePath();
+  const messages = messagesOf(locale);
+  const showDocs = locale === DEFAULT_SITE_LOCALE;
+
+  const columns = [
+    ...(showDocs
+      ? [
+          {
+            title: messages.footerDocs,
+            links: [
+              { label: messages.footerQuickStart, href: "/docs/quick-start" },
+              { label: messages.footerSyntax, href: "/docs/syntax" },
+              { label: messages.footerEditor, href: "/docs/editor" },
+              { label: messages.footerStyling, href: "/docs/styling" },
+            ],
+          },
+        ]
+      : []),
+    {
+      title: messages.footerResources,
+      links: [
+        { label: "npm", href: "https://www.npmjs.com/package/@heikeson/md-engine" },
+        { label: "GitHub", href: "https://github.com/heikeson/md-engine" },
+        { label: messages.footerIssues, href: "https://github.com/heikeson/md-engine/issues" },
+      ],
+    },
+    {
+      title: messages.footerConventions,
+      links: [
+        {
+          label: messages.footerContract,
+          href: "https://github.com/heikeson/md-engine/blob/main/%E5%AF%B9%E6%8E%A5%E5%A5%91%E7%BA%A6.md",
+        },
+        { label: messages.footerLicense, href: "https://github.com/heikeson/md-engine/blob/main/LICENSE" },
+      ],
+    },
+  ];
+
   return (
     <footer className="site-footer">
       <div className="footer-inner">
@@ -62,7 +75,7 @@ export function Footer(): ReactElement {
           <span>© {COPYRIGHT_RANGE} kesonoasis · powered by heikeson</span>
         </div>
         <div className="footer-cols">
-          {COLUMNS.map((column) => (
+          {columns.map((column) => (
             <div className="footer-col" key={column.title}>
               <span className="footer-col-title">{column.title}</span>
               {column.links.map((link) =>

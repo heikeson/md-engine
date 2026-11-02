@@ -11,7 +11,10 @@ import type { Root, RootContent } from "mdast";
 import { COMPONENTS, MAX_CONTAINER_DEPTH } from "./registry";
 import type { JsxBlock } from "./syntax/jsx-mdast";
 
-/** 诊断码 */
+/**
+ * 诊断码
+ * @description 一个 code 对应一条消息（展示层映射 `diag*` 文案键），因此不设「一码两用」。
+ */
 export type DiagnosticCode =
   | "UNCLOSED_TAG"
   | "DEPTH_EXCEEDED"
@@ -20,6 +23,9 @@ export type DiagnosticCode =
   | "INDENT_AS_CODE"
   | "MERMAID_EMPTY"
   | "MERMAID_TOO_LARGE"
+  | "DUPLICATE_ID_ANCHOR"
+  | "DUPLICATE_ID_DIV"
+  /** @deprecated 已细分为 DUPLICATE_ID_ANCHOR / DUPLICATE_ID_DIV，不再产出 */
   | "DUPLICATE_ID";
 
 /** Mermaid 源码体积上限（字节）：超限不渲染图表，原样显示源码 */
@@ -27,12 +33,15 @@ export const MERMAID_MAX_BYTES = 20 * 1024;
 
 /** 一条诊断 */
 export interface Diagnostic {
+  /** 诊断码，同时是文案键（`diag` + 驼峰） */
   code: DiagnosticCode;
   level: "warn" | "error";
   /** 行号（1 起） */
   line: number;
-  /** 中文提示 */
+  /** 中文提示（兜底：无 Provider 或日志场景直接用；展示层应优先按 code 翻译） */
   message: string;
+  /** 文案插值参数（展示层据此重建本地化文本） */
+  params?: Record<string, string | number>;
   /** 全文 offset 区间 */
   range?: [number, number];
 }
@@ -90,6 +99,7 @@ function walk(
         level: "warn",
         line,
         message: `第 ${childDepth} 层容器 ${child.name} 超出上限 ${maxDepth}，已按源码显示`,
+        params: { depth: childDepth, name: child.name, max: maxDepth },
         range: [child.position?.start.offset ?? 0, child.position?.end.offset ?? 0],
       });
       // 保留节点并标记降级：渲染按源码块、块索引按 source、序列化原样输出原文，
@@ -206,6 +216,7 @@ export function collectUnclosed(tree: Root, source: string): Diagnostic[] {
           level: "warn",
           line: block.position?.start.line ?? 1,
           message: `<${block.name}> 未闭合，已按延伸到文末处理`,
+          params: { name: block.name },
           range: [block.position?.start.offset ?? 0, block.position?.end.offset ?? 0],
         });
       }
@@ -243,6 +254,7 @@ export function collectMermaid(tree: Root): Diagnostic[] {
             level: "warn",
             line,
             message: `<${block.name}> 容器体为空，未生成图表`,
+            params: { name: block.name },
             range,
           });
         } else if (new TextEncoder().encode(raw).length > MERMAID_MAX_BYTES) {
@@ -252,6 +264,7 @@ export function collectMermaid(tree: Root): Diagnostic[] {
             level: "warn",
             line,
             message: `<${block.name}> 源码超过 ${MERMAID_MAX_BYTES / 1024} KB，已改为显示源码`,
+            params: { name: block.name, kb: MERMAID_MAX_BYTES / 1024 },
             range,
           });
         }

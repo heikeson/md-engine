@@ -4,6 +4,7 @@
 > @description React Markdown 内容引擎：尖括号容器语法的解析、渲染、序列化、格式化与 CodeMirror 6 编辑器内核，单一 npm 包五个入口。
 > @created 2026-10-24 19:57
 > @updated 2026-11-02 10:55 版本口径对齐 0.4.0；补文案覆写、快捷键、DUPLICATE_ID 与 ESM-only 说明
+> @updated 2026-11-02 19:32 新增国际化：`locale` / `messages` / `MdEngineProvider` / ICU 消息 / 语言包子路径
 > @status v0.4.0
 
 一个面向 React 的 Markdown 内容引擎。在标准 Markdown（GFM + 数学公式）之上，把
@@ -94,7 +95,19 @@ export default function EditorPage() {
 `Mod+1` 二级标题、`Mod+Shift+Q` 引用、`Mod+Shift+L` 列表。
 
 预览要出交互式图表时透传渲染配置：`config={{ rendererConfig: { components: mermaidComponents } }}`；
-`config.text` 可覆写工具栏与状态栏文案。
+文案分两层：`config.locale` 决定用哪套内置语言包（并驱动 ICU 复数规则与书写方向），`config.messages` 逐键覆写个别词。两者都可省略，省略时继承外层 `MdEngineProvider`，再退到 `zh-CN`。
+
+想在应用里设一次、全局生效，用根级 Provider 包住根节点即可——子树里所有渲染器与编辑器自动继承：
+
+```tsx
+import { MdEngineProvider } from "@heikeson/md-engine";
+
+<MdEngineProvider locale={locale}>
+  <App />
+</MdEngineProvider>
+```
+
+语言值必须是**服务端与客户端一致**的受控输入（通常来自 URL 段或请求头）。库不读 `navigator`、`<html lang>` 或 cookie：隐式探测在 SSR 下必然导致首屏语言不一致。需要客户端探测时显式调用 `detectLocale()`（只能放在 `effect` 里）。
 
 ### 自定义
 
@@ -111,13 +124,26 @@ export default function EditorPage() {
     rehypePlugins: [],
     // 块级元素输出 data-src-start（编辑器滚动同步用，阅读页保持关闭）
     sourcePositions: false,
-    // 包内固定文案覆写（aria-label、图表工具栏等；浅合并，未给的键保持中文默认）
-    text: { imageZoomClose: "Close zoomed image" },
+    // 语言：选内置语言包 + ICU 复数规则 + 书写方向
+    locale: "en-US",
+    // 文案逐键覆写（优先于语言包；旧字段 text 仍兼容，两者同时给时以 messages 为准）
+    messages: { imageZoomClose: "Close zoomed image" },
   }}
 />
 ```
 
-自定义组件里可用 `useUIText()` 读取同一份生效文案，保持与包内组件文案口径一致。
+自定义组件里可用 `useUIText()` 读文案、`useMessage()` 按 ICU 语法格式化，保持与包内组件同一口径：
+
+```tsx
+const t = useMessage();
+t("editorWordCount", { n: 12 }); // "12 characters"（en-US）/ "12 字"（zh-CN）
+```
+
+消息模板支持 ICU 复数，`zh-CN` 只有 `other` 分支，`en-US` 区分 `one` / `other`：
+
+```
+editorWordCount: "{n, plural, one {# character} other {# characters}}"
+```
 
 ### 图表（`/mermaid` 入口）
 
@@ -200,7 +226,11 @@ const components = { ...mdxComponents, ...mermaidComponents };
 | `extractBlocks(tree, source)` | 从 mdast 提取扁平块索引 |
 | `MarkdownRenderer` | `{ content, className?, config? }` |
 | `mdxComponents` | 组件映射表，自定义渲染或按需取单个组件 |
+| `MdEngineProvider` / `useLocale` / `useMessage` | 根级语言 Provider；读取当前语言与按 ICU 格式化 |
 | `defaultUIText` / `useUIText` / 类型 `UIText` / `UITextPatch` | 包内固定文案表与覆写口径 |
+| `formatMessage` / `resolveLocale` / `detectLocale` / `isRTL` / `toRouteSegment` / `fromRouteSegment` / `normalizeLocale` / `matchLocale` / `languageOf` / `localeCandidates` / `supportsIntlLocale` / `DEFAULT_LOCALE` / `BUILTIN_LOCALES` | 语言标识、回退匹配、方向判定与 ICU 格式化（纯函数，库内不做隐式探测） |
+| `createLocaleStorage` / `DEFAULT_LOCALE_STORAGE_KEY` / 类型 `LocaleStorage` | 语言偏好存取（默认键 `lkes-md-lang`，宿主可换实现） |
+| `zhCN` / `enUS`（子路径 `./locales/zh-CN`、`./locales/en-US`） | 内置语言包 |
 | `COMPONENTS` / `ITEMS` / `MAX_CONTAINER_DEPTH` | 语法注册表（唯一事实来源） |
 | `getComponent` / `getItemSpec` / `listComponents` / `isContainerWithItems` | 注册表查询 |
 | `jsxBlocks` / `remarkJsxBlocks` / `jsxFromMarkdown` / `jsxToMarkdown` / `parseOpenTag` | 自行组装 unified 管线时用 |
@@ -211,7 +241,7 @@ const components = { ...mdxComponents, ...mermaidComponents };
 
 | 导出 | 说明 |
 |---|---|
-| `MarkdownEditor` | `{ value, onChange, view?, config?, fullscreen?, onToggleFullscreen? }`；`config` 支持 `uploadImage` / `placeholder` / `readOnly` / `rendererConfig` / `text` |
+| `MarkdownEditor` | `{ value, onChange, view?, config?, fullscreen?, onToggleFullscreen? }`；`config` 支持 `uploadImage` / `placeholder` / `readOnly` / `rendererConfig` / `locale` / `fallbackLocale` / `messages`（旧 `text` 兼容） |
 | `EditorConfig` / `EditorView` / `MarkdownEditorProps` | 类型 |
 | `INSERTABLE_BLOCKS` / `blockSnippet(name)` | 可插入的容器与骨架文本 |
 | `insertAtCursor` / `toggleLinePrefix` / `wrapSelection` | 纯函数文本动作，可脱离编辑器复用 |

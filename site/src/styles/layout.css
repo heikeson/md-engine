@@ -113,6 +113,15 @@
   background: var(--bg-sink);
 }
 
+/* 语言切换：文字按钮，宽度随词长自适应（特异性高于 .icon-btn，移动端同样生效） */
+.icon-btn.lang-btn {
+  width: auto;
+  height: 28px;
+  padding: 0 8px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
 /* 主题图标：由祖先 .dark 决定显隐，JS 不参与 */
 .icon-moon {
   display: none;

@@ -33,7 +33,7 @@ import type { JsxBlock } from "./syntax/jsx-mdast";
 import { collectMermaid, enforceMaxDepth } from "./policy";
 import { rehypeCodeMeta } from "./rehype-code-meta";
 import { rehypeSourcePositions } from "./rehype-source-positions";
-import { UITextProvider, type UITextPatch } from "./internal/text";
+import { MdEngineProvider, type UITextPatch } from "./internal/text";
 import { useShallowStable } from "./internal/use-shallow-stable";
 
 /** 宿主可覆盖的组件类型 */
@@ -54,10 +54,21 @@ export interface RenderConfig {
    */
   sourcePositions?: boolean;
   /**
-   * UI 文案覆写（浅合并，未给的键保持中文默认值）
+   * UI 文案覆写（逐键浅合并，未给的键继承 locale 语言包）
    * @description 只影响包内固定文案（aria-label、图表工具栏等），不碰正文内容
+   * @deprecated 语义已由 `messages` 承接；两者同时给出时 `messages` 优先
    */
   text?: UITextPatch;
+  /** 文案逐键覆写（优先于 `text` 与内置语言包） */
+  messages?: UITextPatch;
+  /**
+   * 语言标识（BCP-47）
+   * @description 不给时继承外层 `MdEngineProvider`；再退到 zh-CN。库内不做任何环境探测，
+   *   服务端与客户端必须拿到同一个值，否则会产生 hydration mismatch。
+   */
+  locale?: string;
+  /** 目标语言未内置时的回退语言（默认 zh-CN） */
+  fallbackLocale?: string;
 }
 
 /** 渲染器参数 */
@@ -163,6 +174,13 @@ export default function MarkdownRenderer({
   const extraRehype = useShallowStable(config?.rehypePlugins);
   const sourcePositions = config?.sourcePositions;
   const text = useShallowStable(config?.text);
+  const messages = useShallowStable(config?.messages);
+  // 旧 `text` 与新 `messages` 合并，新字段优先；两者都未给时保持 undefined，避免无谓重建
+  const textPatch = useMemo<UITextPatch | undefined>(() => {
+    if (!text) return messages;
+    if (!messages) return text;
+    return { ...text, ...messages };
+  }, [text, messages]);
   const processor = useMemo(
     () => createProcessor(extraRemark, extraRehype, sourcePositions),
     [extraRemark, extraRehype, sourcePositions],
@@ -187,8 +205,12 @@ export default function MarkdownRenderer({
   }, [content, overrides, processor]);
 
   return (
-    <UITextProvider text={text}>
+    <MdEngineProvider
+      locale={config?.locale}
+      fallbackLocale={config?.fallbackLocale}
+      messages={textPatch}
+    >
       <div className={className}>{rendered}</div>
-    </UITextProvider>
+    </MdEngineProvider>
   );
 }

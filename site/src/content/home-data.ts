@@ -76,3 +76,60 @@ export const MD_SAMPLE = [
   "  内容为纯文本，存入数据库即为原始字符串。",
   "</Callout>",
 ].join("\n");
+
+// —— 英文站数据（与中文结构一一对应，便于同版式复用） ——
+
+/** 英文 Hero 源码栏 */
+export const HERO_MD_EN = [
+  '<Callout type="tip" title="Tip">',
+  "  Content inside containers is still Markdown: use `inline code` or lists.",
+  "</Callout>",
+  "",
+  "<Tabs>",
+  '  <Tab value="npm">npm i @heikeson/md-engine</Tab>',
+  '  <Tab value="pnpm">pnpm add @heikeson/md-engine</Tab>',
+  "</Tabs>",
+].join("\n");
+
+/** 英文容器清单 */
+export const ROWS_EN = [
+  { tag: "Callout", attrs: "type · title · icon", items: "—", note: "Callout block, 7 types" },
+  { tag: "Tabs", attrs: "—", items: "Tab", note: "Tabs, value is the label" },
+  { tag: "Steps", attrs: "—", items: "Step", note: "Numbered steps, title is the name" },
+  { tag: "Cards", attrs: "—", items: "Card", note: "Card grid, children may self-close" },
+  { tag: "Accordion", attrs: "—", items: "AccItem", note: "Collapsible panels, type sets the default" },
+  { tag: "Files", attrs: "—", items: "Folder / File", note: "File tree, icons matched by extension" },
+  { tag: "TypeTable", attrs: "—", items: "TypeItem", note: "Property table" },
+  { tag: "Image", attrs: "src · alt · align · width · caption · zoom", items: "—", note: "Self-closing leaf" },
+  { tag: "Mermaid", attrs: "title · height", items: "—", note: "Container body is raw text" },
+  { tag: "div", attrs: "class · id", items: "—", note: "Generic block, attributes pass through to DOM" },
+] as const;
+
+/** 英文 MDX 对照 */
+export const MDX_SAMPLE_EN = [
+  'import { Callout } from "@/ui";',
+  "",
+  "export default function Page() {",
+  "  return (",
+  '    <Callout type="tip" title="Tip">',
+  "      Content became a component tree; saving runs a compile step.",
+  "    </Callout>",
+  "  );",
+  "}",
+].join("\n");
+
+/** 英文纯文本对照 */
+export const MD_SAMPLE_EN = [
+  '<Callout type="tip" title="Tip">',
+  "  Content is plain text; the database stores the original string.",
+  "</Callout>",
+].join("\n");
+
+/** 英文入口说明 */
+export const ENTRIES_EN = [
+  { path: ".", desc: "Parse, render, serialize, format", note: "Reading pages" },
+  { path: "./editor", desc: "MarkdownEditor with CodeMirror and scroll sync", note: "Authoring" },
+  { path: "./components", desc: "Component map, for single-component overrides", note: "Custom UI" },
+  { path: "./mermaid", desc: "Interactive diagrams: zoom, source view, export", note: "With diagrams" },
+  { path: "./styles.css", desc: "Prebuilt plain CSS, import once", note: "Required" },
+] as const;

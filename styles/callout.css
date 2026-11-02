@@ -10,7 +10,7 @@
   .prose-site .callout {
     margin: 1.25rem 0;
     padding: 0.75rem 1rem;
-    border-left: 4px solid var(--lkes-tone, var(--lkes-border, #e5e7eb));
+    border-inline-start: 4px solid var(--lkes-tone, var(--lkes-border, #e5e7eb));
     border-radius: var(--lkes-radius, 0.5rem);
   }
 
@@ -86,7 +86,7 @@
   }
 
   .prose-site :is(.callout-note, .callout-tip, .callout-important, .callout-warning, .callout-caution) {
-    border-left-color: var(--lkes-tone);
+    border-inline-start-color: var(--lkes-tone);
     background-color: color-mix(in oklab, var(--lkes-tone) 10%, transparent);
     /* 向正文色混合：浅底上偏深、深底上偏亮，亮暗共用一套值 */
     color: color-mix(in oklab, var(--lkes-tone) 62%, var(--lkes-fg, #1f2937));

@@ -113,7 +113,7 @@
     flex: 1;
     overflow-y: auto;
     padding: 1rem;
-    border-left: 1px solid var(--lkes-border, #e5e7eb);
+    border-inline-start: 1px solid var(--lkes-border, #e5e7eb);
   }
 
   .md-editor-status {

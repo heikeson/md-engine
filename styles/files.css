@@ -60,11 +60,11 @@
     display: inline;
   }
 
-  /* 嵌套层级用左侧缩进线表示 */
+  /* 嵌套层级用起始侧缩进线表示（RTL 下自动翻到右侧） */
   .prose-site .files-children {
-    margin-left: 0.75rem;
-    padding-left: 0.5rem;
-    border-left: 1px solid color-mix(in oklab, var(--lkes-border, #e5e7eb) 70%, transparent);
+    margin-inline-start: 0.75rem;
+    padding-inline-start: 0.5rem;
+    border-inline-start: 1px solid color-mix(in oklab, var(--lkes-border, #e5e7eb) 70%, transparent);
   }
 
   .prose-site .files-icon {
@@ -85,7 +85,7 @@
   }
 
   .prose-site .files-count {
-    margin-left: auto;
+    margin-inline-start: auto;
     font-size: 11px;
     font-variant-numeric: tabular-nums;
     color: var(--lkes-muted, #6b7280);

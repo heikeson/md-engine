@@ -24,7 +24,7 @@
   .prose-site .step::before {
     content: "";
     position: absolute;
-    left: 0.75rem;
+    inset-inline-start: 0.75rem;
     top: 1.75rem;
     bottom: 0;
     width: 1px;

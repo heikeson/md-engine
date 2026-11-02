@@ -210,7 +210,7 @@
   /* 不在变换层内：缩放时不会跟着缩小或移出视野 */
   .lkes-mermaid-zoom {
     position: absolute;
-    right: 0.875rem;
+    inset-inline-end: 0.875rem;
     bottom: 0.875rem;
     display: flex;
     align-items: center;

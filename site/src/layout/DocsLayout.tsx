@@ -3,16 +3,19 @@
  * @description 三栏：左侧分组目录、中间正文、右侧本页目录。
  *   正文由引擎渲染 Markdown，站点只负责外壳——文档页因此同时是一次回归测试：
  *   某个容器被改坏，这里立刻看得见。
+ *   外壳文案走站点字典（文档正文本身仍由内容层维护）。
  * @created 2026-11-02 00:12
  * @updated 2026-11-02 00:12
+ * @updated 2026-11-02 19:32 目录/翻页文案走字典
  */
 
 import { useState, type ReactElement } from "react";
 import { MarkdownRenderer } from "@heikeson/md-engine";
 import { SITE_RENDER_CONFIG } from "../components/render-config";
 import { DOCS, GROUP_ORDER, docNeighbors, type DocEntry } from "../content/docs";
+import { messagesOf } from "../i18n";
 import { collectToc } from "../lib/toc";
-import { Link } from "../router";
+import { Link, useLocalePath } from "../router";
 
 /**
  * 文档页
@@ -20,6 +23,8 @@ import { Link } from "../router";
  * @returns 文档页布局
  */
 export function DocsLayout({ doc }: { doc: DocEntry }): ReactElement {
+  const { locale } = useLocalePath();
+  const messages = messagesOf(locale);
   const toc = collectToc(doc.body);
   const { prev, next } = docNeighbors(doc.slug);
   const [navOpen, setNavOpen] = useState(false);
@@ -34,7 +39,7 @@ export function DocsLayout({ doc }: { doc: DocEntry }): ReactElement {
           aria-controls="docs-nav"
           onClick={() => setNavOpen((open) => !open)}
         >
-          文档目录
+          {messages.docsCatalog}
           <svg
             className="docs-nav-caret"
             width="14"
@@ -53,7 +58,7 @@ export function DocsLayout({ doc }: { doc: DocEntry }): ReactElement {
         <nav
           id="docs-nav"
           className={`docs-nav${navOpen ? " is-open" : ""}`}
-          aria-label="文档目录"
+          aria-label={messages.docsCatalog}
         >
           {GROUP_ORDER.map((group) => {
             const items = DOCS.filter((item) => item.group === group);
@@ -86,10 +91,10 @@ export function DocsLayout({ doc }: { doc: DocEntry }): ReactElement {
 
         <MarkdownRenderer content={doc.body} className="prose-site doc-prose" config={SITE_RENDER_CONFIG} />
 
-        <nav className="doc-pager" aria-label="上下篇">
+        <nav className="doc-pager" aria-label={messages.docsPager}>
           {prev ? (
             <Link className="pager-card" href={`/docs/${prev.slug}`}>
-              <span className="pager-label">上一篇</span>
+              <span className="pager-label">{messages.docsPrev}</span>
               <span className="pager-title">{prev.title}</span>
             </Link>
           ) : (
@@ -97,7 +102,7 @@ export function DocsLayout({ doc }: { doc: DocEntry }): ReactElement {
           )}
           {next ? (
             <Link className="pager-card pager-next" href={`/docs/${next.slug}`}>
-              <span className="pager-label">下一篇</span>
+              <span className="pager-label">{messages.docsNext}</span>
               <span className="pager-title">{next.title}</span>
             </Link>
           ) : (
@@ -107,7 +112,7 @@ export function DocsLayout({ doc }: { doc: DocEntry }): ReactElement {
       </article>
 
       <aside className="doc-toc">
-        <span className="toc-title">本页目录</span>
+        <span className="toc-title">{messages.docsToc}</span>
         <ul className="toc-list">
           {toc.map((item) => (
             <li key={item.id} className={`toc-item toc-level-${item.level}`}>

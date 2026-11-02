@@ -41,5 +41,36 @@ export type { MarkdownRendererProps, RenderConfig } from "./render";
 export { mdxComponents, MermaidPlaceholder } from "./components";
 export type { MermaidProps } from "./components";
 
-export { DEFAULT_UI_TEXT as defaultUIText, useUIText } from "./internal/text";
-export type { UIText, UITextPatch } from "./internal/text";
+export {
+  DEFAULT_UI_TEXT as defaultUIText,
+  BUILTIN_LOCALES,
+  MdEngineProvider,
+  mergeUIText,
+  useLocale,
+  useMessage,
+  useUIText,
+} from "./internal/text";
+export type { MdEngineProviderProps, TextDirection, UIText, UITextPatch } from "./internal/text";
+
+export {
+  DEFAULT_LOCALE,
+  detectLocale,
+  formatMessage,
+  fromRouteSegment,
+  isRTL,
+  languageOf,
+  localeCandidates,
+  matchLocale,
+  normalizeLocale,
+  resolveLocale,
+  supportsIntlLocale,
+  toRouteSegment,
+} from "./internal/locale";
+
+export { DEFAULT_LOCALE_STORAGE_KEY, createLocaleStorage } from "./internal/storage";
+export type { LocaleStorage, LocaleStorageOptions } from "./internal/storage";
+
+export { diagnosticTextKey, formatDiagnostic } from "./internal/diagnostics";
+
+export { zhCN } from "./locales/zh-CN";
+export { enUS } from "./locales/en-US";

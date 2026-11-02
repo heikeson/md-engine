@@ -45,6 +45,14 @@
       "types": "./dist/mermaid/index.d.ts",
       "import": "./dist/mermaid/index.js"
     },
+    "./locales/zh-CN": {
+      "types": "./dist/locales/zh-CN.d.ts",
+      "import": "./dist/locales/zh-CN.js"
+    },
+    "./locales/en-US": {
+      "types": "./dist/locales/en-US.d.ts",
+      "import": "./dist/locales/en-US.js"
+    },
     "./styles.css": "./dist/styles.css",
     "./styles/*": "./styles/*"
   },
@@ -57,7 +65,7 @@
   ],
   "scripts": {
     "dev": "vite --config dev/vite.config.ts",
-    "build": "tsup && npm run build:css",
+    "build": "node dev/clean-dist.mjs && tsup && npm run build:css",
     "build:css": "esbuild styles/index.css --bundle --minify --outfile=dist/styles.css",
     "snapshot": "vite build --config dev/snapshot.vite.config.ts && vite build --config dev/snapshot.css.vite.config.ts && node dev/.out/snapshot.mjs",
     "selfcheck": "npm run build && node dev/selfcheck.mjs",
@@ -79,6 +87,7 @@
     "dompurify": "^3.4.17",
     "github-slugger": "2.0.0",
     "hast-util-to-jsx-runtime": "2.3.6",
+    "intl-messageformat": "^12.1.4",
     "lucide-react": "^1.61.0",
     "mdast-util-from-markdown": "2.0.3",
     "mdast-util-gfm": "3.1.0",

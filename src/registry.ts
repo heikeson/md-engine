@@ -6,6 +6,7 @@
  *   `docs/markdown/02-语法规范.md` 与引擎对接契约。
  * @created 2026-10-24 20:07
  * @updated 2026-11-01 21:10 新增 Mermaid 图表容器与 rawBody（容器体按原始文本保留）声明
+ * @updated 2026-11-02 21:33 TypeItem 声明 selfClosing：支持 `<TypeItem … />` 自闭合写法
  */
 
 /** 组件的编辑形态：visual 允许结构化编辑；source 只按源码块保留 */
@@ -64,8 +65,15 @@ export const ITEMS: Readonly<Record<string, ItemSpec>> = {
   Folder: { name: "Folder", attrs: ["name"], boolAttrs: ["defaultOpen"] },
   // 文件树叶子：自闭合，href 可选（给了就渲染成链接）；icon 可选（覆盖自动类型图标）
   File: { name: "File", attrs: ["name", "href", "icon"], selfClosing: true },
-  // 类型表行：name 属性名、type 类型、default 默认值、required 布尔必填
-  TypeItem: { name: "TypeItem", attrs: ["name", "type", "default"], boolAttrs: ["required"] },
+  // 类型表行：name 属性名、type 类型、default 默认值、required 布尔必填。
+  // 允许自闭合：fumadocs 风格 `<TypeItem name="…" type="…" />`（说明列留空），
+  // 不声明的话整行会退回 CommonMark HTML 块，既不渲染成行也不报诊断
+  TypeItem: {
+    name: "TypeItem",
+    attrs: ["name", "type", "default"],
+    boolAttrs: ["required"],
+    selfClosing: true,
+  },
 };
 
 /** 容器组件声明表 */

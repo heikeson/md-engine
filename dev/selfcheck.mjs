@@ -8,6 +8,7 @@
  *   每条用例默认断言「往返结构等价 + 往返幂等」，个别用例再断言字节一致 / 结构 / 渲染。
  * @created 2026-10-28 03:40
  * @updated 2026-10-28 11:52 扩为断言套件：新增围栏感知、跨段落折叠、序列化保形与渲染断言
+ * @updated 2026-11-02 21:33 新增自闭合 TypeItem 用例（解析 / 块索引 / 渲染三处断言）
  */
 
 import React from "react";
@@ -176,6 +177,25 @@ const CASES = [
       const list = items(findBlock(tree, "TypeTable"));
       return list.length === 1 ? null : `子项数 ${list.length}，期望 1`;
     },
+  },
+  {
+    // 自闭合子项：不声明 selfClosing 时整行会退回 CommonMark HTML 块，行全丢
+    name: "自闭合子项（TypeTable 逐行）",
+    md: "<TypeTable>\n  <TypeItem name=\"title\" type=\"string\" required />\n  <TypeItem name=\"tone\" type=\"string\" default=\"note\" />\n</TypeTable>\n",
+    structure: (tree) => {
+      const list = items(findBlock(tree, "TypeTable"));
+      if (list.length !== 2) return `子项数 ${list.length}，期望 2`;
+      return list[0].attributes.required === true && list[1].attributes.default === "note"
+        ? null
+        : "子项属性丢失";
+    },
+    blocks: (list) => {
+      const table = findInBlocks(list, "TypeTable");
+      const count = (table?.items ?? []).filter((item) => item.name === "TypeItem").length;
+      return count === 2 ? null : `块索引里 TypeItem 数 ${count}，期望 2`;
+    },
+    html: (html) =>
+      html.includes('class="type-item"') && html.includes("必填") ? null : "类型表未渲染出数据行",
   },
   {
     name: "行内子项：Steps / Cards / Accordion",

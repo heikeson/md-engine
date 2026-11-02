@@ -6,7 +6,9 @@
 > @updated 2026-11-02 10:55 版本口径对齐 0.4.0；补文案覆写、快捷键、DUPLICATE_ID 与 ESM-only 说明
 > @updated 2026-11-02 19:32 新增国际化：`locale` / `messages` / `MdEngineProvider` / ICU 消息 / 语言包子路径
 > @updated 2026-11-02 20:50 版本口径对齐 0.5.0
-> @status v0.5.0
+> @updated 2026-11-02 21:33 容器语法表标注 `TypeItem` 可自闭合
+> @updated 2026-11-02 21:40 版本口径对齐 0.5.1
+> @status v0.5.1
 
 一个面向 React 的 Markdown 内容引擎。在标准 Markdown（GFM + 数学公式）之上，把
 `<Callout>`、`<Cards><Card /></Cards>` 这类**尖括号容器**纳入解析流程，并保证
@@ -175,7 +177,7 @@ const components = { ...mdxComponents, ...mermaidComponents };
 | `Cards` | — | `Card`：`title`、`href`、`icon`、`description`（可自闭合） |
 | `Accordion` | — | `AccItem`：`title`、`type`（`open` / `close`） |
 | `Files` | — | `Folder`：`name`、`defaultOpen`（布尔）；`File`：`name`、`href`、`icon`（可自闭合） |
-| `TypeTable` | — | `TypeItem`：`name`、`type`、`default`、`required`（布尔） |
+| `TypeTable` | — | `TypeItem`：`name`、`type`、`default`、`required`（布尔），可自闭合 |
 | `Image` | `src` / `alt` / `align`（默认 `center`）/ `width` / `caption` / `zoom`（布尔） | 自闭合叶子 |
 | `div` | `class` / `id` | 正文（属性透传到 DOM，用于局部样式或锚点） |
 | `Mermaid` | `title` / `height`（默认自动高度；给数字才限高） | **原始文本**：容器体不按 Markdown 解析，整段是图表源码 |

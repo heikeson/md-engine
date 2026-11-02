@@ -10,6 +10,10 @@
  * @updated 2026-11-01 22:49 改为内置亮暗两套配色，去掉对宿主语义变量的依赖
  * @updated 2026-11-01 22:51 内置亮/暗两套配色，零宿主变量依赖
  * @updated 2026-11-01 23:18 图表区去掉 min-height，默认按内容自适应
+ * @updated 2026-11-02 22:58 新增 `.lkes-mermaid-viewport` 手势视口；变换层改绝对定位 + 自然尺寸
+ * @updated 2026-11-02 23:01 图表区去掉内边距（画布贴住卡片边界），内边距移到源码区
+ * @updated 2026-11-02 23:04 去掉变换层 will-change：合成层会把 SVG 栅格化，放大会糊
+ * @updated 2026-11-02 23:12 视口 touch-action 改为 pan-y（不再吞页面滚动），文本选择锁只在拖动期生效
  */
 
 @layer lkes.components {
@@ -141,43 +145,76 @@
   }
 
   /* ---- 图表区 / 源码区 ---- */
-  /* 不设 min-height：默认按内容自适应（图表多高就多高），
-     只有显式写了 height 才由内联 maxHeight 限高并裁切 */
+  /* 不设 min-height：默认按内容自适应（图表多高就多高）。
+     不留内边距：画布（视口）边界必须与卡片边界重合，中间不能出现空白带 */
   .lkes-mermaid-body {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1rem;
+    padding: 0;
     overflow: hidden;
     background: var(--lkes-chart-bg, #ffffff);
   }
 
-  /* 变换层：缩放以左上角为原点，与 use-zoom 的换算口径一致 */
+  /* 视口：手势面 + 裁切区。拖的是它，不是图 —— 图表区空白处按住也能拖。
+     高度由内联 style 给（height 上限，或初始适配高度） */
+  .lkes-mermaid-viewport {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    cursor: grab;
+    /* 只把纵向滚动留给浏览器：单指竖滑照样能滚页面，横向拖动与双指捏合归组件。
+       不要写 touch-action: none —— 那等于吞掉整块区域的页面滚动 */
+    touch-action: pan-y;
+  }
+
+  /* 拖动中指针可能已在视口外，用属性驱动才能保持 grabbing 手感；
+     文本选择只在拖动期锁住：静止时图里的字要能选中复制 */
+  .lkes-mermaid-viewport[data-dragging="true"] {
+    cursor: grabbing;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* 变换层：绝对定位在视口左上角、按内容自然尺寸渲染。
+     这样 translate 即「内容左上角在视口中的坐标」，与 use-zoom 的锚点换算口径一致。
+     **不要加 will-change / translate3d / backface-visibility**：那会把本层提升为合成层，
+     SVG 被按固定倍率栅格化成位图后再放大，放大即糊（参考实现同样只用 2D transform）。 */
   .lkes-mermaid-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    /* 尺寸解析失败时的兜底：按视口宽铺开，不产生 0 宽空白 */
     width: 100%;
     transform-origin: 0 0;
-    cursor: grab;
-    touch-action: none;
-    user-select: none;
   }
 
-  .lkes-mermaid-canvas:active {
-    cursor: grabbing;
-  }
-
-  /* 图底透明：卡片底即图底，避免出现与卡片不同色的矩形 */
-  .lkes-mermaid-canvas svg {
+  /* 图底透明：卡片底即图底，避免出现与卡片不同色的矩形。
+     mermaid 内联的 width="100%" / style="max-width:…px" 交给这里统一接管 */
+  .lkes-mermaid-canvas > svg {
     display: block;
-    margin-inline: auto;
-    max-width: 100%;
-    height: auto;
+    width: 100%;
+    height: 100%;
+    max-width: none !important;
     background: transparent;
+  }
+
+  /* 尺寸解析失败（极少见）时的兜底：回到文档流，让图自己撑开高度；
+     此时不做缩放平移，退化为静态显示 */
+  .lkes-mermaid-canvas[data-static="true"] {
+    position: static;
+    width: 100%;
+  }
+
+  .lkes-mermaid-canvas[data-static="true"] > svg {
+    height: auto;
+    max-width: 100% !important;
   }
 
   .lkes-mermaid-source {
     margin: 0;
+    box-sizing: border-box;
     width: 100%;
-    max-height: 100%;
+    /* 内边距从图表区移到源码区：源码仍需呼吸感，图表则要贴边。
+       限高由内联 style 给（height 属性），这里只管滚动 */
+    padding: 1rem;
     overflow: auto;
     color: var(--lkes-chart-fg, #1f2937);
     font-size: 0.8125rem;

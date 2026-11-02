@@ -36,3 +36,5 @@ Thumbs.db
 # —— 官网构建产物与 SSR 中间件 ——
 site/dist/
 site/.ssr/
+
+docs/

@@ -8,6 +8,7 @@
  * @updated 2026-11-01 22:37 令牌三级回落（引擎令牌→宿主语义变量→内置）+ oklch/hsl 归一；取色改按图表元素
  * @updated 2026-11-01 22:51 取色改为「JS 配置 → 组件自带 --lkes-chart-* → 内置」，不再读宿主变量
  * @updated 2026-11-02 10:35 缓存加 LRU 上限（防编辑长文时内存只涨不落）；超时改为可识别异常，文案由视图侧本地化
+ * @updated 2026-11-02 22:57 新增 readSvgSize：从产物解析图表自然尺寸，供交互视图做初始适配
  */
 
 "use client";
@@ -35,11 +36,19 @@ interface MermaidLike {
 /** 渲染状态 */
 export type RenderStatus = "idle" | "loading" | "ready" | "error";
 
+/** 图表自然尺寸（SVG 用户单位，按 1:1 换算成 px） */
+export interface ChartSize {
+  width: number;
+  height: number;
+}
+
 /** 渲染结果 */
 export interface RenderResult {
   status: RenderStatus;
   /** 已净化的 SVG 标记 */
   svg: string;
+  /** 图表自然尺寸：拿到才能在视口里做初始适配与平移；解析失败为 null（降级为静态显示） */
+  size: ChartSize | null;
   /** 失败原因（可直接展示） */
   error: string;
 }
@@ -124,6 +133,42 @@ function sanitizeSvg(svg: string): string {
     ADD_TAGS: ["style"],
     ADD_ATTR: ["dominant-baseline"],
   });
+}
+
+/**
+ * 读取开标签上的某个属性值
+ * @param tag 开标签文本
+ * @param name 属性名
+ * @returns 属性值；不存在返回空串
+ */
+function attribute(tag: string, name: string): string {
+  const matched = new RegExp(`\\s${name}\\s*=\\s*"([^"]*)"`, "i").exec(tag);
+  return matched ? matched[1] : "";
+}
+
+/**
+ * 从渲染产物里读出图表自然尺寸
+ * @param svg 已净化的 SVG 标记
+ * @returns 自然尺寸；产物里没有可用尺寸信息时为 null
+ * @description 只读根 `<svg>` 开标签：mermaid 恒输出 `viewBox="0 0 W H"`（`useMaxWidth` 下还会带
+ *   `style="max-width: Wpx"` 与 `width="100%"`），因此 viewBox 是最可靠的来源。
+ *   取不到就无法算初始适配比例，由调用方降级为静态显示。
+ */
+export function readSvgSize(svg: string): ChartSize | null {
+  if (!svg) return null;
+  // 只看开标签：内部元素也可能带同名属性，不能全串匹配
+  const open = /<svg\b[^>]*>/i.exec(svg)?.[0] ?? "";
+  if (!open) return null;
+  const box = /viewBox\s*=\s*"([^"]+)"/i.exec(open)?.[1];
+  if (box) {
+    const parts = box.trim().split(/[\s,]+/).map(Number);
+    if (parts.length === 4 && parts[2] > 0 && parts[3] > 0) {
+      return { width: parts[2], height: parts[3] };
+    }
+  }
+  const width = Number(attribute(open, "width"));
+  const height = Number(attribute(open, "height"));
+  return width > 0 && height > 0 ? { width, height } : null;
 }
 
 /**
@@ -228,7 +273,7 @@ export function useMermaidRender(
   dark: boolean,
   elementRef?: RefObject<HTMLElement | null>,
 ): RenderResult {
-  const [state, setState] = useState<RenderResult>({ status: "idle", svg: "", error: "" });
+  const [state, setState] = useState<RenderResult>({ status: "idle", svg: "", size: null, error: "" });
   const text = useUIText();
 
   useEffect(() => {
@@ -239,7 +284,7 @@ export function useMermaidRender(
     void (async () => {
       try {
         const svg = await renderChart(source, resolveChartTokens(dark, elementRef?.current ?? null));
-        if (!cancelled) setState({ status: "ready", svg, error: "" });
+        if (!cancelled) setState({ status: "ready", svg, size: readSvgSize(svg), error: "" });
       } catch (error) {
         if (!cancelled) {
           const message =
@@ -250,7 +295,7 @@ export function useMermaidRender(
                 : text.mermaidFallbackError;
           // 失败要可见：降级成源码，并在控制台留一条可诊断的记录
           console.warn("[md-engine] mermaid 渲染失败，已降级为源码：", message);
-          setState({ status: "error", svg: "", error: message });
+          setState({ status: "error", svg: "", size: null, error: message });
         }
       }
     })();

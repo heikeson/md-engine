@@ -3,8 +3,10 @@
  * @description 作为 `<TypeTable>` 的子项渲染成 `<tr>`；说明文字用正文（children）。
  * @created 2026-10-24 22:22
  * @updated 2026-10-24 22:22
+ * @updated 2026-11-02 10:00 「必填」改经 useUIText 取（i18n）
  */
 import type { ReactNode } from "react";
+import { useUIText } from "../internal/text-context";
 
 /** 行参数 */
 export interface TypeItemProps {
@@ -26,11 +28,12 @@ export interface TypeItemProps {
  * @returns 表格行
  */
 export default function TypeItem({ name, type, default: defaultValue, required, children }: TypeItemProps) {
+  const text = useUIText();
   return (
     <tr className="type-item">
       <td className="type-cell-name">
         <code>{name}</code>
-        {required ? <span className="type-required">必填</span> : null}
+        {required ? <span className="type-required">{text.required}</span> : null}
       </td>
       <td>
         <code>{type ?? "—"}</code>

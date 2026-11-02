@@ -7,12 +7,15 @@
  * @updated 2026-11-01 22:37 标题并入工具栏；暗色与取色按图表容器判定；手势仅在出图后启用
  * @updated 2026-11-01 22:51 导出 PNG 底色改走 resolveChartTokens
  * @updated 2026-11-01 23:18 height 未指定 / 空 / auto 一律自动高度
+ * @updated 2026-11-02 10:00 提示与缩放条文案改经 useUIText 取（i18n）
  */
 
 "use client";
 
 import { useEffect, useRef, useState, type ReactElement } from "react";
 import type { MermaidProps } from "../components/mermaid-placeholder";
+import { formatText } from "../internal/text";
+import { useUIText } from "../internal/text-context";
 import { downloadPng, downloadSvg } from "./export";
 import MermaidHeader from "./header";
 import { ResetIcon, ZoomInIcon, ZoomOutIcon } from "./icons";
@@ -50,6 +53,7 @@ export default function MermaidChart({ raw, code, title, height, tooLarge }: Mer
   const [visible, setVisible] = useState(false);
   const [showSource, setShowSource] = useState(disabled);
   const { status, svg, error } = useMermaidRender(source, visible && !disabled, dark, frameRef);
+  const text = useUIText();
   const canExport = status === "ready";
   const ready = canExport && !showSource;
   // 手势只在「图已挂载」时启用：canvas 未渲染时 ref 为空，提前绑定滚轮会绑不到元素
@@ -114,17 +118,17 @@ export default function MermaidChart({ raw, code, title, height, tooLarge }: Mer
           </pre>
         )}
       </div>
-      {status === "loading" ? <p className="lkes-mermaid-hint">正在渲染图表…</p> : null}
-      {error ? <p className="lkes-mermaid-error">图表渲染失败：{error}（已显示源码）</p> : null}
+      {status === "loading" ? <p className="lkes-mermaid-hint">{text.mermaidLoading}</p> : null}
+      {error ? <p className="lkes-mermaid-error">{formatText(text.mermaidFailed, { error })}</p> : null}
       {ready ? (
-        <div className="lkes-mermaid-zoom" role="group" aria-label="缩放控制">
-          <button type="button" onClick={zoom.zoomIn} aria-label="放大" title="放大">
+        <div className="lkes-mermaid-zoom" role="group" aria-label={text.zoomControls}>
+          <button type="button" onClick={zoom.zoomIn} aria-label={text.zoomIn} title={text.zoomIn}>
             <ZoomInIcon />
           </button>
-          <button type="button" onClick={zoom.zoomOut} aria-label="缩小" title="缩小">
+          <button type="button" onClick={zoom.zoomOut} aria-label={text.zoomOut} title={text.zoomOut}>
             <ZoomOutIcon />
           </button>
-          <button type="button" onClick={zoom.reset} aria-label="重置缩放" title="重置">
+          <button type="button" onClick={zoom.reset} aria-label={text.resetZoom} title={text.reset}>
             <ResetIcon />
           </button>
         </div>

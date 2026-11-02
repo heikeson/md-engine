@@ -6,6 +6,7 @@
  * @created 2026-10-24 21:12
  * @updated 2026-10-24 21:10 补齐图片上传、修复 hook 依赖与声明顺序
  * @updated 2026-11-01 23:02 EditorConfig 增加 rendererConfig：预览区可透传组件覆盖（如 mermaidComponents）
+ * @updated 2026-11-02 10:00 EditorConfig 增加 locale/text；工具栏/状态栏文案经字典取（i18n）
  */
 
 "use client";
@@ -14,6 +15,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import MarkdownRenderer, { type RenderConfig } from "../render";
 import { parse } from "../parse";
 import { normalizeMarkdown } from "../format";
+import { formatText, getUIText, type Locale, type UIText, type UITextPatch } from "../internal/text";
 import {
   insertBlockAt,
   toggleLinePrefix,
@@ -38,6 +40,13 @@ export interface EditorConfig {
    *   编辑器入口不直接依赖 `/mermaid`，否则 CodeMirror 入口会连带 mermaid 一起进产物。
    */
   rendererConfig?: RenderConfig;
+  /**
+   * 界面文案语言（编辑器工具栏与状态栏；预览侧未显式指定时沿用）
+   * @default "zh"
+   */
+  locale?: Locale;
+  /** 逐键覆写界面文案（优先级高于 locale） */
+  text?: UITextPatch;
 }
 
 /** 视图 */
@@ -57,26 +66,26 @@ export interface MarkdownEditorProps {
 }
 
 /** 视图切换项 */
-const VIEW_OPTIONS: ReadonlyArray<{ value: EditorView; label: string }> = [
-  { value: "source", label: "编辑" },
-  { value: "split", label: "分屏" },
-  { value: "preview", label: "预览" },
+const VIEW_OPTIONS: ReadonlyArray<{ value: EditorView; labelKey: keyof UIText }> = [
+  { value: "source", labelKey: "viewEdit" },
+  { value: "split", labelKey: "viewSplit" },
+  { value: "preview", labelKey: "viewPreview" },
 ];
 
 /** 工具栏：包裹类 */
-const WRAP_ITEMS = [
-  { key: "bold", label: "粗体", before: "**", after: "**" },
-  { key: "italic", label: "斜体", before: "*", after: "*" },
-  { key: "strike", label: "删除线", before: "~~", after: "~~" },
-  { key: "code", label: "行内码", before: "`", after: "`" },
-] as const;
+const WRAP_ITEMS: ReadonlyArray<{ key: string; labelKey: keyof UIText; before: string; after: string }> = [
+  { key: "bold", labelKey: "bold", before: "**", after: "**" },
+  { key: "italic", labelKey: "italic", before: "*", after: "*" },
+  { key: "strike", labelKey: "strike", before: "~~", after: "~~" },
+  { key: "code", labelKey: "inlineCode", before: "`", after: "`" },
+];
 
-/** 工具栏：行首前缀类 */
-const LINE_ITEMS = [
+/** 工具栏：行首前缀类（H2 各语言同形，不进文案字典） */
+const LINE_ITEMS: ReadonlyArray<{ key: string; label?: string; labelKey?: keyof UIText; prefix: string }> = [
   { key: "h2", label: "H2", prefix: "## " },
-  { key: "quote", label: "引用", prefix: "> " },
-  { key: "list", label: "列表", prefix: "- " },
-] as const;
+  { key: "quote", labelKey: "quote", prefix: "> " },
+  { key: "list", labelKey: "list", prefix: "- " },
+];
 
 /**
  * Markdown 编辑器
@@ -101,6 +110,8 @@ export default function MarkdownEditor({
   /** 图片处理最新实现（编辑器实例只建一次，经 ref 转发） */
   const imageHandlerRef = useRef<(file: File) => void>(() => {});
   const [selection, setSelection] = useState<Selection>({ start: 0, end: 0 });
+  /** 编辑器界面文案（locale 基底 + text 覆写） */
+  const uiText = useMemo(() => getUIText(config?.locale, config?.text), [config?.locale, config?.text]);
 
   // 最新值与回调写入 ref（render 期间禁止写 ref）
   useEffect(() => {
@@ -218,10 +229,10 @@ export default function MarkdownEditor({
           <button
             key={item.key}
             type="button"
-            onClick={() => applyLive((doc, sel) => wrapSelection(doc, sel, item.before, item.after))}
+            onClick={() => applyLive((doc, sel) => wrapSelection(doc, sel, item.before, item.after, uiText.wrapPlaceholder))}
             disabled={config?.readOnly}
           >
-            {item.label}
+            {uiText[item.labelKey]}
           </button>
         ))}
         <span className="md-editor-sep" />
@@ -232,7 +243,7 @@ export default function MarkdownEditor({
             onClick={() => applyLive((doc, sel) => toggleLinePrefix(doc, sel, item.prefix))}
             disabled={config?.readOnly}
           >
-            {item.label}
+            {item.labelKey ? uiText[item.labelKey] : item.label}
           </button>
         ))}
         <span className="md-editor-sep" />
@@ -247,7 +258,7 @@ export default function MarkdownEditor({
           </button>
         ))}
         <span className="md-editor-grow" />
-        <div className="md-editor-views" role="group" aria-label="视图切换">
+        <div className="md-editor-views" role="group" aria-label={uiText.viewSwitch}>
           {VIEW_OPTIONS.map((option) => (
             <button
               key={option.value}
@@ -256,13 +267,13 @@ export default function MarkdownEditor({
               aria-pressed={viewMode === option.value}
               onClick={() => setViewMode(option.value)}
             >
-              {option.label}
+              {uiText[option.labelKey]}
             </button>
           ))}
         </div>
         {onToggleFullscreen ? (
           <button type="button" onClick={onToggleFullscreen}>
-            {fullscreen ? "退出全屏" : "全屏"}
+            {fullscreen ? uiText.exitFullscreen : uiText.fullscreen}
           </button>
         ) : null}
       </div>
@@ -276,17 +287,23 @@ export default function MarkdownEditor({
             <MarkdownRenderer
               content={value}
               className="prose-site"
-              config={{ ...config?.rendererConfig, sourcePositions: true }}
+              config={{
+                ...config?.rendererConfig,
+                sourcePositions: true,
+                // 预览侧未显式指定语言/覆写时沿用编辑器配置
+                locale: config?.rendererConfig?.locale ?? config?.locale,
+                text: config?.rendererConfig?.text ?? config?.text,
+              }}
             />
           </div>
         )}
       </div>
 
       <div className="md-editor-status">
-        <span>{value.length} 字</span>
+        <span>{formatText(uiText.charCount, { count: value.length })}</span>
         {diagnostics.length > 0 && (
           <span className="md-editor-status-warn">
-            {diagnostics.length} 条提示：{diagnostics[0].message}
+            {formatText(uiText.diagnosticsHint, { count: diagnostics.length, message: diagnostics[0].message })}
           </span>
         )}
       </div>

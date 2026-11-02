@@ -12,3 +12,5 @@ export type { EditorConfig, EditorView, MarkdownEditorProps } from "./MarkdownEd
 export { blockSnippet, INSERTABLE_BLOCKS } from "./snippets";
 export { insertAtCursor, toggleLinePrefix, wrapSelection } from "./actions";
 export type { EditResult, Selection } from "./actions";
+
+export type { Locale, UIText, UITextPatch } from "../internal/text";

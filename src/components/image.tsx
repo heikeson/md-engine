@@ -4,11 +4,13 @@
  *   外链图片来源不确定，用原生 img 而非 next/image（后者需要逐域配置且对未知尺寸不友好）。
  * @created 2026-09-03 21:54
  * @updated 2026-10-24 22:20 新增 zoom（点击全屏放大，Esc 关闭）
+ * @updated 2026-11-02 10:00 遮罩 aria-label 改经 useUIText 取（i18n）
  */
 "use client";
 
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { isSafeHref } from "../internal/url-policy";
+import { useUIText } from "../internal/text-context";
 
 /** 图片参数 */
 export interface ImageProps {
@@ -37,6 +39,7 @@ export default function Image({
   children,
 }: ImageProps) {
   const [open, setOpen] = useState(false);
+  const text = useUIText();
   // 属性来自正文，不能直接信任：协议白名单不过就不加载（诊断在 policy-tags 里给）
   const safeSrc = src && isSafeHref(src) ? src : undefined;
   const w = width ? (typeof width === "number" ? `${width}px` : width) : undefined;
@@ -75,7 +78,7 @@ export default function Image({
           className="image-zoom-mask"
           role="button"
           tabIndex={-1}
-          aria-label="关闭放大图片"
+          aria-label={text.closeZoomImage}
           onClick={() => setOpen(false)}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}

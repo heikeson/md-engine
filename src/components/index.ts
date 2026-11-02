@@ -5,6 +5,7 @@
  * @created 2026-10-24 20:10
  * @updated 2026-10-24 21:58 文件树改为 Files / Folder / File
  * @updated 2026-11-01 21:47 登记 Mermaid 占位组件
+ * @updated 2026-11-02 10:00 re-export i18n 文案 API（Provider/useUIText/字典）
  */
 
 import AccItem from "./acc-item";
@@ -50,3 +51,9 @@ export const mdxComponents = {
 
 export { AccItem, Accordion, Callout, Card, Cards, File, Files, Folder, MdImage, MermaidPlaceholder, Step, Steps, Tab, Tabs, TypeItem, TypeTable };
 export type { MermaidProps } from "./mermaid-placeholder";
+
+/** 宿主直接用本映射时，可自包 UITextProvider 注入界面文案 */
+export { UITextProvider, useUIText } from "../internal/text-context";
+export type { UITextProviderProps } from "../internal/text-context";
+export { DEFAULT_UI_TEXT as defaultUIText, EN_UI_TEXT as enUIText, formatText, getUIText } from "../internal/text";
+export type { Locale, UIText, UITextPatch } from "../internal/text";

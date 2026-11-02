@@ -6,6 +6,7 @@
  * @created 2026-10-24 20:24
  * @updated 2026-10-24 20:24
  * @updated 2026-11-01 21:47 rawBody 容器把源码以 props 交给组件；渲染侧同步 collectMermaid 标记
+ * @updated 2026-11-02 10:00 RenderConfig 新增 locale/text，输出包一层 UITextProvider
  */
 
 import { useMemo, type ComponentType, type ReactElement } from "react";
@@ -32,6 +33,8 @@ import type { JsxBlock } from "./syntax/jsx-mdast";
 import { collectMermaid, enforceMaxDepth } from "./policy";
 import { rehypeCodeMeta } from "./rehype-code-meta";
 import { rehypeSourcePositions } from "./rehype-source-positions";
+import { UITextProvider } from "./internal/text-context";
+import type { Locale, UITextPatch } from "./internal/text";
 
 /** 宿主可覆盖的组件类型 */
 type AnyComponent = ComponentType<Record<string, unknown>>;
@@ -50,6 +53,15 @@ export interface RenderConfig {
    * @description 仅供编辑器分屏做内容对齐的滚动同步；前台文章保持关闭以省体积
    */
   sourcePositions?: boolean;
+  /**
+   * 界面文案语言（图表工具栏、TypeTable 等内置文案）
+   * @default "zh"
+   * @description 不做浏览器语言自动检测：SSR 与客户端检测结果可能不一致导致 hydration 错位，
+   *   语言由宿主显式声明
+   */
+  locale?: Locale;
+  /** 逐键覆写内置文案（优先级高于 locale）；模板键须保留 `{name}` 占位 */
+  text?: UITextPatch;
 }
 
 /** 渲染器参数 */
@@ -177,5 +189,11 @@ export default function MarkdownRenderer({
     });
   }, [content, overrides, processor]);
 
-  return <div className={className}>{rendered}</div>;
+  return (
+    <div className={className}>
+      <UITextProvider locale={config?.locale} text={config?.text}>
+        {rendered}
+      </UITextProvider>
+    </div>
+  );
 }

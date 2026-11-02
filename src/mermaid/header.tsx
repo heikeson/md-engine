@@ -5,11 +5,13 @@
  * @created 2026-11-01 22:29
  * @updated 2026-11-01 22:29
  * @updated 2026-11-01 22:37 左侧增加图表标题（不再单独占一行）
+ * @updated 2026-11-02 10:00 工具栏文案改经 useUIText 取（i18n）
  */
 
 "use client";
 
 import { useRef, useState, type ReactElement } from "react";
+import { useUIText } from "../internal/text-context";
 import { CodeIcon, CopyIcon, DownloadIcon, ImageIcon } from "./icons";
 
 /** 工具栏参数 */
@@ -40,6 +42,7 @@ export default function MermaidHeader(props: MermaidHeaderProps): ReactElement {
   const { showSource, canExport, source, title, onToggleView, onExportSvg, onExportPng } = props;
   const [copied, setCopied] = useState(false);
   const timer = useRef<number | null>(null);
+  const text = useUIText();
 
   /** 复制源码到剪贴板；成功后在按钮上反馈 1.5 秒 */
   const onCopy = async (): Promise<void> => {
@@ -61,25 +64,25 @@ export default function MermaidHeader(props: MermaidHeaderProps): ReactElement {
           className="lkes-mermaid-mode"
           onClick={onToggleView}
           aria-pressed={showSource}
-          title={showSource ? "切换到图表" : "查看源码"}
+          title={showSource ? text.switchToChart : text.viewSource}
         >
           <CodeIcon />
-          <span>{showSource ? "图表视图" : "源码视图"}</span>
+          <span>{showSource ? text.chartView : text.sourceView}</span>
         </button>
         {title ? <span className="lkes-mermaid-title">{title}</span> : null}
       </div>
       <div className="lkes-mermaid-actions">
         <button type="button" onClick={onCopy}>
           <CopyIcon />
-          <span>{copied ? "已复制" : "复制源码"}</span>
+          <span>{copied ? text.copied : text.copySource}</span>
         </button>
         <button type="button" onClick={onExportSvg} disabled={!canExport}>
           <DownloadIcon />
-          <span>下载 SVG</span>
+          <span>{text.downloadSvg}</span>
         </button>
         <button type="button" onClick={onExportPng} disabled={!canExport}>
           <ImageIcon />
-          <span>下载 PNG</span>
+          <span>{text.downloadPng}</span>
         </button>
       </div>
     </div>

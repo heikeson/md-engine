@@ -4,8 +4,40 @@
 > @description `@heikeson/md-engine` 的版本更新记录，倒序累积。每次发版在此一次性写清「更新内容 + 修复内容」，不记录操作步骤。
 > @created 2026-10-26 23:37
 > @updated 2026-11-01 22:31 记录 0.4.0（含图表 UI 定稿）
-> @status 0.4.0 已记录
+> @updated 2026-11-02 20:50 记录 0.5.0（国际化、无障碍与性能增强、组件自洽外观）
+> @status 0.5.0 已记录
 > @readonly 由维护者（@heikeson）维护，请勿直接编辑；变更请提 issue
+
+---
+
+## 0.5.0 — 2026-11-02
+
+### 更新内容
+
+| 内容 | 说明 |
+|---|---|
+| 新增国际化（i18n） | `RenderConfig` 增加 `locale` / `messages` / `fallbackLocale`；解析链 `messages → 内置语言包[locale] → fallbackLocale → zh-CN`。文案改用 ICU MessageFormat（`intl-messageformat`），复数按 CLDR 规则处理 |
+| 根级 `MdEngineProvider` | 应用根节点包一层即全局生效：子树里所有 `MarkdownRenderer` / `MarkdownEditor` 自动继承语言；`useLocale()` 读取当前语言 |
+| 内置语言包 | `zh-CN` / `en-US` 以 `./locales/zh-CN`、`./locales/en-US` 子路径导出；主入口另导出 `zhCN` / `enUS` / `BUILTIN_LOCALES` |
+| 语言工具链 | 新增 `formatMessage` / `useMessage` / `resolveLocale` / `matchLocale` / `normalizeLocale` / `detectLocale` / `isRTL` / `languageOf` / `localeCandidates` / `supportsIntlLocale` / `toRouteSegment` / `fromRouteSegment` / `createLocaleStorage` |
+| 文案表 `UIText` | 包内固定文案（aria-label、图表工具栏、编辑器工具栏/状态栏）集中到 `UIText`，键**只增不改**；主入口导出 `defaultUIText` / `useUIText` / `mergeUIText`。`config.text` 保留为 `messages` 别名 |
+| 诊断文案外置 | `Diagnostic` 新增 `params`，文案由 `diagnosticTextKey` / `formatDiagnostic` 按语言取，领域层不再内联中文 |
+| 编辑器快捷键 | `Mod+B/I/E` 粗体/斜体/行内码、`Mod+Shift+S` 删除线、`Mod+1` 二级标题、`Mod+Shift+Q` 引用、`Mod+Shift+L` 列表；与工具栏按钮共用同一组纯函数 |
+| 编辑器 `config.placeholder` | 接线并改走 CodeMirror `Compartment` 热替换，切语言不再重建编辑器 |
+| RTL 支持 | `styles/` 18 处物理方向属性迁移为逻辑属性，`isRTL` 决定书写方向 |
+| 渲染配置稳定化 | `components` / `remarkPlugins` / `rehypePlugins` / 文案补丁做浅比较，内联配置不再击穿管线缓存 |
+| 编辑器性能 | 预览与诊断改用 `useDeferredValue`，长文输入不再每键全量解析；mermaid 渲染缓存加 LRU 上限（32） |
+| 无障碍 | Tabs 补齐 WAI-ARIA Tabs：tab/panel id 关联、←/→ 循环与 Home/End、roving tabindex；Image 放大遮罩可聚焦，Enter/Space 关闭 |
+| 组件外观自洽 | 链接形态的 `Card`（`a.card`）与文件树文件名（`a.files-name`）自带颜色与 `text-decoration: none`，不再继承宿主的链接色/下划线；`.card-title` 改用 `--lkes-fg` 令牌。宿主无需再写样式补丁 |
+| 新诊断 `DUPLICATE_ID` | `div id` 与标题锚点或彼此重复时提示（只提示不改写），随 i18n 拆为 `DUPLICATE_ID_ANCHOR` / `DUPLICATE_ID_DIV` |
+| 工程化 | 新增 CI 门禁（typecheck + build + selfcheck + pack）与 changesets；`build` 改为 `clean-dist → tsup → build:css`；新增依赖 `github-slugger`（重复 id 诊断）与 `intl-messageformat`（ICU） |
+
+### 修复内容
+
+| 问题 | 修复 |
+|---|---|
+| 切语言丢光标与撤销栈 | 编辑器重建依赖收敛，placeholder 走 `Compartment` 热替换，切语言不再重挂载 |
+| `tsup` 自动 clean 与 d.ts 竞争 | 移除 `tsup` 的 `clean`，改由 `dev/clean-dist.mjs` 在构建前统一清理 |
 
 ---
 

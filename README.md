@@ -5,7 +5,8 @@
 > @created 2026-10-24 19:57
 > @updated 2026-11-02 10:55 版本口径对齐 0.4.0；补文案覆写、快捷键、DUPLICATE_ID 与 ESM-only 说明
 > @updated 2026-11-02 19:32 新增国际化：`locale` / `messages` / `MdEngineProvider` / ICU 消息 / 语言包子路径
-> @status v0.4.0
+> @updated 2026-11-02 20:50 版本口径对齐 0.5.0
+> @status v0.5.0
 
 一个面向 React 的 Markdown 内容引擎。在标准 Markdown（GFM + 数学公式）之上，把
 `<Callout>`、`<Cards><Card /></Cards>` 这类**尖括号容器**纳入解析流程，并保证

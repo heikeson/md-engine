@@ -7,9 +7,13 @@
  * @updated 2026-11-01 22:29 改为卡片式骨架（与交互视图同布局），内联源码图标以保持主入口零图表依赖
  * @updated 2026-11-01 22:37 标题并入工具栏左侧，与交互视图同布局
  * @updated 2026-11-01 23:18 height 未指定 / 空 / auto 一律自动高度（不再固定 420px）
+ * @updated 2026-11-02 10:42 「源码视图」文案走 UIText（与交互视图同口径）
  */
 
-import type { ReactElement } from "react";
+"use client";
+
+import { type ReactElement } from "react";
+import { useUIText } from "../internal/text";
 
 /**
  * 图表组件 props（占位骨架与 `/mermaid` 入口的交互组件共用同一签名）
@@ -81,6 +85,7 @@ export default function MermaidPlaceholder({
   tooLarge,
 }: MermaidProps): ReactElement {
   const source = raw ?? code ?? "";
+  const text = useUIText();
   // state 供样式与宿主调试用：pending 表示等待交互入口增强，empty / too-large 是两种降级
   const state = tooLarge ? "too-large" : source.trim() ? "pending" : "empty";
   return (
@@ -89,7 +94,7 @@ export default function MermaidPlaceholder({
         <div className="lkes-mermaid-leading">
           <span className="lkes-mermaid-mode" aria-hidden="true">
             <SourceIcon />
-            <span>源码视图</span>
+            <span>{text.mermaidSourceView}</span>
           </span>
           {title ? <span className="lkes-mermaid-title">{title}</span> : null}
         </div>

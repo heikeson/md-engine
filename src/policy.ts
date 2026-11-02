@@ -19,7 +19,8 @@ export type DiagnosticCode =
   | "UNSAFE_HREF"
   | "INDENT_AS_CODE"
   | "MERMAID_EMPTY"
-  | "MERMAID_TOO_LARGE";
+  | "MERMAID_TOO_LARGE"
+  | "DUPLICATE_ID";
 
 /** Mermaid 源码体积上限（字节）：超限不渲染图表，原样显示源码 */
 export const MERMAID_MAX_BYTES = 20 * 1024;

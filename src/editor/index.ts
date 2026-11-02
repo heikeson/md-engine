@@ -4,6 +4,7 @@
  *   否则编辑器代码会进入阅读页 chunk。
  * @created 2026-10-24 21:12
  * @updated 2026-10-24 21:12
+ * @updated 2026-11-02 10:50 re-export 文案类型（EditorConfig.text 用）
  */
 
 export { default as MarkdownEditor } from "./MarkdownEditor";
@@ -12,3 +13,4 @@ export type { EditorConfig, EditorView, MarkdownEditorProps } from "./MarkdownEd
 export { blockSnippet, INSERTABLE_BLOCKS } from "./snippets";
 export { insertAtCursor, toggleLinePrefix, wrapSelection } from "./actions";
 export type { EditResult, Selection } from "./actions";
+export type { UIText, UITextPatch } from "../internal/text";

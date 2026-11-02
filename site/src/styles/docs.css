@@ -4,6 +4,7 @@
  *   容器类组件（Tabs、Cards、Files）在窄栏里会显得拥挤，所以正文卡片的边距单独放宽一点。
  * @created 2026-11-02 01:28
  * @updated 2026-11-02 01:28
+ * @updated 2026-11-02 20:46 正文链接与表格规则降进 @layer site，避免压过包内组件的卡片/文件树/TypeTable 样式
  */
 
 .docs-sidebar {
@@ -128,49 +129,54 @@
   margin: 0.35em 0;
 }
 
-.doc-prose a {
-  color: var(--accent);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  text-decoration-thickness: 1px;
-}
-
 .doc-prose .code-block {
   margin: 1.1em 0;
 }
 
-.doc-prose table {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 1.1em 0;
-  font-size: 14px;
-}
+/* 链接与表格降进 @layer site（层序见 site.css：reset → site → lkes.tokens → lkes.components）：
+   包内组件（卡片、文件树、TypeTable）的内部元素优先用包内样式，不被站点的正文排版压过；
+   普通 Markdown 的链接与表格仍由这里排版——引擎不碰它们 */
+@layer site {
+  .doc-prose a {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1px;
+  }
 
-.doc-prose th,
-.doc-prose td {
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--line);
-  text-align: left;
-  vertical-align: top;
-}
+  .doc-prose table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.1em 0;
+    font-size: 14px;
+  }
 
-.doc-prose th {
-  font-weight: 500;
-  color: var(--muted);
-  font-size: 12.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
+  .doc-prose th,
+  .doc-prose td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--line);
+    text-align: left;
+    vertical-align: top;
+  }
 
-.doc-prose td {
-  color: var(--fg-soft);
-}
+  .doc-prose th {
+    font-weight: 500;
+    color: var(--muted);
+    font-size: 12.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
 
-.doc-prose td code {
-  font-size: 12.5px;
-  padding: 1px 5px;
-  border-radius: 4px;
-  background: var(--bg-sink);
+  .doc-prose td {
+    color: var(--fg-soft);
+  }
+
+  .doc-prose td code {
+    font-size: 12.5px;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: var(--bg-sink);
+  }
 }
 
 /* ---- 右侧目录 ---- */

@@ -4,12 +4,15 @@
  *   这样开发态改 styles/ 立刻生效，构建产物也自带一份完整样式，不依赖 node_modules。
  * @created 2026-11-02 01:05
  * @updated 2026-11-02 01:05
- * @updated 2026-11-02 20:44 顶部声明层序（reset → lkes.tokens → lkes.components），站点重置进 reset 层，
+ * @updated 2026-11-02 20:37 顶部声明层序（reset → lkes.tokens → lkes.components），站点重置进 reset 层，
  *   否则未分层重置会压过包内 @layer lkes.components（Tabs 选中态失效即此因）
+ * @updated 2026-11-02 20:46 层序加 site（低于组件层）：docs.css 的正文链接/表格覆写不再压过包内组件样式
  */
 
-/* 层序必须在任何 @import 之前声明：先出现的层优先级更低，reset 必须垫在最底 */
-@layer reset, lkes.tokens, lkes.components;
+/* 层序必须在任何 @import 之前声明：先出现的层优先级更低。
+   site 层放站点对正文的排版覆写（docs.css 的链接/表格），必须低于 lkes.components，
+   否则站点规则会压掉包内组件样式；reset 垫在最底 */
+@layer reset, site, lkes.tokens, lkes.components;
 
 @import "../../../styles/index.css";
 @import "./tokens.css";

@@ -7,7 +7,7 @@
  * @created 2026-10-27 13:43
  * @updated 2026-10-27 13:49
  * @updated 2026-11-01 21:34 汇总 mermaid.css
- * @updated 2026-11-02 20:44 补充层序风险提示：宿主用未分层的元素重置（如 button{border:0}）会盖掉组件样式
+ * @updated 2026-11-02 20:37 补充层序风险提示：宿主用未分层的元素重置（如 button{border:0}）会盖掉组件样式
  */
 
 @layer lkes.tokens, lkes.components;

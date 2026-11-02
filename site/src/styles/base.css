@@ -4,7 +4,7 @@
  *   主按钮用前景色反白，强调色留给链接——一页里彩色的地方越少，越像有人在认真排版。
  * @created 2026-11-02 01:08
  * @updated 2026-11-02 01:40 按钮改中性，去掉 teal 填充与阴影
- * @updated 2026-11-02 20:44 元素级重置收进 @layer reset：未分层声明会压过包内 @layer lkes.components
+ * @updated 2026-11-02 20:37 元素级重置收进 @layer reset：未分层声明会压过包内 @layer lkes.components
  */
 
 /* 元素级重置统一放进 reset 层（层序在 site.css 顶部声明：reset → lkes.tokens → lkes.components）。

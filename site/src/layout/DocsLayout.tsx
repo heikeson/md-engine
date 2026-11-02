@@ -12,7 +12,7 @@
 import { useState, type ReactElement } from "react";
 import { MarkdownRenderer } from "@heikeson/md-engine";
 import { SITE_RENDER_CONFIG } from "../components/render-config";
-import { DOCS, GROUP_ORDER, docNeighbors, type DocEntry } from "../content/docs";
+import { GROUP_ORDER, GROUP_TITLE, docNeighbors, docsOf, type DocEntry } from "../content/docs";
 import { messagesOf } from "../i18n";
 import { collectToc } from "../lib/toc";
 import { Link, useLocalePath } from "../router";
@@ -26,7 +26,9 @@ export function DocsLayout({ doc }: { doc: DocEntry }): ReactElement {
   const { locale } = useLocalePath();
   const messages = messagesOf(locale);
   const toc = collectToc(doc.body);
-  const { prev, next } = docNeighbors(doc.slug);
+  const docs = docsOf(locale);
+  const groups = GROUP_TITLE[locale];
+  const { prev, next } = docNeighbors(doc.slug, locale);
   const [navOpen, setNavOpen] = useState(false);
 
   return (
@@ -61,11 +63,11 @@ export function DocsLayout({ doc }: { doc: DocEntry }): ReactElement {
           aria-label={messages.docsCatalog}
         >
           {GROUP_ORDER.map((group) => {
-            const items = DOCS.filter((item) => item.group === group);
+            const items = docs.filter((item) => item.group === group);
             if (!items.length) return null;
             return (
               <div className="side-group" key={group}>
-                <span className="side-group-title">{group}</span>
+                <span className="side-group-title">{groups[group]}</span>
                 {items.map((item) => (
                   <Link
                     key={item.slug}
@@ -84,7 +86,7 @@ export function DocsLayout({ doc }: { doc: DocEntry }): ReactElement {
 
       <article className="doc-main">
         <header className="doc-head">
-          <span className="doc-eyebrow">{doc.group}</span>
+          <span className="doc-eyebrow">{groups[doc.group]}</span>
           <h1 className="doc-title">{doc.title}</h1>
           <p className="doc-summary">{doc.summary}</p>
         </header>

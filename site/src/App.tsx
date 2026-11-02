@@ -14,7 +14,7 @@
 import { useEffect, type ReactElement } from "react";
 import { MdEngineProvider } from "@heikeson/md-engine";
 import { findDoc } from "./content/docs";
-import { DEFAULT_SITE_LOCALE, messagesOf, type SiteLocale } from "./i18n";
+import { messagesOf, type SiteLocale } from "./i18n";
 import { Footer } from "./layout/Footer";
 import { Header } from "./layout/Header";
 import { DocsPage } from "./pages/DocsPage";
@@ -33,14 +33,12 @@ const TITLE_SUFFIX = "md-engine";
  * @description 英文站暂时只开放首页与 Playground（文档正文待翻译），
  *   其余路径一律给 404，避免出现「英文界面 + 中文正文」的半成品。
  */
-function renderPage(path: string, locale: SiteLocale): ReactElement {
+function renderPage(path: string): ReactElement {
   if (path === "/" || path === "") return <Home />;
   if (path === "/playground") return <Playground />;
-  if (locale === DEFAULT_SITE_LOCALE) {
-    if (path === "/docs") return <DocsPage slug="" />;
-    const docMatch = /^\/docs\/([\w-]+)$/.exec(path);
-    if (docMatch) return <DocsPage slug={docMatch[1]} />;
-  }
+  if (path === "/docs") return <DocsPage slug="" />;
+  const docMatch = /^\/docs\/([\w-]+)$/.exec(path);
+  if (docMatch) return <DocsPage slug={docMatch[1]} />;
   return <NotFound />;
 }
 
@@ -54,13 +52,11 @@ function titleOf(path: string, locale: SiteLocale): string {
   const messages = messagesOf(locale);
   if (path === "/" || path === "") return messages.titleHome;
   if (path === "/playground") return messages.titlePlayground;
-  if (locale === DEFAULT_SITE_LOCALE) {
-    if (path === "/docs") return messages.titleDocs;
-    const docMatch = /^\/docs\/([\w-]+)$/.exec(path);
-    if (docMatch) {
-      const doc = findDoc(docMatch[1]);
-      if (doc) return `${doc.title} · ${TITLE_SUFFIX}`;
-    }
+  if (path === "/docs") return messages.titleDocs;
+  const docMatch = /^\/docs\/([\w-]+)$/.exec(path);
+  if (docMatch) {
+    const doc = findDoc(docMatch[1], locale);
+    if (doc) return `${doc.title} · ${TITLE_SUFFIX}`;
   }
   return messages.titleNotFound;
 }
@@ -88,7 +84,7 @@ export default function App(): ReactElement {
       ) : (
         <>
           <Header />
-          {renderPage(path, locale)}
+          {renderPage(path)}
           <Footer />
         </>
       )}

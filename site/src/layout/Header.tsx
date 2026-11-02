@@ -12,12 +12,7 @@
 
 import { useEffect, useRef, useState, type ReactElement } from "react";
 import { createLocaleStorage } from "@heikeson/md-engine";
-import {
-  DEFAULT_SITE_LOCALE,
-  localePath,
-  messagesOf,
-  type SiteLocale,
-} from "../i18n";
+import { localePath, messagesOf, type SiteLocale } from "../i18n";
 import { Link, navigate, useLocalePath } from "../router";
 import { toggleTheme } from "../theme";
 import { ENGINE_VERSION } from "../version";
@@ -70,11 +65,10 @@ function LanguageToggle({
 }): ReactElement {
   const target: SiteLocale = locale === "zh-CN" ? "en-US" : "zh-CN";
 
-  /** 切语言：英文站尚无文档，文档页一律回到对应语言首页，避免跳到 404 */
+  /** 切语言：同一页面换前缀即可（两种语言都有完整的首页、文档与 Playground） */
   const onClick = (): void => {
-    const logical = localePathNotReady(path, target);
     localeStorage.set(target);
-    navigate(localePath(logical, target));
+    navigate(localePath(path, target));
     window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
   };
 
@@ -85,17 +79,7 @@ function LanguageToggle({
   );
 }
 
-/**
- * 计算目标语言下可用的对应路径
- * @param path 当前逻辑路径
- * @param target 目标语言
- * @returns 目标语言下存在的逻辑路径
- * @description 英文站暂未提供文档：从任一文档页切到英文时回首页。
- */
-function localePathNotReady(path: string, target: SiteLocale): string {
-  if (target !== DEFAULT_SITE_LOCALE && path.startsWith("/docs")) return "/";
-  return path;
-}
+
 
 /**
  * 顶栏
@@ -129,16 +113,13 @@ export function Header(): ReactElement {
 
   const navLinks = (
     <>
-      {/* 英文站暂无文档，导航里直接不出现，避免点进去是 404 */}
-      {locale === DEFAULT_SITE_LOCALE ? (
-        <Link
-          href="/docs"
-          className={`nav-link${isDocs ? " is-active" : ""}`}
-          onClick={() => setMenuOpen(false)}
-        >
-          {messages.navDocs}
-        </Link>
-      ) : null}
+      <Link
+        href="/docs"
+        className={`nav-link${isDocs ? " is-active" : ""}`}
+        onClick={() => setMenuOpen(false)}
+      >
+        {messages.navDocs}
+      </Link>
       <Link
         href="/playground"
         className={`nav-link${path === "/playground" ? " is-active" : ""}`}

@@ -10,7 +10,7 @@
  */
 
 import type { ReactElement } from "react";
-import { DEFAULT_SITE_LOCALE, messagesOf } from "../i18n";
+import { messagesOf } from "../i18n";
 import { Link, useLocalePath } from "../router";
 import { ENGINE_VERSION } from "../version";
 
@@ -30,22 +30,17 @@ const COPYRIGHT_RANGE: string =
 export function Footer(): ReactElement {
   const { locale } = useLocalePath();
   const messages = messagesOf(locale);
-  const showDocs = locale === DEFAULT_SITE_LOCALE;
 
   const columns = [
-    ...(showDocs
-      ? [
-          {
-            title: messages.footerDocs,
-            links: [
-              { label: messages.footerQuickStart, href: "/docs/quick-start" },
-              { label: messages.footerSyntax, href: "/docs/syntax" },
-              { label: messages.footerEditor, href: "/docs/editor" },
-              { label: messages.footerStyling, href: "/docs/styling" },
-            ],
-          },
-        ]
-      : []),
+    {
+      title: messages.footerDocs,
+      links: [
+        { label: messages.footerQuickStart, href: "/docs/quick-start" },
+        { label: messages.footerSyntax, href: "/docs/syntax" },
+        { label: messages.footerEditor, href: "/docs/editor" },
+        { label: messages.footerStyling, href: "/docs/styling" },
+      ],
+    },
     {
       title: messages.footerResources,
       links: [

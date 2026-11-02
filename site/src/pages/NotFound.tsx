@@ -8,8 +8,8 @@
  */
 
 import type { ReactElement } from "react";
-import { DOCS } from "../content/docs";
-import { DEFAULT_SITE_LOCALE, messagesOf } from "../i18n";
+import { docsOf } from "../content/docs";
+import { messagesOf } from "../i18n";
 import { Link, useLocalePath } from "../router";
 
 /**
@@ -19,6 +19,7 @@ import { Link, useLocalePath } from "../router";
 export function NotFound(): ReactElement {
   const { locale } = useLocalePath();
   const messages = messagesOf(locale);
+  const firstDoc = docsOf(locale)[0];
 
   return (
     <main className="notfound">
@@ -29,8 +30,8 @@ export function NotFound(): ReactElement {
         <Link className="btn btn-primary" href="/">
           {messages.notFoundHome}
         </Link>
-        {locale === DEFAULT_SITE_LOCALE ? (
-          <Link className="btn btn-ghost" href={`/docs/${DOCS[0].slug}`}>
+        {firstDoc ? (
+          <Link className="btn btn-ghost" href={`/docs/${firstDoc.slug}`}>
             {messages.notFoundStart}
           </Link>
         ) : null}

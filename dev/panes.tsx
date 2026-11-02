@@ -6,7 +6,8 @@
  */
 
 import type { ReactElement } from "react";
-import { MarkdownRenderer } from "../src/index";
+import { MarkdownRenderer, useLocale } from "../src/index";
+import { devMessages } from "./i18n";
 import { mermaidComponents } from "../src/mermaid/index";
 import { MarkdownEditor } from "../src/editor/index";
 
@@ -25,11 +26,13 @@ export interface PaneProps {
  * @returns 双栏布局
  */
 export function RenderPane({ source, onSourceChange }: PaneProps): ReactElement {
+  const { locale } = useLocale();
+  const messages = devMessages(locale);
   return (
     <div className="flex h-full min-h-0">
       <section className="flex w-[46%] min-w-0 flex-col border-r border-border">
         <div className="shrink-0 border-b border-border px-3 py-1.5 text-xs text-muted-foreground">
-          Markdown 原文（可直接改，右侧实时渲染）
+          {messages.sourcePane}
         </div>
         <textarea
           value={source}

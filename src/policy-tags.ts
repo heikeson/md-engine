@@ -1,13 +1,16 @@
 /**
  * @file 属性与标签类诊断
- * @description 两件事：① 校验内容里的 `href` / `src`（容器属性与普通链接、图片）是否符合协议白名单，
- *   不合法产出 `UNSAFE_HREF`；② 把不在 registry 里的尖括号标签识别为 `UNKNOWN_TAG`。
+ * @description 三件事：① 校验内容里的 `href` / `src`（容器属性与普通链接、图片）是否符合协议白名单，
+ *   不合法产出 `UNSAFE_HREF`；② 把不在 registry 里的尖括号标签识别为 `UNKNOWN_TAG`；
+ *   ③ 检查 `div` 手写 `id` 与标题锚点或彼此冲突，产出 `DUPLICATE_ID`。
  *   渲染行为不在这里改：降级分别由组件（`isSafeHref`）与渲染期 remark 插件负责。
  * @created 2026-10-26 22:20
  * @updated 2026-10-26 22:20
+ * @updated 2026-11-02 10:48 新增 DUPLICATE_ID：div 手写 id 与标题锚点（rehype-slug）或彼此冲突时提示
  */
 
-import type { Image as MdImage, Link, Root, RootContent } from "mdast";
+import type { Image as MdImage, Link, Root, RootContent, Text } from "mdast";
+import GithubSlugger from "github-slugger";
 import { COMPONENTS, ITEMS } from "./registry";
 import type { JsxBlock } from "./syntax/jsx-mdast";
 import type { Diagnostic } from "./policy";
@@ -70,6 +73,78 @@ export function collectUnsafeUrls(tree: Root): Diagnostic[] {
       if (!isSafeHref(url)) report(line, node.type === "link" ? "链接" : "图片", url);
     }
   });
+
+  return diagnostics;
+}
+
+/**
+ * 取节点的纯文本（标题 slug 用）
+ * @param node mdast 节点
+ * @returns 拼接后的文本
+ */
+function nodeText(node: RootContent | RootContent[]): string {
+  if (Array.isArray(node)) return node.map(nodeText).join("");
+  if (node.type === "text" || node.type === "inlineCode") return (node as Text).value;
+  const children = (node as { children?: RootContent[] }).children;
+  return children ? nodeText(children) : "";
+}
+
+/**
+ * 收集重复 id 诊断
+ * @description `div id="x"` 原样透传到 DOM，标题 id 由 rehype-slug 按同一算法（github-slugger）
+ *   生成。两者撞车或两个 div 写同一个 id 时，页面出现重复 id：锚点跳转行为未定义、
+ *   无障碍引用失效。只提示、不改写（与其余诊断同一容错哲学）。
+ *   两遍扫描：先按文档序算出全部标题 slug（与 rehype-slug 的去重后缀口径一致），再查 div。
+ * @param tree mdast 根节点
+ * @returns 诊断列表
+ */
+export function collectDuplicateIds(tree: Root): Diagnostic[] {
+  const diagnostics: Diagnostic[] = [];
+  const slugger = new GithubSlugger();
+  const headingSlugs = new Set<string>();
+
+  // 第一遍：文档序生成标题 slug（rehype-slug 同名标题会加 -1/-2 后缀，这里保持同口径）
+  const collectHeadings = (node: Root | RootContent): void => {
+    if (node.type === "heading") headingSlugs.add(slugger.slug(nodeText(node as RootContent)));
+    const children = (node as { children?: RootContent[] }).children;
+    if (children) for (const child of children) collectHeadings(child);
+  };
+  collectHeadings(tree);
+
+  // 第二遍：div 的手写 id 查重（div 之间 + 与标题锚点之间）
+  const seen = new Map<string, number>();
+  const checkDivs = (node: Root | RootContent): void => {
+    if (node.type === "jsxBlock") {
+      const block = node as JsxBlock;
+      if (block.name === "div") {
+        const id = block.attributes?.id;
+        const line = block.position?.start.line ?? 1;
+        if (typeof id === "string" && id.length > 0) {
+          const first = seen.get(id);
+          if (headingSlugs.has(id)) {
+            diagnostics.push({
+              code: "DUPLICATE_ID",
+              level: "warn",
+              line,
+              message: `div id="${id}" 与标题生成的锚点重复，页面将出现两个同名 id`,
+            });
+          } else if (first !== undefined) {
+            diagnostics.push({
+              code: "DUPLICATE_ID",
+              level: "warn",
+              line,
+              message: `div id="${id}" 与第 ${first} 行的 div 重复，页面将出现两个同名 id`,
+            });
+          } else {
+            seen.set(id, line);
+          }
+        }
+      }
+    }
+    const children = (node as { children?: RootContent[] }).children;
+    if (children) for (const child of children) checkDivs(child);
+  };
+  checkDivs(tree);
 
   return diagnostics;
 }

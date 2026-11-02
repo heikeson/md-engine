@@ -7,14 +7,24 @@
  * @updated 2026-11-01 21:24
  * @updated 2026-11-01 22:37 令牌三级回落（引擎令牌→宿主语义变量→内置）+ oklch/hsl 归一；取色改按图表元素
  * @updated 2026-11-01 22:51 取色改为「JS 配置 → 组件自带 --lkes-chart-* → 内置」，不再读宿主变量
+ * @updated 2026-11-02 10:35 缓存加 LRU 上限（防编辑长文时内存只涨不落）；超时改为可识别异常，文案由视图侧本地化
  */
 
 "use client";
 
 import { useEffect, useState, type RefObject } from "react";
 import DOMPurify from "dompurify";
+import { useUIText } from "../internal/text";
 import type { ChartTokens } from "./tokens";
 import { buildMermaidConfig, getChartTheme, hasCustomChartTheme, tokenFingerprint } from "./tokens";
+
+/** 渲染超时异常（消息文案由视图侧按 UIText 生成） */
+export class MermaidRenderTimeoutError extends Error {
+  constructor() {
+    super("MERMAID_RENDER_TIMEOUT");
+    this.name = "MermaidRenderTimeoutError";
+  }
+}
 
 /** mermaid 模块的最小接口（不引 mermaid 类型：它是可选 peer，未装也能构建） */
 interface MermaidLike {
@@ -37,8 +47,9 @@ export interface RenderResult {
 /** 单次渲染超时（毫秒）：一张卡死不能拖垮整页 */
 const RENDER_TIMEOUT = 10_000;
 
-/** 渲染产物缓存：键为「令牌指纹 + 源码」 */
+/** 渲染产物缓存：键为「令牌指纹 + 源码」；LRU，超上限淘汰最久未用（SVG 可达数百 KB，必须封顶） */
 const CACHE = new Map<string, string>();
+const CACHE_LIMIT = 32;
 
 /** 渲染 id 自增序号 */
 let seq = 0;
@@ -77,7 +88,7 @@ function runExclusive<T>(task: () => Promise<T>): Promise<T> {
  */
 function withTimeout<T>(task: Promise<T>, ms: number): Promise<T> {
   return new Promise<T>((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error("图表渲染超时")), ms);
+    const timer = setTimeout(() => reject(new MermaidRenderTimeoutError()), ms);
     task.then(
       (value) => {
         clearTimeout(timer);
@@ -182,7 +193,12 @@ export function resolveChartTokens(dark: boolean, element?: HTMLElement | null):
 export async function renderChart(source: string, tokens: ChartTokens): Promise<string> {
   const key = `${tokenFingerprint(tokens)}#${source}`;
   const cached = CACHE.get(key);
-  if (cached) return cached;
+  if (cached) {
+    // LRU：命中即刷新为最近使用（Map 保持插入序，删旧再插即置顶）
+    CACHE.delete(key);
+    CACHE.set(key, cached);
+    return cached;
+  }
   const mermaid = await loadMermaid();
   const svg = await runExclusive(async () => {
     mermaid.initialize(buildMermaidConfig(tokens));
@@ -192,6 +208,10 @@ export async function renderChart(source: string, tokens: ChartTokens): Promise<
   const clean = sanitizeSvg(svg);
   // 失败产物不入缓存：下次挂载自动重试
   CACHE.set(key, clean);
+  if (CACHE.size > CACHE_LIMIT) {
+    const oldest = CACHE.keys().next().value;
+    if (oldest !== undefined && oldest !== key) CACHE.delete(oldest);
+  }
   return clean;
 }
 
@@ -209,6 +229,7 @@ export function useMermaidRender(
   elementRef?: RefObject<HTMLElement | null>,
 ): RenderResult {
   const [state, setState] = useState<RenderResult>({ status: "idle", svg: "", error: "" });
+  const text = useUIText();
 
   useEffect(() => {
     if (!enabled) return;
@@ -221,7 +242,12 @@ export function useMermaidRender(
         if (!cancelled) setState({ status: "ready", svg, error: "" });
       } catch (error) {
         if (!cancelled) {
-          const message = error instanceof Error ? error.message : "图表渲染失败";
+          const message =
+            error instanceof MermaidRenderTimeoutError
+              ? text.mermaidTimeout
+              : error instanceof Error && error.message !== "MERMAID_RENDER_TIMEOUT"
+                ? error.message
+                : text.mermaidFallbackError;
           // 失败要可见：降级成源码，并在控制台留一条可诊断的记录
           console.warn("[md-engine] mermaid 渲染失败，已降级为源码：", message);
           setState({ status: "error", svg: "", error: message });
@@ -231,7 +257,8 @@ export function useMermaidRender(
     return () => {
       cancelled = true;
     };
-  }, [source, enabled, dark]);
+    // text 为上下文中的稳定引用（覆写变化才更新），并入依赖不影响常规渲染
+  }, [source, enabled, dark, text]);
 
   return state;
 }

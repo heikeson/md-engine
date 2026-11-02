@@ -6,6 +6,7 @@
  * @created 2026-10-24 20:24
  * @updated 2026-10-24 20:24
  * @updated 2026-11-01 21:47 rawBody 容器把源码以 props 交给组件；渲染侧同步 collectMermaid 标记
+ * @updated 2026-11-02 10:33 新增 config.text 文案覆写；components/plugins 浅比较稳定化（内联配置不再击穿 memo）
  */
 
 import { useMemo, type ComponentType, type ReactElement } from "react";
@@ -32,6 +33,8 @@ import type { JsxBlock } from "./syntax/jsx-mdast";
 import { collectMermaid, enforceMaxDepth } from "./policy";
 import { rehypeCodeMeta } from "./rehype-code-meta";
 import { rehypeSourcePositions } from "./rehype-source-positions";
+import { UITextProvider, type UITextPatch } from "./internal/text";
+import { useShallowStable } from "./internal/use-shallow-stable";
 
 /** 宿主可覆盖的组件类型 */
 type AnyComponent = ComponentType<Record<string, unknown>>;
@@ -50,6 +53,11 @@ export interface RenderConfig {
    * @description 仅供编辑器分屏做内容对齐的滚动同步；前台文章保持关闭以省体积
    */
   sourcePositions?: boolean;
+  /**
+   * UI 文案覆写（浅合并，未给的键保持中文默认值）
+   * @description 只影响包内固定文案（aria-label、图表工具栏等），不碰正文内容
+   */
+  text?: UITextPatch;
 }
 
 /** 渲染器参数 */
@@ -150,10 +158,11 @@ export default function MarkdownRenderer({
   className,
   config,
 }: MarkdownRendererProps): ReactElement {
-  const overrides = config?.components;
-  const extraRemark = config?.remarkPlugins;
-  const extraRehype = config?.rehypePlugins;
+  const overrides = useShallowStable(config?.components);
+  const extraRemark = useShallowStable(config?.remarkPlugins);
+  const extraRehype = useShallowStable(config?.rehypePlugins);
   const sourcePositions = config?.sourcePositions;
+  const text = useShallowStable(config?.text);
   const processor = useMemo(
     () => createProcessor(extraRemark, extraRehype, sourcePositions),
     [extraRemark, extraRehype, sourcePositions],
@@ -177,5 +186,9 @@ export default function MarkdownRenderer({
     });
   }, [content, overrides, processor]);
 
-  return <div className={className}>{rendered}</div>;
+  return (
+    <UITextProvider text={text}>
+      <div className={className}>{rendered}</div>
+    </UITextProvider>
+  );
 }

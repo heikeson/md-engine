@@ -24,7 +24,7 @@ import {
   enforceMaxDepth,
   type Diagnostic,
 } from "./policy";
-import { collectUnknownTags, collectUnsafeUrls } from "./policy-tags";
+import { collectDuplicateIds, collectUnknownTags, collectUnsafeUrls } from "./policy-tags";
 import { extractBlocks, type Block } from "./blocks";
 
 /** 解析选项 */
@@ -70,6 +70,7 @@ export function parse(md: string, options?: ParseOptions): ParseResult {
     ...collectUnsafeUrls(tree),
     ...collectUnknownTags(tree),
     ...collectIndentAsCode(tree, source),
+    ...collectDuplicateIds(tree),
     // 图表容器：空源码 / 超限。必须在 enforceMaxDepth 之后——
     // 被深度裁剪降级的图表块不再出图，也就不该再报图表自身的诊断
     ...collectMermaid(tree),

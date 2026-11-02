@@ -3,8 +3,8 @@
 > @file README.md
 > @description React Markdown 内容引擎：尖括号容器语法的解析、渲染、序列化、格式化与 CodeMirror 6 编辑器内核，单一 npm 包五个入口。
 > @created 2026-10-24 19:57
-> @updated 2026-10-27 19:10 版本口径对齐 0.3.0（样式原生 CSS + 令牌，样式目录改分片）
-> @status v0.3.0
+> @updated 2026-11-02 10:55 版本口径对齐 0.4.0；补文案覆写、快捷键、DUPLICATE_ID 与 ESM-only 说明
+> @status v0.4.0
 
 一个面向 React 的 Markdown 内容引擎。在标准 Markdown（GFM + 数学公式）之上，把
 `<Callout>`、`<Cards><Card /></Cards>` 这类**尖括号容器**纳入解析流程，并保证
@@ -30,6 +30,7 @@ npm install @heikeson/md-engine
 | React | `>=19`（peer dependency，`react` + `react-dom`） |
 | Node | `>=20`（构建与发布；运行时无要求） |
 | Tailwind | 不需要。包内样式为原生 CSS，颜色走 `--lkes-*` 变量，可脱离 Tailwind 独立使用 |
+| 模块格式 | **ESM-only**：`exports` 只提供 `import` 条件，无 CJS 入口。CommonJS 项目（老 Jest、webpack4）需经 ESM 互操作层或打包后使用 |
 
 ## 快速开始
 
@@ -89,6 +90,12 @@ export default function EditorPage() {
 
 编辑器以 Markdown 文本为唯一真源：左 CodeMirror、右实时预览，工具栏插入的容器骨架保证「插进去即合法」。
 
+内置快捷键（与工具栏按钮同一动作实现）：`Mod+B/I/E` 粗体/斜体/行内码、`Mod+Shift+S` 删除线、
+`Mod+1` 二级标题、`Mod+Shift+Q` 引用、`Mod+Shift+L` 列表。
+
+预览要出交互式图表时透传渲染配置：`config={{ rendererConfig: { components: mermaidComponents } }}`；
+`config.text` 可覆写工具栏与状态栏文案。
+
 ### 自定义
 
 ```tsx
@@ -96,15 +103,21 @@ export default function EditorPage() {
   content={md}
   config={{
     // 单组件覆盖，未覆盖的仍用包内实现
+    // 提示：覆写表请提为模块级常量（如 README 图表一节的 `components`），
+    // 内联字面量虽已被浅比较兜住，但常量写法语义最清晰
     components: { Callout: MyCallout },
     // 追加插件（rehype 须为同步插件，以保证 SSR 安全）
     remarkPlugins: [],
     rehypePlugins: [],
     // 块级元素输出 data-src-start（编辑器滚动同步用，阅读页保持关闭）
     sourcePositions: false,
+    // 包内固定文案覆写（aria-label、图表工具栏等；浅合并，未给的键保持中文默认）
+    text: { imageZoomClose: "Close zoomed image" },
   }}
 />
 ```
+
+自定义组件里可用 `useUIText()` 读取同一份生效文案，保持与包内组件文案口径一致。
 
 ### 图表（`/mermaid` 入口）
 
@@ -187,6 +200,7 @@ const components = { ...mdxComponents, ...mermaidComponents };
 | `extractBlocks(tree, source)` | 从 mdast 提取扁平块索引 |
 | `MarkdownRenderer` | `{ content, className?, config? }` |
 | `mdxComponents` | 组件映射表，自定义渲染或按需取单个组件 |
+| `defaultUIText` / `useUIText` / 类型 `UIText` / `UITextPatch` | 包内固定文案表与覆写口径 |
 | `COMPONENTS` / `ITEMS` / `MAX_CONTAINER_DEPTH` | 语法注册表（唯一事实来源） |
 | `getComponent` / `getItemSpec` / `listComponents` / `isContainerWithItems` | 注册表查询 |
 | `jsxBlocks` / `remarkJsxBlocks` / `jsxFromMarkdown` / `jsxToMarkdown` / `parseOpenTag` | 自行组装 unified 管线时用 |
@@ -197,7 +211,7 @@ const components = { ...mdxComponents, ...mermaidComponents };
 
 | 导出 | 说明 |
 |---|---|
-| `MarkdownEditor` | `{ value, onChange, view?, config?, fullscreen?, onToggleFullscreen? }` |
+| `MarkdownEditor` | `{ value, onChange, view?, config?, fullscreen?, onToggleFullscreen? }`；`config` 支持 `uploadImage` / `placeholder` / `readOnly` / `rendererConfig` / `text` |
 | `EditorConfig` / `EditorView` / `MarkdownEditorProps` | 类型 |
 | `INSERTABLE_BLOCKS` / `blockSnippet(name)` | 可插入的容器与骨架文本 |
 | `insertAtCursor` / `toggleLinePrefix` / `wrapSelection` | 纯函数文本动作，可脱离编辑器复用 |
@@ -252,6 +266,7 @@ Markdown
 | 非白名单协议的 `href` / `src` | `href` → `#`、`src` 移除 | `UNSAFE_HREF` |
 | `<Mermaid>` 容器体为空 | 渲染为源码块 + 提示，不白屏 | `MERMAID_EMPTY` |
 | `<Mermaid>` 源码 > 20 KB | 不渲染图表，原样显示源码 | `MERMAID_TOO_LARGE` |
+| `div id` 与标题锚点或彼此重复 | 照常渲染（提示重复 id 风险），不改写内容 | `DUPLICATE_ID` |
 
 协议白名单为 `http(s)` / `mailto` / `tel`，以及任意无 scheme 的引用（相对路径、`//host`、`#锚点`、`?查询`）。
 

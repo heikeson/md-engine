@@ -6,14 +6,17 @@
  * @created 2026-10-24 21:12
  * @updated 2026-10-24 21:10 补齐图片上传、修复 hook 依赖与声明顺序
  * @updated 2026-11-01 23:02 EditorConfig 增加 rendererConfig：预览区可透传组件覆盖（如 mermaidComponents）
+ * @updated 2026-11-02 10:44 预览与诊断改用 useDeferredValue（长文输入不卡键）；新增 config.text 文案覆写；工具栏动作补快捷键
  */
 
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import MarkdownRenderer, { type RenderConfig } from "../render";
 import { parse } from "../parse";
 import { normalizeMarkdown } from "../format";
+import { mergeUIText, UITextProvider, type UITextPatch } from "../internal/text";
+import { useShallowStable } from "../internal/use-shallow-stable";
 import {
   insertBlockAt,
   toggleLinePrefix,
@@ -38,6 +41,8 @@ export interface EditorConfig {
    *   编辑器入口不直接依赖 `/mermaid`，否则 CodeMirror 入口会连带 mermaid 一起进产物。
    */
   rendererConfig?: RenderConfig;
+  /** UI 文案覆写（工具栏 / 状态栏 / 预览内组件文案，浅合并） */
+  text?: UITextPatch;
 }
 
 /** 视图 */
@@ -56,26 +61,26 @@ export interface MarkdownEditorProps {
   onToggleFullscreen?: () => void;
 }
 
-/** 视图切换项 */
-const VIEW_OPTIONS: ReadonlyArray<{ value: EditorView; label: string }> = [
-  { value: "source", label: "编辑" },
-  { value: "split", label: "分屏" },
-  { value: "preview", label: "预览" },
+/** 视图切换项（label 取 UIText 键） */
+const VIEW_OPTIONS: ReadonlyArray<{ value: EditorView; labelKey: "editorViewSource" | "editorViewSplit" | "editorViewPreview" }> = [
+  { value: "source", labelKey: "editorViewSource" },
+  { value: "split", labelKey: "editorViewSplit" },
+  { value: "preview", labelKey: "editorViewPreview" },
 ];
 
 /** 工具栏：包裹类 */
 const WRAP_ITEMS = [
-  { key: "bold", label: "粗体", before: "**", after: "**" },
-  { key: "italic", label: "斜体", before: "*", after: "*" },
-  { key: "strike", label: "删除线", before: "~~", after: "~~" },
-  { key: "code", label: "行内码", before: "`", after: "`" },
+  { key: "bold", labelKey: "editorBold", before: "**", after: "**" },
+  { key: "italic", labelKey: "editorItalic", before: "*", after: "*" },
+  { key: "strike", labelKey: "editorStrike", before: "~~", after: "~~" },
+  { key: "code", labelKey: "editorCode", before: "`", after: "`" },
 ] as const;
 
 /** 工具栏：行首前缀类 */
 const LINE_ITEMS = [
-  { key: "h2", label: "H2", prefix: "## " },
-  { key: "quote", label: "引用", prefix: "> " },
-  { key: "list", label: "列表", prefix: "- " },
+  { key: "h2", labelKey: "editorH2", prefix: "## " },
+  { key: "quote", labelKey: "editorQuote", prefix: "> " },
+  { key: "list", labelKey: "editorList", prefix: "- " },
 ] as const;
 
 /**
@@ -101,6 +106,14 @@ export default function MarkdownEditor({
   /** 图片处理最新实现（编辑器实例只建一次，经 ref 转发） */
   const imageHandlerRef = useRef<(file: File) => void>(() => {});
   const [selection, setSelection] = useState<Selection>({ start: 0, end: 0 });
+
+  // 文案：浅稳定化内联覆写对象，合并后同时供工具栏与预览子树（Provider）使用
+  const textPatch = useShallowStable(config?.text);
+  const text = useMemo(() => mergeUIText(textPatch), [textPatch]);
+
+  // 预览与诊断走延迟值：长文档每次按键全量 parse + 渲染会拖住输入，
+  // useDeferredValue 让 React 优先保证输入流畅，重活在后台帧完成
+  const deferredValue = useDeferredValue(value);
 
   // 最新值与回调写入 ref（render 期间禁止写 ref）
   useEffect(() => {
@@ -177,13 +190,14 @@ export default function MarkdownEditor({
       onSelection: setSelection,
       onImage: (file) => imageHandlerRef.current(file),
       readOnly: config?.readOnly,
+      wrapPlaceholder: text.editorWrapPlaceholder,
     });
     handleRef.current = handle;
     return () => {
       handle.destroy();
       handleRef.current = null;
     };
-  }, [viewMode, config?.readOnly]);
+  }, [viewMode, config?.readOnly, text.editorWrapPlaceholder]);
 
   // 分屏时建立"按内容对齐"的双向滚动同步（块级锚点，非比例映射）
   useEffect(() => {
@@ -200,7 +214,7 @@ export default function MarkdownEditor({
     handleRef.current?.setDoc(value);
   }, [value]);
 
-  const diagnostics = useMemo(() => parse(value).diagnostics, [value]);
+  const diagnostics = useMemo(() => parse(deferredValue).diagnostics, [deferredValue]);
 
   /** 失焦时整理排版（补空行、收敛空行），不改语义 */
   const handleBlur = useCallback((): void => {
@@ -212,16 +226,21 @@ export default function MarkdownEditor({
   }, []);
 
   return (
+    <UITextProvider text={textPatch}>
     <div className="md-editor">
       <div className="md-editor-toolbar">
         {WRAP_ITEMS.map((item) => (
           <button
             key={item.key}
             type="button"
-            onClick={() => applyLive((doc, sel) => wrapSelection(doc, sel, item.before, item.after))}
+            onClick={() =>
+              applyLive((doc, sel) =>
+                wrapSelection(doc, sel, item.before, item.after, text.editorWrapPlaceholder),
+              )
+            }
             disabled={config?.readOnly}
           >
-            {item.label}
+            {text[item.labelKey]}
           </button>
         ))}
         <span className="md-editor-sep" />
@@ -232,7 +251,7 @@ export default function MarkdownEditor({
             onClick={() => applyLive((doc, sel) => toggleLinePrefix(doc, sel, item.prefix))}
             disabled={config?.readOnly}
           >
-            {item.label}
+            {text[item.labelKey]}
           </button>
         ))}
         <span className="md-editor-sep" />
@@ -247,7 +266,7 @@ export default function MarkdownEditor({
           </button>
         ))}
         <span className="md-editor-grow" />
-        <div className="md-editor-views" role="group" aria-label="视图切换">
+        <div className="md-editor-views" role="group" aria-label={text.editorViewGroup}>
           {VIEW_OPTIONS.map((option) => (
             <button
               key={option.value}
@@ -256,13 +275,13 @@ export default function MarkdownEditor({
               aria-pressed={viewMode === option.value}
               onClick={() => setViewMode(option.value)}
             >
-              {option.label}
+              {text[option.labelKey]}
             </button>
           ))}
         </div>
         {onToggleFullscreen ? (
           <button type="button" onClick={onToggleFullscreen}>
-            {fullscreen ? "退出全屏" : "全屏"}
+            {fullscreen ? text.editorExitFullscreen : text.editorFullscreen}
           </button>
         ) : null}
       </div>
@@ -272,24 +291,29 @@ export default function MarkdownEditor({
         {viewMode !== "source" && (
           <div ref={previewRef} className="md-editor-preview">
             {/* sourcePositions：给块级元素写 data-src-start，供滚动同步按内容对齐；
-                components 由宿主注入（传 mermaidComponents 后图表在编辑器里也是交互视图） */}
+                components 由宿主注入（传 mermaidComponents 后图表在编辑器里也是交互视图）；
+                content 用延迟值：输入帧先渲染旧预览，后台帧追上新内容 */}
             <MarkdownRenderer
-              content={value}
+              content={deferredValue}
               className="prose-site"
-              config={{ ...config?.rendererConfig, sourcePositions: true }}
+              config={{ ...config?.rendererConfig, sourcePositions: true, text: textPatch }}
             />
           </div>
         )}
       </div>
 
       <div className="md-editor-status">
-        <span>{value.length} 字</span>
+        <span>
+          {value.length} {text.editorWordCountUnit}
+        </span>
         {diagnostics.length > 0 && (
           <span className="md-editor-status-warn">
-            {diagnostics.length} 条提示：{diagnostics[0].message}
+            {diagnostics.length} {text.editorDiagnosticPrefix}
+            {diagnostics[0].message}
           </span>
         )}
       </div>
     </div>
+    </UITextProvider>
   );
 }

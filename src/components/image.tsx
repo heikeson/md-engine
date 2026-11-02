@@ -4,11 +4,13 @@
  *   外链图片来源不确定，用原生 img 而非 next/image（后者需要逐域配置且对未知尺寸不友好）。
  * @created 2026-09-03 21:54
  * @updated 2026-10-24 22:20 新增 zoom（点击全屏放大，Esc 关闭）
+ * @updated 2026-11-02 10:41 遮罩可聚焦、Enter/Space 可关闭并在打开时接管焦点；关闭文案走 UIText
  */
 "use client";
 
-import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { isSafeHref } from "../internal/url-policy";
+import { useUIText } from "../internal/text";
 
 /** 图片参数 */
 export interface ImageProps {
@@ -37,6 +39,8 @@ export default function Image({
   children,
 }: ImageProps) {
   const [open, setOpen] = useState(false);
+  const maskRef = useRef<HTMLDivElement>(null);
+  const text = useUIText();
   // 属性来自正文，不能直接信任：协议白名单不过就不加载（诊断在 policy-tags 里给）
   const safeSrc = src && isSafeHref(src) ? src : undefined;
   const w = width ? (typeof width === "number" ? `${width}px` : width) : undefined;
@@ -51,6 +55,11 @@ export default function Image({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+
+  // 打开即把焦点移入遮罩：键盘用户能立刻感知到放大态，且 Enter/Space 可关闭
+  useEffect(() => {
+    if (open) maskRef.current?.focus();
   }, [open]);
 
   return (
@@ -72,11 +81,18 @@ export default function Image({
       ) : null}
       {zoom && open && safeSrc ? (
         <div
+          ref={maskRef}
           className="image-zoom-mask"
           role="button"
-          tabIndex={-1}
-          aria-label="关闭放大图片"
+          tabIndex={0}
+          aria-label={text.imageZoomClose}
           onClick={() => setOpen(false)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              setOpen(false);
+            }
+          }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={src} alt={alt ?? ""} className="image-zoom-img" />

@@ -5,6 +5,7 @@
  *   主题走 CSS 变量（`--lkes-*`），不写死色值。
  * @created 2026-10-24 21:02
  * @updated 2026-10-24 21:02
+ * @updated 2026-11-02 10:46 新增 Markdown 动作快捷键（加粗/斜体/删除线/行内码/标题/引用/列表）
  */
 
 "use client";
@@ -13,7 +14,50 @@ import { EditorState } from "@codemirror/state";
 import { EditorView, drawSelection, keymap, lineNumbers } from "@codemirror/view";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
-import type { Selection } from "./actions";
+import { toggleLinePrefix, wrapSelection, type EditResult, type Selection } from "./actions";
+
+/** 快捷键定义：与工具栏按钮共用 actions 纯函数，保证行为一致 */
+interface ShortcutDef {
+  key: string;
+  run: (doc: string, sel: Selection) => EditResult;
+}
+
+/**
+ * 构建快捷键表（包裹类需要占位文案，由调用方从 UIText 传入）
+ * @param wrapPlaceholder 空选区包裹时的占位文字
+ * @returns 快捷键定义
+ */
+function buildShortcuts(wrapPlaceholder: string): ShortcutDef[] {
+  return [
+    { key: "Mod-b", run: (d, s) => wrapSelection(d, s, "**", "**", wrapPlaceholder) },
+    { key: "Mod-i", run: (d, s) => wrapSelection(d, s, "*", "*", wrapPlaceholder) },
+    { key: "Mod-e", run: (d, s) => wrapSelection(d, s, "`", "`", wrapPlaceholder) },
+    { key: "Mod-Shift-s", run: (d, s) => wrapSelection(d, s, "~~", "~~", wrapPlaceholder) },
+    { key: "Mod-1", run: (d, s) => toggleLinePrefix(d, s, "## ") },
+    { key: "Mod-Shift-q", run: (d, s) => toggleLinePrefix(d, s, "> ") },
+    { key: "Mod-Shift-l", run: (d, s) => toggleLinePrefix(d, s, "- ") },
+  ];
+}
+
+/**
+ * 在编辑器上执行一次文本动作（与工具栏同一 diff-patch 通道，撤销栈与光标行为一致）
+ * @param view CodeMirror 视图
+ * @param run 动作纯函数
+ * @returns 是否消费了该按键（只读态不消费）
+ */
+function runTextAction(view: EditorView, run: (doc: string, sel: Selection) => EditResult): boolean {
+  if (view.state.readOnly) return false;
+  const doc = view.state.doc.toString();
+  const { from, to } = view.state.selection.main;
+  const result = run(doc, { start: from, end: to });
+  const change = diffChange(doc, result.value);
+  view.dispatch({
+    changes: change ?? undefined,
+    selection: { anchor: result.selection.start, head: result.selection.end },
+    scrollIntoView: true,
+  });
+  return true;
+}
 
 /** 编辑器句柄 */
 export interface EditorHandle {
@@ -42,6 +86,8 @@ export interface CreateEditorOptions {
   /** 粘贴/拖拽图片回调（由上层负责上传并插入 Markdown） */
   onImage?: (file: File) => void;
   readOnly?: boolean;
+  /** 空选区包裹快捷键的占位文案（来自 UIText；缺省用「文本」） */
+  wrapPlaceholder?: string;
 }
 
 /** 编辑器外观：全部引用 CSS 变量，随宿主主题走 */
@@ -85,7 +131,16 @@ const THEME = EditorView.theme({
  * @returns 句柄
  */
 export function createEditor(options: CreateEditorOptions): EditorHandle {
-  const { parent, value, onChange, onSelection, onImage, readOnly } = options;
+  const { parent, value, onChange, onSelection, onImage, readOnly, wrapPlaceholder } = options;
+
+  // 自定义快捷键放在 defaultKeymap 之前：同名组合（如 Mod-b）以本表为准
+  const shortcutKeymap = keymap.of(
+    buildShortcuts(wrapPlaceholder ?? "文本").map((item) => ({
+      key: item.key,
+      preventDefault: true,
+      run: (view: EditorView) => runTextAction(view, item.run),
+    })),
+  );
 
   const view = new EditorView({
     parent,
@@ -96,6 +151,7 @@ export function createEditor(options: CreateEditorOptions): EditorHandle {
         history(),
         drawSelection(),
         EditorView.lineWrapping,
+        shortcutKeymap,
         keymap.of([...defaultKeymap, ...historyKeymap]),
         markdown({ base: markdownLanguage }),
         THEME,

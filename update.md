@@ -1,19 +1,23 @@
 # 版本更新记录
 
 > @file update.md
-> @description `@heikeson/md-engine` 的版本更新记录，倒序累积。每次发版在此一次性写清「更新内容 + 修复内容」，不记录操作步骤。
+> @description `@heikeson/md-engine` 的版本更新记录，倒序累积。每次发版在此一次性写清「更新内容 + 修复内容」，不记录操作步骤。GitHub Release 正文由 `.github/workflows/release.yml` 从本文件同名版本段切出，故版本标题必须是 `## vX.Y.Z — 日期`。
 > @created 2026-10-26 23:37
 > @updated 2026-11-01 22:31 记录 0.4.0（含图表 UI 定稿）
 > @updated 2026-11-02 20:50 记录 0.5.0（国际化、无障碍与性能增强、组件自洽外观）
 > @updated 2026-11-02 21:40 记录 0.5.1（TypeItem 自闭合、类型表行丢失修复）
 > @updated 2026-11-02 23:00 记录未发布的图表交互修复（整画布拖动、缩放定位）
 > @updated 2026-11-02 23:14 发版 0.5.2：图表交互修复定稿（整画布拖动、初始适配居中、双指捏合、手势期直写 DOM）
+> @updated 2026-11-05 22:51 标题统一为 `## vX.Y.Z — 日期`；各版本补「一句话摘要」「升级与使用」「完整变更」，供 release.yml 抽取 Release 正文
+> @note 「升级与使用」按 npm 包口径写四项：依赖 / 配置 / 产物 / 回滚。数据库项不适用（本包不落库），镜像项由「产物」承担（`dist/` 与 npm 版本），故均不单列。
 > @status 0.5.2 已记录
 > @readonly 由维护者（@heikeson）维护，请勿直接编辑；变更请提 issue
 
 ---
 
-## 0.5.2 — 2026-11-02
+## v0.5.2 — 2026-11-02
+
+**一句话摘要**：修复 `<Mermaid>` 图表交互——整块画布可拖动、初始按容器自动适配居中、触屏支持双指捏合，手势期间直接写 DOM 不再逐帧重渲染。升级只需改版本号，无需改代码。
 
 ### 修复内容
 
@@ -36,9 +40,20 @@
 | 手势性能 | 变换层 `transform` 由 `use-zoom` 直接写 DOM，手势期间不再逐帧触发 React 重新渲染；文本选择锁改为仅在拖动期间生效 |
 | 样式 | 新增 `.lkes-mermaid-viewport`；`.lkes-mermaid-canvas` 改绝对定位 + 自然尺寸，mermaid 内联的 `max-width` 由包内 CSS 接管 |
 
+### 升级与使用
+
+- **依赖**：`npm install @heikeson/md-engine@0.5.2`；`mermaid` 仍是可选 peer（建议 11.x），版本要求未变。
+- **配置**：无新增配置项；`<Mermaid>` 的 `height` 语义不变（不写 / `auto` 仍为自适应）。
+- **产物**：`dist/` 与 `dist/styles.css` 重新构建（新增 `.lkes-mermaid-viewport` 规则），宿主需重新构建一次。
+- **回滚**：把依赖改回 `0.5.1` 即可，无数据迁移、无 API 变化。
+
+**Full Changelog**: https://github.com/heikeson/md-engine/compare/v0.5.1...v0.5.2
+
 ---
 
-## 0.5.1 — 2026-11-02
+## v0.5.1 — 2026-11-02
+
+**一句话摘要**：`<TypeItem>` 支持自闭合写法，修复 `<TypeTable>` 只渲染表头、数据行整块丢失。升级只需改版本号。
 
 ### 更新内容
 
@@ -53,9 +68,20 @@
 | `<TypeTable>` 只渲染出表头，数据行整块丢失且无诊断 | `ITEMS.TypeItem` 未声明 `selfClosing`，`<TypeItem … />` 退回 CommonMark 的 HTML 块，被渲染管线当文本丢弃。补上声明后按容器子项正常解析，块索引的 `items` 也如实给出每一行 |
 | 站点文档 8 张属性表空白 | 中英文 `syntax` / `editor` 四份文档均使用自闭合写法，随上一条一并恢复，无需改内容 |
 
+### 升级与使用
+
+- **依赖**：`npm install @heikeson/md-engine@0.5.1`。
+- **配置**：无新增配置项；自闭合写法属语法新增（C1 只增不改），原有块形态照旧可用。
+- **产物**：`dist/` 与 `dist/styles.css` 重新构建，宿主需重新构建一次。
+- **回滚**：把依赖改回 `0.5.0` 即可；已用自闭合写法写的文章在旧版本下会退化成 HTML 块，回滚前请核对正文。
+
+**Full Changelog**: https://github.com/heikeson/md-engine/compare/v0.5.0...v0.5.1
+
 ---
 
-## 0.5.0 — 2026-11-02
+## v0.5.0 — 2026-11-02
+
+**一句话摘要**：新增国际化（i18n）与 RTL 支持、编辑器快捷键与性能优化、无障碍补强；组件外观自洽，宿主不再写样式补丁。不传 `locale` 的存量代码行为不变（默认 `zh-CN`）。
 
 ### 更新内容
 
@@ -84,9 +110,20 @@
 | 切语言丢光标与撤销栈 | 编辑器重建依赖收敛，placeholder 走 `Compartment` 热替换，切语言不再重挂载 |
 | `tsup` 自动 clean 与 d.ts 竞争 | 移除 `tsup` 的 `clean`，改由 `dev/clean-dist.mjs` 在构建前统一清理 |
 
+### 升级与使用
+
+- **依赖**：`npm install @heikeson/md-engine@0.5.0`；新增直接依赖 `github-slugger`、`intl-messageformat`，随包安装，无需手工处理；`mermaid` 仍为可选 peer。
+- **配置**：新增可选 `locale` / `messages` / `fallbackLocale` 与编辑器 `placeholder`，全部带默认值（缺省等于原有 `zh-CN` 文案）；要换语言在根节点包一层 `MdEngineProvider`。
+- **产物**：`dist/` 与 `dist/styles.css` 重新构建；新增 `./locales/zh-CN`、`./locales/en-US` 两个子路径导出，宿主需重新构建一次。
+- **回滚**：把依赖改回 `0.4.0` 即可；仅用到默认中文文案的项目无需改动代码，自建 `messages` 补丁的项目回滚后失效。
+
+**Full Changelog**: https://github.com/heikeson/md-engine/compare/v0.4.0...v0.5.0
+
 ---
 
-## 0.4.0 — 2026-11-01
+## v0.4.0 — 2026-11-01
+
+**一句话摘要**：新增 `<Mermaid>` 容器与 `/mermaid` 交互图表入口（懒加载、缩放拖动、SVG/PNG 导出），图表配色改为包内自带亮/暗两套。不用图表的页面可完全忽略，主入口零引用。
 
 ### 更新内容
 
@@ -124,7 +161,20 @@
 - 依赖：`mermaid` 为可选 peer（建议 11.x），`dompurify` 为直接依赖（随包安装）。
 - 诊断只做"空源码"与"超限"两条：源码里出现字面量 `</Mermaid>` 时行为已由"只认结尾处的闭合标签"约束，无需额外诊断码。
 
-## 0.3.1 — 2026-10-28
+### 升级与使用
+
+- **依赖**：`npm install @heikeson/md-engine@0.4.0`；`mermaid` 升为可选 peer（建议 11.x），`dompurify` 为直接依赖；不用图表则无需安装 `mermaid`。
+- **配置**：无破坏性配置变更；编辑器要显示交互图表需传 `rendererConfig: { components: mermaidComponents }`，图表换色用 `configureChartTheme({ light, dark })`。
+- **产物**：`dist/` 与 `dist/styles.css` 重新构建，新增 `/mermaid` 入口产物；该入口不含 `"use client"`，须由宿主的客户端组件引入。
+- **回滚**：把依赖改回 `0.3.1` 即可；已写 `<Mermaid>` 的文章在旧版本下会被当成未知标签按文本显示，回滚前请先摘掉或保留围栏写法。
+
+**Full Changelog**: https://github.com/heikeson/md-engine/compare/v0.3.1...v0.4.0
+
+---
+
+## v0.3.1 — 2026-10-28
+
+**一句话摘要**：新增 `div` 通用容器与行内子项写法；修复白名单外标签内容整块消失、嵌套超限往返不闭合等解析问题。升级只需改版本号。
 
 ### 更新内容
 
@@ -153,7 +203,20 @@
 - 缩进仍不参与排版：容器内正文顶格书写；被当成缩进代码块时由 `INDENT_AS_CODE` 提示，内容不改写。
 - 缩进代码块写回为围栏（` ``` `）、CRLF 归一为 LF，属既有规范化，语义不变。
 
-## 0.3.0 — 2026-10-27
+### 升级与使用
+
+- **依赖**：`npm install @heikeson/md-engine@0.3.1`，依赖清单无变化。
+- **配置**：无新增配置项；新增诊断码 `INDENT_AS_CODE`（只提示不改写，可按需在诊断面板过滤）。
+- **产物**：`dist/` 与 `dist/styles.css` 重新构建；`npm run selfcheck` 仅供开发自检，不进发布包。
+- **回滚**：把依赖改回 `0.3.0` 即可；已用 `<div>` 容器或行内子项写法的文章在旧版本下会退化为文本/HTML 块，回滚前请核对正文。
+
+**Full Changelog**: https://github.com/heikeson/md-engine/compare/v0.3.0...v0.3.1
+
+---
+
+## v0.3.0 — 2026-10-27
+
+**一句话摘要**：样式改为原生 CSS 并产出 `dist/styles.css`，宿主不装 Tailwind 也能正常显示；配色收敛为 9 个 `--lkes-*` 令牌。升级后宿主改引 `styles.css` 即可，组件与属性未变。
 
 ### 更新内容
 
@@ -176,9 +239,20 @@
 - 向后兼容：组件名、属性语义、语义类名、四个导出路径均未变，`styles/engine.css` 保留为转发入口，旧引入路径继续可用。
 - 样式实现方式调整，视觉以同一套语义类与令牌为准；宿主既有的类级覆盖继续有效。
 
+### 升级与使用
+
+- **依赖**：`npm install @heikeson/md-engine@0.3.0`，依赖清单无变化。
+- **配置**：无新增配置项；配色走 9 个 `--lkes-*` 令牌，不配也有默认值。宿主没装 Tailwind 时不再报错，装了也可继续用同名变量覆盖。
+- **产物**：`dist/styles.css` 为新生效的样式入口，宿主只需引入一次 `@heikeson/md-engine/styles.css`；旧 `styles/engine.css` 保留为转发入口，无需立刻改。
+- **回滚**：把依赖改回 `0.2.1` 即可；回滚后样式需宿主自带 Tailwind 4 管线，否则样式失效。
+
+**Full Changelog**: https://github.com/heikeson/md-engine/compare/v0.2.1...v0.3.0
+
 ---
 
-## 0.2.1 — 2026-10-26
+## v0.2.1 — 2026-10-26
+
+**一句话摘要**：仅文档与元数据：重写 README、新增 `AGENT.md`，`dist/` 与 `0.2.0` 行为一致。可不升级。
 
 ### 更新内容
 
@@ -197,9 +271,20 @@
 
 - 本版不含代码变更：`dist/` 产物与 `0.2.0` 行为一致，差异仅在随包文档与元数据，无破坏性变更。
 
+### 升级与使用
+
+- **依赖**：无代码变更，不必升级；要同步文档执行 `npm install @heikeson/md-engine@0.2.1` 即可。
+- **配置**：无。
+- **产物**：`dist/` 与 `0.2.0` 完全一致，随包文档与元数据更新。
+- **回滚**：无必要（`0.2.0` 行为相同）。
+
+**Full Changelog**: https://github.com/heikeson/md-engine/compare/v0.2.0...v0.2.1
+
 ---
 
-## 0.2.0 — 2026-10-26
+## v0.2.0 — 2026-10-26
+
+**一句话摘要**：新增 `Callout` / `File` 图标能力、文件夹图标开合双形态、`UNSAFE_HREF` / `UNKNOWN_TAG` 诊断与末端的链接闸门；数学公式往返不再被转义。无破坏性变更。
 
 ### 新增内容
 
@@ -230,12 +315,32 @@
 - 无破坏性变更：已发布组件的名字与属性语义未改，语法只增不改，存量文章无需迁移。
 - 宿主升级到 `^0.2.0` 并 `npm install` 即可获得上述全部能力；引擎 `dist/` 已重新构建，样式仍随包走 `styles/engine.css`。
 
+### 升级与使用
+
+- **依赖**：`npm install @heikeson/md-engine@0.2.0`；`mdast-util-math`、`micromark-extension-math` 升为直接依赖，随包自动安装。
+- **配置**：无新增配置项；URL 校验放宽（放行相对路径与 `//host`），仍拒绝 `javascript:`、`data:` 等非白名单 scheme。
+- **产物**：`dist/` 与样式产物重新构建，宿主需重新构建一次。
+- **回滚**：把依赖改回 `0.1.0` 即可，无数据迁移；已经使用 `icon` 属性或 `div` 之外新诊断的文章需摘掉相关用法。
+
+**Full Changelog**: https://github.com/heikeson/md-engine/compare/v0.1.0...v0.2.0
+
 ---
 
-## 0.1.0 — 2026-10-25
+## v0.1.0 — 2026-10-25
+
+**一句话摘要**：首次发布到 npm，提供容器语法解析、渲染、序列化与格式化，`dist/` 三入口 + `.d.ts`，源码不入包。
 
 首次发布到 npm。
 
 - 包形态：`tsup` 产出 `dist/`（主入口 / `editor` / `components` 三个入口，含 `.d.ts`），源码不入包；样式保留 `@apply` 源码，由宿主 Tailwind 4 管线处理。
 - 基础能力：尖括号容器语法解析、渲染、序列化与格式化；`Callout`、`Accordion`、`Cards` 等容器组件与组件属性表。
 - 内容保证：`md → AST → md` 逐字一致；节点保留 `position`，支持块索引与滚动同步。
+
+### 升级与使用
+
+- **依赖**：`npm install @heikeson/md-engine@0.1.0`；`react` / `react-dom` 为 peer（>=19）。
+- **配置**：无；样式为 `@apply` 源码，需宿主自带 Tailwind 4 管线。
+- **产物**：`dist/` 三入口（主入口 / `editor` / `components`）含 `.d.ts`，源码不入包。
+- **回滚**：不适用（首发版本）。
+
+**Full Changelog**：首发版本，无上一 tag 可对比。

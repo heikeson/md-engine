@@ -1,0 +1,93 @@
+# @file release.yml
+# @description 从根目录 update.md 抽取对应版本段落，创建或更新 GitHub Release。
+#   触发：仅推送 v* tag（没有 workflow_dispatch，不能手动重跑）。
+#   正文：`## vX.Y.Z — 日期` 行之后、下一个版本标题之前的内容；标题行不进正文，末尾 `---` 与空行裁掉。
+#   tag 与 update.md 版本对不上时正文为空：未发布的 tag 改标题后重打；已发布的用 `gh release edit` 覆盖。
+#   与 publish.yml 相互独立：Release 失败不影响 npm 发布，反之亦然。
+# @created 2026-11-05 22:51
+# @updated 2026-11-05 22:51
+
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+# 同一 tag 只允许一次；已在跑的那次不取消
+concurrency:
+  group: release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+# 建 / 改 Release 需要写权限；工作流不改仓库内容
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: 由 update.md 生成 Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: 检出 tag 对应提交
+        uses: actions/checkout@v4
+        with:
+          # 完整历史，保证 Release 的 compare / generate-notes 能解析到上一版本
+          fetch-depth: 0
+
+      # 抽取规则：命中 `## v<版本>`（兼容历史无 v 的 `## 0.5.2`）开始收集，
+      # 遇到下一个 `## v<数字>` 结束；末尾从后往前裁 空行 → `---` → 空行，开头裁空行。
+      - name: 抽取本版正文
+        id: extract
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          VERSION="${TAG#v}"
+          echo "tag=$TAG version=$VERSION"
+          python3 - "$VERSION" <<'PY'
+          import pathlib, re, sys
+
+          version = re.escape(sys.argv[1])
+          start = re.compile(rf"^## v?{version}(?!\d)")
+          next_version = re.compile(r"^## v?\d")
+          lines, inside = [], False
+          for line in pathlib.Path("update.md").read_text(encoding="utf-8").splitlines():
+              if not inside:
+                  inside = bool(start.match(line))
+                  continue
+              if next_version.match(line):
+                  break
+              lines.append(line)
+          while lines and lines[-1].strip() in ("", "---"):
+              lines.pop()
+          while lines and not lines[0].strip():
+              lines.pop(0)
+          body = "\n".join(lines).strip() + "\n" if lines else ""
+          pathlib.Path("release-body.md").write_text(body, encoding="utf-8")
+          print(f"extracted {len(lines)} lines")
+          PY
+          if [ -s release-body.md ]; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::update.md 中找不到 $VERSION 的段落，Release 正文改用 GitHub 自动生成"
+          fi
+
+      - name: 创建或更新 Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+          FOUND: ${{ steps.extract.outputs.found }}
+        run: |
+          # Release 已存在：只在本版正文非空时覆盖，避免把已有正文清空
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            if [ "$FOUND" = "true" ]; then
+              gh release edit "$TAG" --title "$TAG" --notes-file release-body.md
+            else
+              echo "Release 已存在且无可用正文，保持原样"
+            fi
+            exit 0
+          fi
+          if [ "$FOUND" = "true" ]; then
+            gh release create "$TAG" --title "$TAG" --notes-file release-body.md --verify-tag
+          else
+            gh release create "$TAG" --title "$TAG" --generate-notes --verify-tag
+          fi

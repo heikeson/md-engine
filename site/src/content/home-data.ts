@@ -3,7 +3,7 @@
  * @description 演示用的 Markdown 与表格数据。文案原则：只陈述产品做了什么，
  *   不写「五分钟」「零成本」这类承诺，也不做对仗句——页面上每一句都能被代码验证。
  * @created 2026-11-02 00:24
- * @updated 2026-11-02 02:05 重写文案与数据结构
+ * @updated 2026-11-05 23:52 MDX 对照样例改为陈述示例本身；入口备注去掉「必选」
  */
 
 /** 安装命令 */
@@ -54,7 +54,7 @@ export const ENTRIES = [
   { path: "./editor", desc: "MarkdownEditor，含 CodeMirror 与滚动同步", note: "后台写作" },
   { path: "./components", desc: "组件映射表，做单组件覆盖时取", note: "自定义" },
   { path: "./mermaid", desc: "交互式图表：缩放、源码切换、导出", note: "需要图表" },
-  { path: "./styles.css", desc: "打包好的原生 CSS，引入一次就够", note: "必选" },
+  { path: "./styles.css", desc: "打包好的原生 CSS，引入一次就够", note: "样式" },
 ] as const;
 
 /** MDX 写法 */
@@ -64,7 +64,7 @@ export const MDX_SAMPLE = [
   "export default function Page() {",
   "  return (",
   '    <Callout type="tip" title="提示">',
-  "      内容写成了组件树，保存时要过一遍编译。",
+  "      正文是 JSX：属性、表达式与导入都写在这里。",
   "    </Callout>",
   "  );",
   "}",
@@ -112,7 +112,7 @@ export const MDX_SAMPLE_EN = [
   "export default function Page() {",
   "  return (",
   '    <Callout type="tip" title="Tip">',
-  "      Content became a component tree; saving runs a compile step.",
+  "      The prose is JSX: attributes, expressions and imports live here.",
   "    </Callout>",
   "  );",
   "}",
@@ -131,5 +131,5 @@ export const ENTRIES_EN = [
   { path: "./editor", desc: "MarkdownEditor with CodeMirror and scroll sync", note: "Authoring" },
   { path: "./components", desc: "Component map, for single-component overrides", note: "Custom UI" },
   { path: "./mermaid", desc: "Interactive diagrams: zoom, source view, export", note: "With diagrams" },
-  { path: "./styles.css", desc: "Prebuilt plain CSS, import once", note: "Required" },
+  { path: "./styles.css", desc: "Prebuilt plain CSS, import once", note: "Styles" },
 ] as const;

@@ -4,7 +4,7 @@
  *   **默认语言（中文）不带前缀**，英文一律 `/en/...`——已有线上 URL 与索引因此不受影响。
  *   语言只由路由决定：URL 可分享、可索引、预渲染时已知，不存在首屏语言闪烁。
  * @created 2026-11-02 19:32
- * @updated 2026-11-02 19:32
+ * @updated 2026-11-05 23:52 首页文案改为陈述实现，去掉「Markdown 语法的一部分」与入口数量等夸大说法
  */
 
 /** 站点支持的语言 */
@@ -197,7 +197,7 @@ const zh: SiteMessages = {
   titleDocs: "文档 · md-engine",
   titlePlayground: "Playground · md-engine",
   titleNotFound: "页面不存在 · md-engine",
-  homeHeroTitle: "尖括号容器，是 Markdown 语法的一部分",
+  homeHeroTitle: "把尖括号容器解析成 mdast 节点的 Markdown 引擎",
   homeHeroLead: "",
   homeHeroMeta: "React 19+ · 原生 CSS，不依赖 Tailwind · MIT",
   homeReadDocs: "读文档",
@@ -212,10 +212,10 @@ const zh: SiteMessages = {
   homeTheoryNote: "说明",
   homePackTitle: "包里有什么",
   homePackNote:
-    "五个入口分开打包。主入口不引编辑器，阅读页就不会带上 CodeMirror；不装 mermaid，产物里也没有图表代码。",
+    "入口按子路径分开导出：主入口不含编辑器代码，阅读页不会带上 CodeMirror；图表入口在未安装 mermaid 时降级为源码块。",
   homeCompareTitle: "和 MDX 的差别",
   homeCompareNote:
-    "MDX 把内容编译成组件树，作者需要掌握 JSX，内容存回去要经过一次格式化。这里把容器当普通节点处理，内容从头到尾都是文本。",
+    "MDX 把正文编译成组件树，页面里写的是 JSX；这里容器是普通 mdast 节点，正文始终是文本。",
   homeCompareMdx: "MDX",
   homeCompareHere: "这里",
   homeCompareFoot:
@@ -280,9 +280,9 @@ const en: SiteMessages = {
   titleDocs: "Docs · md-engine",
   titlePlayground: "Playground · md-engine",
   titleNotFound: "Page not found · md-engine",
-  homeHeroTitle: "Angle-bracket containers are part of Markdown syntax",
+  homeHeroTitle: "A Markdown engine that parses angle-bracket containers into mdast nodes",
   homeHeroLead:
-    "Tags such as <Callout>, <Tabs> and <Mermaid> are parsed into mdast nodes, rendered as React components, and written back verbatim. Authors write Markdown and never touch JSX.",
+    "Tags such as <Callout>, <Tabs> and <Mermaid> are parsed into mdast nodes, rendered as React components, and written back verbatim. Authors write Markdown, not JSX.",
   homeHeroMeta: "React 19+ · plain CSS, no Tailwind · MIT",
   homeReadDocs: "Read the docs",
   homeTryBrowser: "Try it in the browser",
@@ -296,10 +296,10 @@ const en: SiteMessages = {
   homeTheoryNote: "Description",
   homePackTitle: "What is in the box",
   homePackNote:
-    "Five entry points are bundled separately. The main entry never imports the editor, so reading pages do not ship CodeMirror; without mermaid installed, no diagram code is emitted.",
+    "Entries are split by subpath: the main entry contains no editor code, so reading pages do not carry CodeMirror; without mermaid installed, the diagram entry degrades to a source block.",
   homeCompareTitle: "How it differs from MDX",
   homeCompareNote:
-    "MDX compiles content into a component tree: authors must know JSX, and saving content back goes through a formatting pass. Here containers are ordinary nodes, and the content is text from end to end.",
+    "MDX compiles prose into a component tree, so pages are written as JSX. Here containers are ordinary mdast nodes and the prose stays text.",
   homeCompareMdx: "MDX",
   homeCompareHere: "Here",
   homeCompareFoot:

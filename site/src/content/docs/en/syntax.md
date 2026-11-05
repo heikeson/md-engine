@@ -1,31 +1,45 @@
 # Container syntax
 
-Containers are what separates this engine from a plain Markdown renderer: a tag such as `<Callout>` is a real node in mdast, not a string replacement. It can therefore be parsed, rendered, serialized, and mapped back to a position in the source.
+A container is a `jsxBlock` node in mdast, not a string replacement: the same node is parsed, rendered, serialized and indexed with source offsets. The syntax has exactly one declaration site — `COMPONENTS` / `ITEMS` in `src/registry.ts`; attribute names are not hard-coded anywhere else.
 
 ## Overview
 
-| Container | Purpose | Children |
+| Container | Attributes | Children |
 |---|---|---|
-| `Callout` | Callout block | prose |
-| `Tabs` | Tabbed panels | `Tab` |
-| `Steps` | Numbered steps | `Step` |
-| `Cards` | Card navigation | `Card` |
-| `Accordion` | Collapsible panels | `AccItem` |
-| `Files` | File tree | `Folder` / `File` |
-| `TypeTable` | API property table | `TypeItem` |
-| `Image` | Image with caption | self-closing |
-| `Mermaid` | Diagram | raw text |
-| `div` | Generic block | prose |
+| `Callout` | `type` / `title` / `icon` | prose |
+| `Tabs` | — | `Tab`: `value` (required), `default` (boolean) |
+| `Steps` | — | `Step`: `title` |
+| `Cards` | — | `Card`: `title` / `href` / `icon` / `description`, self-closing allowed |
+| `Accordion` | — | `AccItem`: `title` / `type` |
+| `Files` | — | `Folder`: `name` / `defaultOpen`; `File`: `name` / `href` / `icon`, self-closing allowed |
+| `TypeTable` | — | `TypeItem`: `name` / `type` / `default` / `required` (boolean), self-closing allowed |
+| `Image` | `src` / `alt` / `align` / `width` / `caption` / `zoom` | self-closing |
+| `Mermaid` | `title` / `height` | raw text |
+| `div` | `class` / `id` | prose |
+
+"Nine containers plus a generic `div`" comes from this table: `div` passes its attributes straight to the DOM and its body is parsed as Markdown.
 
 ## Callout
 
-`type` decides the colour and icon; omitting it means `note`.
+`type` has 7 values; omitting it means `note`, and any unknown value renders as `note`.
+
+| Value | Palette branch |
+|---|---|
+| `note` / `info` | note |
+| `tip` | tip |
+| `important` | important |
+| `warning` | warning |
+| `caution` / `danger` | caution |
+
+`warn`, `error`, `success` and `idea` are aliases that reuse the warning, caution, tip and tip palettes — no new visual branches.
 
 <TypeTable>
-  <TypeItem name="type" type="note | tip | important | warning | caution | danger" default="note" />
+  <TypeItem name="type" type="note | info | tip | important | warning | caution | danger" default="note" />
   <TypeItem name="title" type="string" />
   <TypeItem name="icon" type="string" />
 </TypeTable>
+
+Without `title` the icon sits inline with the body; no default label such as "Note" is added.
 
 ```md
 <Callout type="tip" title="Tip">
@@ -39,13 +53,11 @@ Rendered:
   The body supports full Markdown, including `inline code` and [links](https://example.com).
 </Callout>
 
-<Callout type="important" title="Aliases add no visual branch">
-  `warn`, `error`, `success` and `idea` are aliases of existing palettes; they introduce no new visual branch.
-</Callout>
+A string `icon` is wrapped in a fixed 16×16 box (same size as the lucide icons), so an emoji or a single character works.
 
 ## Tabs
 
-`Tabs` is the container and `Tab` its children. A child's `value` is both the label shown on the tab and the identity of that pane; the boolean `default` picks which tab is open first.
+`value` is both the tab label and the identity of that pane. `default` only sets the initial selection.
 
 <TypeTable>
   <TypeItem name="value" type="string" required />
@@ -66,12 +78,10 @@ Rendered (opens on `pnpm`):
   <Tab value="pnpm" default>pnpm add @heikeson/md-engine</Tab>
 </Tabs>
 
-Usage notes:
-
-- Without `default` the first tab opens; with several `default` attributes only the first in document order is used.
-- `default` only sets the initial selection — after the reader clicks another tab, it is not pulled back.
-- Keyboard: focus a tab, then ← / → cycle through tabs and Home / End jump to the ends.
-- Children may also be expanded into blocks, and their bodies may contain blank lines, which are treated as paragraph breaks. Saving writes the original shape back — nothing is force-expanded and no blank lines are added.
+- Without `default` the first tab opens; with several `default` attributes only the first in document order counts.
+- After the reader clicks another tab, it is not pulled back to the default.
+- Keyboard: `←` / `→` cycle, `Home` / `End` jump to the ends, focus follows the selection (roving tabindex, unselected tabs get `tabIndex=-1`).
+- Children may share a line with the tag or expand into blocks; block bodies may contain blank lines, treated as paragraph breaks. Saving writes the original shape back.
 
 ## Steps
 
@@ -89,23 +99,23 @@ Usage notes:
 
 ## Cards
 
-`Card` may self-close: put everything in attributes, which suits navigation grids.
+`Card` may self-close, with everything in attributes — handy for navigation grids.
 
 ```md
 <Cards>
-  <Card title="Quick start" description="Get the first render working" href="/en/docs/quick-start" />
-  <Card title="Styles and tokens" description="Recolour by changing variables" href="/en/docs/styling" />
+  <Card title="Quick start" description="Get the first render working" href="/docs/quick-start" />
+  <Card title="Styles and tokens" description="Recolour by changing variables" href="/docs/styling" />
 </Cards>
 ```
 
 <Cards>
-  <Card title="Quick start" description="Get the first render working" href="/en/docs/quick-start" />
-  <Card title="Styles and tokens" description="Recolour by changing variables" href="/en/docs/styling" />
+  <Card title="Quick start" description="Get the first render working" href="/docs/quick-start" />
+  <Card title="Styles and tokens" description="Recolour by changing variables" href="/docs/styling" />
 </Cards>
 
 ## Accordion
 
-`type` is `open` or `close`, setting the initial state.
+`AccItem`'s `type` is `open` or `close` and sets the initial state; `close` and omitting it both mean collapsed. A child may also carry an `id`, which expands it when the URL hash matches `#id` — that attribute is not in the registry whitelist, so the editor does not suggest it.
 
 ```md
 <Accordion>
@@ -121,7 +131,7 @@ Usage notes:
 
 ## Files
 
-`Folder` nests and takes `defaultOpen`; `File` self-closes, takes an optional `href`, and picks its icon from the extension.
+`Folder` nests and takes `defaultOpen`; `File` self-closes, picks its icon from the extension, and `icon` overrides it.
 
 ```md
 <Files>
@@ -129,7 +139,7 @@ Usage notes:
     <File name="index.ts" />
     <File name="render.tsx" />
   </Folder>
-  <File name="README.md" href="/en/docs/quick-start" />
+  <File name="README.md" href="/docs/quick-start" />
 </Files>
 ```
 
@@ -138,12 +148,12 @@ Usage notes:
     <File name="index.ts" />
     <File name="render.tsx" />
   </Folder>
-  <File name="README.md" href="/en/docs/quick-start" />
+  <File name="README.md" href="/docs/quick-start" />
 </Files>
 
 ## TypeTable
 
-The property table under each component on this page is rendered by it. Attributes accept strings only, which is why rows are child elements rather than object expressions.
+Every property table on this page is rendered by it. Attributes accept strings only, which is why rows are child elements instead of object expressions.
 
 ```md
 <TypeTable>
@@ -152,9 +162,11 @@ The property table under each component on this page is rendered by it. Attribut
 </TypeTable>
 ```
 
+`TypeItem` has two equivalent forms: self-closing leaves the description column empty, the block form writes the description between the tags.
+
 ## Image
 
-A self-closing leaf. `zoom` is a bare boolean: set it to enable click-to-zoom and Esc to close.
+A self-closing leaf. `align` defaults to `center`; `zoom` is a bare boolean that enables click-to-zoom and `Esc` to close.
 
 ```md
 <Image src="/cover.svg" alt="Cover" caption="The caption goes here" width="360" />
@@ -162,7 +174,7 @@ A self-closing leaf. `zoom` is a bare boolean: set it to enable click-to-zoom an
 
 ## Mermaid
 
-The container body is **raw text**: `#`, `|`, `-->` and leading `-` inside it are not Markdown syntax, and the text is written back byte for byte.
+The body is **raw text**: `#`, `|`, `-->` and a leading `-` are not Markdown syntax. It is stored as `data.rawBody` on the node and written back byte for byte.
 
 ```md
 <Mermaid title="Render pipeline">
@@ -173,11 +185,13 @@ flowchart LR
 </Mermaid>
 ```
 
-The main entry renders only the source skeleton. To get a zoomable, exportable diagram, wire up the `/mermaid` entry — see **Editor and diagrams**.
+- A numeric `height` caps the diagram area in pixels; omitting it, an empty value or `auto` fits the content.
+- The main entry renders only the source skeleton. Zooming, dragging and exporting require the `/mermaid` entry — see **Editor and diagrams**.
+- Source over 20 KB is not rendered; the source is shown with `MERMAID_TOO_LARGE`. `<Mermaid />` equals empty source and reports `MERMAID_EMPTY`.
 
 ## div
 
-Use it when you need a block that carries `class` / `id`. Attributes pass straight through to the DOM and the body is still parsed as Markdown.
+Use it when you need a block carrying `class` / `id`. Attributes pass through to the DOM and no component wraps it.
 
 ```md
 <div class="note-block" id="anchor">
@@ -187,11 +201,9 @@ Use it when you need a block that carries `class` / `id`. Attributes pass straig
 
 ## Writing rules
 
-<Callout type="warning" title="Common pitfalls when writing">
-  Containers must start at **column zero**. Indenting body lines by four spaces or more makes CommonMark treat them as an indented code block; the engine reports `INDENT_AS_CODE` but does not rewrite the content. Use fences for code.
-</Callout>
-
-- Attributes accept strings (`a="b"`) and bare booleans (`a`) only. No `{…}` expressions, arrays or objects. Attribute values may contain `>`.
-- Tags outside the whitelist are **shown as plain text** together with their body — nothing is lost and no HTML is executed.
-- Nesting is capped at three container levels; the level beyond the limit degrades to raw text as a whole.
-- Only `Image`, `Card`, `File` and `Mermaid` may be written as `<X />`; everything else needs a closing tag.
+- Attributes accept strings (`a="b"`) and bare booleans (`a`) only: no `{…}` expressions, arrays or objects. Attribute values may contain `>`, and names are case sensitive.
+- Containers start at column zero. Children may be indented per level; a **body** line indented by 4+ spaces (or a tab) becomes an indented code block under CommonMark, which reports `INDENT_AS_CODE` without rewriting the content.
+- Tags outside the whitelist are shown as text together with their body (`UNKNOWN_TAG`); nothing is lost and no HTML is executed.
+- Nesting is capped at 3 container levels, children excluded; the level beyond the limit degrades to raw text (`DEPTH_EXCEEDED`).
+- Only `Image`, `Card`, `File`, `TypeItem` and `Mermaid` may be written as `<X />`; everything else needs a closing tag.
+- `normalizeMarkdown` only adds blank lines around standalone tags that start with an **uppercase** letter, so lowercase tags such as `div` are left alone.

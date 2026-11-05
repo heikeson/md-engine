@@ -1,31 +1,45 @@
 # 容器语法
 
-容器是这套引擎和普通 Markdown 渲染器的差别所在：`<Callout>` 这类标签在 mdast 里是一个真正的节点，不是字符串替换。所以它能被解析、渲染、序列化，也能定位到源码里的位置。
+容器在 mdast 里是 `jsxBlock` 节点，不是字符串替换：同一个节点被解析、渲染、序列化，也在块索引里带 offset。语法声明只有一处——`src/registry.ts` 的 `COMPONENTS` / `ITEMS`，属性名不在别处硬编码。
 
 ## 总览
 
-| 容器 | 用途 | 子项 |
+| 容器 | 属性 | 子项 |
 |---|---|---|
-| `Callout` | 提示块 | 正文 |
-| `Tabs` | 选项卡 | `Tab` |
-| `Steps` | 分步说明 | `Step` |
-| `Cards` | 卡片导航 | `Card` |
-| `Accordion` | 折叠面板 | `AccItem` |
-| `Files` | 文件树 | `Folder` / `File` |
-| `TypeTable` | API 属性表 | `TypeItem` |
-| `Image` | 图片（带题注） | 自闭合 |
-| `Mermaid` | 图表 | 原始文本 |
-| `div` | 通用分块 | 正文 |
+| `Callout` | `type` / `title` / `icon` | 正文 |
+| `Tabs` | — | `Tab`：`value`（必填）、`default`（布尔） |
+| `Steps` | — | `Step`：`title` |
+| `Cards` | — | `Card`：`title` / `href` / `icon` / `description`，可自闭合 |
+| `Accordion` | — | `AccItem`：`title` / `type` |
+| `Files` | — | `Folder`：`name` / `defaultOpen`；`File`：`name` / `href` / `icon`，可自闭合 |
+| `TypeTable` | — | `TypeItem`：`name` / `type` / `default` / `required`（布尔），可自闭合 |
+| `Image` | `src` / `alt` / `align` / `width` / `caption` / `zoom` | 自闭合 |
+| `Mermaid` | `title` / `height` | 原始文本 |
+| `div` | `class` / `id` | 正文 |
+
+「九个容器加一个通用 `div`」的口径来自这张表：`div` 的属性原样透传到 DOM，内容照常按 Markdown 解析。
 
 ## Callout
 
-`type` 决定配色与图标，不写则按 `note` 处理。
+`type` 有 7 个取值，缺省 `note`；表外取值按 `note` 渲染。
+
+| 值 | 配色分支 |
+|---|---|
+| `note` / `info` | note |
+| `tip` | tip |
+| `important` | important |
+| `warning` | warning |
+| `caution` / `danger` | caution |
+
+`warn`、`error`、`success`、`idea` 是别名，分别复用 warning、caution、tip、tip 的配色，不新增视觉分支。
 
 <TypeTable>
-  <TypeItem name="type" type="note | tip | important | warning | caution | danger" default="note" />
+  <TypeItem name="type" type="note | info | tip | important | warning | caution | danger" default="note" />
   <TypeItem name="title" type="string" />
   <TypeItem name="icon" type="string" />
 </TypeTable>
+
+不写 `title` 时图标与正文同行，不会补出「注意」之类的默认标题。
 
 ```md
 <Callout type="tip" title="提示">
@@ -39,13 +53,11 @@
   正文支持完整 Markdown，包括 `行内码` 与 [链接](https://example.com)。
 </Callout>
 
-<Callout type="important" title="别名不新增视觉分支">
-  `warn`、`error`、`success`、`idea` 只是既有配色的别名，不新增视觉分支。
-</Callout>
+`icon` 给字符串时包在固定 16×16 的盒子里（与 lucide 图标同尺寸），可以用 emoji 或单个字符。
 
 ## Tabs
 
-`Tabs` 是容器，`Tab` 是子项。子项的 `value` 既是页签上显示的文案，也是这一页的身份；默认打开哪个页签由子项的布尔属性 `default` 决定。
+`value` 既是页签文案，也是这一页的身份。`default` 只决定初始选中项。
 
 <TypeTable>
   <TypeItem name="value" type="string" required />
@@ -66,12 +78,10 @@
   <Tab value="pnpm" default>pnpm add @heikeson/md-engine</Tab>
 </Tabs>
 
-用法要点：
-
-- 不写 `default` 时打开第一项；写了多个时只认文档序第一个，其余忽略。
-- `default` 只决定首屏选中项，用户点到别的页签后不会被拉回默认项。
-- 键盘可用：聚焦页签后 ← / → 循环切换，Home / End 跳到首尾。
-- 子项也可以展开成块，内容里允许有空行，按跨段落处理。保存时按原形态写回，不会强行展开或加空行。
+- 没有 `default` 时打开第 1 项；写多个时只认文档序第一个。
+- 点到其他页签后不会被拉回默认项。
+- 键盘：`←` / `→` 循环切换，`Home` / `End` 跳首尾，焦点跟随选中项（roving tabindex，未选中项 `tabIndex=-1`）。
+- 子项可同行书写，也可展开成块；块形态里允许空行，按跨段落处理，保存时按原形态写回。
 
 ## Steps
 
@@ -89,7 +99,7 @@
 
 ## Cards
 
-`Card` 可以自闭合：把所有内容放进属性里，适合做导航网格。
+`Card` 可自闭合，内容全部放进属性，适合做导航网格。
 
 ```md
 <Cards>
@@ -105,7 +115,7 @@
 
 ## Accordion
 
-`type` 取 `open` 或 `close`，控制初始展开状态。
+`AccItem` 的 `type` 取 `open` 或 `close`，决定初始展开状态；写 `close` 或不写都是收起。子项另可带 `id`，`#id` 命中时自动展开——该属性未写进注册表的属性白名单，编辑器不会提示。
 
 ```md
 <Accordion>
@@ -121,7 +131,7 @@
 
 ## Files
 
-`Folder` 可嵌套，`defaultOpen` 控制默认展开；`File` 自闭合，`href` 可选，图标按扩展名自动匹配。
+`Folder` 可嵌套，`defaultOpen` 控制默认展开；`File` 自闭合，图标按扩展名匹配，`icon` 可覆盖。
 
 ```md
 <Files>
@@ -143,7 +153,7 @@
 
 ## TypeTable
 
-本页每个组件下方的属性表就是它渲染的，写法上要求属性只传字符串，所以拆成子项而不是对象表达式。
+本页每张属性表都由它渲染。属性只接受字符串，所以拆成子项而不是对象表达式。
 
 ```md
 <TypeTable>
@@ -152,9 +162,11 @@
 </TypeTable>
 ```
 
+`TypeItem` 两种写法等价：自闭合时说明列留空，块形态则在标签之间写说明。
+
 ## Image
 
-自闭合叶子组件，`zoom` 是布尔属性，写了就能点击放大、按 Esc 关闭。
+自闭合叶子。`align` 缺省 `center`；`zoom` 是布尔，写了才能点击放大、按 `Esc` 关闭。
 
 ```md
 <Image src="/cover.svg" alt="封面" caption="题注写在这里" width="360" />
@@ -162,7 +174,7 @@
 
 ## Mermaid
 
-容器体是**原始文本**：里面的 `#`、`|`、`-->`、行首 `-` 都不会被当成 Markdown 语法，保存时逐字写回。
+容器体是**原始文本**：`#`、`|`、`-->`、行首 `-` 都不按 Markdown 解析，保存在节点 `data.rawBody`，序列化逐字写回。
 
 ```md
 <Mermaid title="渲染管线">
@@ -173,11 +185,13 @@ flowchart LR
 </Mermaid>
 ```
 
-主入口只渲染源码骨架，要变成可缩放、可导出的图表，得额外接入 `/mermaid` 入口，见 **编辑器与图表**。
+- `height` 给数字按像素限高；不写、空或 `auto` 都按内容适配。
+- 主入口只渲染源码骨架。要缩放、拖拽、导出的图表，必须接 `/mermaid` 入口，见 **编辑器与图表**。
+- 源码超过 20 KB 不渲染图表，改为显示源码并给 `MERMAID_TOO_LARGE`；`<Mermaid />` 等价于空源码，给 `MERMAID_EMPTY`。
 
 ## div
 
-需要一层能挂 `class` / `id` 的分块时用它，属性原样透传到 DOM，内容照常按 Markdown 解析。
+需要一层能挂 `class` / `id` 的分块时用它。属性透传到 DOM，不套组件。
 
 ```md
 <div class="note-block" id="anchor">
@@ -187,11 +201,9 @@ flowchart LR
 
 ## 书写约束
 
-<Callout type="warning" title="书写时的常见约束">
-  容器**顶格**书写；正文行缩进 4 空格以上会被 CommonMark 判成缩进代码块，引擎会给出 `INDENT_AS_CODE` 提示但不改写内容。要写代码请用围栏。
-</Callout>
-
-- 属性只接受字符串（`a="b"`）与裸布尔（`a`），不支持 `{…}` 表达式、数组、对象；属性值里可以有 `>`。
-- 白名单外的标签连同正文**按文本原样显示**，不丢内容、也不执行 HTML。
-- 容器嵌套上限 3 层，超限那一层整块降级为原文。
-- 只有 `Image`、`Card`、`File`、`Mermaid` 允许 `<X />`，其余必须写闭合标签。
+- 属性只接受字符串（`a="b"`）与裸布尔（`a`）：不支持 `{…}` 表达式、数组、对象；属性值里可以有 `>`；名字区分大小写。
+- 容器顶格书写。子项可按层缩进；**正文行**缩进 ≥4 空格（或 tab）会被 CommonMark 判成缩进代码块，`parse` 给出 `INDENT_AS_CODE`，内容不改写。
+- 白名单外的标签连同正文按文本显示（`UNKNOWN_TAG`），不丢内容，也不执行 HTML。
+- 容器嵌套上限 3 层，子项不计层；超限那一层整块降级为原文（`DEPTH_EXCEEDED`）。
+- 只有 `Image`、`Card`、`File`、`TypeItem`、`Mermaid` 允许 `<X />`，其余必须写闭合标签。
+- `normalizeMarkdown` 只给**大写开头**的独立标签行补空行，`div` 这类小写标签不参与排版整理。

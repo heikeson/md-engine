@@ -1,28 +1,23 @@
 # @heikeson/md-engine
 
 > @file README.md
-> @description React Markdown 内容引擎：尖括号容器语法的解析、渲染、序列化、格式化与 CodeMirror 6 编辑器内核，单一 npm 包五个入口。
+> @description React Markdown 内容引擎：尖括号容器语法的解析、渲染、序列化、格式化与 CodeMirror 6 编辑器内核，单一 npm 包按子路径拆分入口（主入口 / editor / components / mermaid / styles.css，另有 locales/zh-CN 与 locales/en-US）。
 > @created 2026-10-24 19:57
-> @updated 2026-11-02 10:55 版本口径对齐 0.4.0；补文案覆写、快捷键、DUPLICATE_ID 与 ESM-only 说明
-> @updated 2026-11-02 19:32 新增国际化：`locale` / `messages` / `MdEngineProvider` / ICU 消息 / 语言包子路径
-> @updated 2026-11-02 20:50 版本口径对齐 0.5.0
-> @updated 2026-11-02 21:33 容器语法表标注 `TypeItem` 可自闭合
-> @updated 2026-11-02 21:40 版本口径对齐 0.5.1
-> @updated 2026-11-02 23:14 版本口径对齐 0.5.2
+> @updated 2026-11-05 23:52 校对到 0.5.2 源码：入口按子路径列全；样式作用域与令牌来源；诊断码细分；Callout type 补 info
 > @status v0.5.2
 
 一个面向 React 的 Markdown 内容引擎。在标准 Markdown（GFM + 数学公式）之上，把
-`<Callout>`、`<Cards><Card /></Cards>` 这类**尖括号容器**纳入解析流程，并保证
+`<Callout>`、`<Cards><Card /></Cards>` 这类**尖括号容器**纳入解析流程，并
 `md → AST → md` 逐字往返。适用于文档站、博客、知识库等需要「作者写 Markdown、读者看组件」的场景。
 
 ## 特性
 
-- **容器语法是一等公民**：容器在 mdast 层是 `jsxBlock` 节点，可解析、可渲染、可序列化、可定位，不是字符串替换。
-- **往返无损**：`parse` 与 `serialize` 共用同一套扩展，保存内容不会发生变形。
-- **SSR 安全**：解析与渲染不依赖 `window` / `document`，可在服务端直接调用。
-- **入口隔离**：编辑器代码独立入口，订阅页不会因为引入渲染器而带上 CodeMirror。
-- **容错不崩**：未闭合容器、未知标签、超限嵌套一律降级显示并给出诊断码，不吞内容。
-- **URL 有闸门**：`href` / `src` 在 hast 层统一过白名单，非法 scheme 被拦截，组件覆写也绕不过。
+- **容器是真正的节点**：容器在 mdast 层是 `jsxBlock` 节点，可解析、可渲染、可序列化、可定位，不是字符串替换。
+- **往返保形**：`parse` 与 `serialize` 共用同一套扩展，`md → AST → md` 逐字一致。
+- **SSR 安全**：解析与渲染不读 `window` / `document`，可在服务端直接调用。
+- **入口隔离**：编辑器代码在独立入口，只引渲染器不会带上 CodeMirror。
+- **容错降级**：未闭合容器、未知标签、超限嵌套降级显示并给出诊断码，不吞内容。
+- **URL 白名单**：`href` / `src` 在 hast 层统一过白名单，非法 scheme 被拦截，组件覆写也绕不过。
 
 ## 安装
 
@@ -56,7 +51,7 @@ export default function Article() {
 }
 ```
 
-外层的 `className` 建议带上 `prose-site`：包内样式的作用域挂在该类名下。
+外层的 `className` 要带上 `prose-site`：8 个容器样式（callout / tabs / steps / cards / accordion / files / type-table / image）的作用域挂在该类名下。`Mermaid` 用 `.lkes-mermaid`、编辑器用 `.md-editor`，两者不要求这个类。
 
 ### 解析、序列化与格式化
 
@@ -93,7 +88,7 @@ export default function EditorPage() {
 }
 ```
 
-编辑器以 Markdown 文本为唯一真源：左 CodeMirror、右实时预览，工具栏插入的容器骨架保证「插进去即合法」。
+编辑器以 Markdown 文本为唯一真源：左 CodeMirror、右实时预览；工具栏插入的容器骨架由 `registry.ts` 生成，属性名与子项名不会与解析规则脱节。
 
 内置快捷键（与工具栏按钮同一动作实现）：`Mod+B/I/E` 粗体/斜体/行内码、`Mod+Shift+S` 删除线、
 `Mod+1` 二级标题、`Mod+Shift+Q` 引用、`Mod+Shift+L` 列表。
@@ -172,7 +167,7 @@ const components = { ...mdxComponents, ...mermaidComponents };
 
 | 容器 | 属性 | 子项 |
 |---|---|---|
-| `Callout` | `type`（默认 `note`）/ `title` / `icon` | 正文 |
+| `Callout` | `type`（`note` / `info` / `tip` / `important` / `warning` / `caution` / `danger`，默认 `note`）/ `title` / `icon` | 正文 |
 | `Tabs` | — | `Tab`：`value`、`default`（布尔） |
 | `Steps` | — | `Step`：`title` |
 | `Cards` | — | `Card`：`title`、`href`、`icon`、`description`（可自闭合） |
@@ -252,8 +247,8 @@ const components = { ...mdxComponents, ...mermaidComponents };
 
 ### 样式入口 `@heikeson/md-engine/styles.css`
 
-引入一次即可，类名均挂在 `.prose-site` 作用域下。配色由独立命名空间 `--lkes-*` 控制（9 个令牌），
-默认跟随宿主的 `--background` / `--foreground` / `--border` / `--primary` 等变量，宿主不配置也能正常显示；
+引入一次即可。8 个容器的类名挂在 `.prose-site` 作用域下；`Mermaid` 与编辑器分别用 `.lkes-mermaid` / `.md-editor`，不要求该类名。
+配色由独立命名空间 `--lkes-*` 控制（9 个令牌，亮暗两套字面量），不读宿主的 `--background` / `--foreground` 等变量，宿主不配置也能正常显示；
 覆盖方式与变量清单见 [`对接契约.md`](./对接契约.md) 第 9 节。
 
 需要按组件引入时：
@@ -300,7 +295,8 @@ Markdown
 | 非白名单协议的 `href` / `src` | `href` → `#`、`src` 移除 | `UNSAFE_HREF` |
 | `<Mermaid>` 容器体为空 | 渲染为源码块 + 提示，不白屏 | `MERMAID_EMPTY` |
 | `<Mermaid>` 源码 > 20 KB | 不渲染图表，原样显示源码 | `MERMAID_TOO_LARGE` |
-| `div id` 与标题锚点或彼此重复 | 照常渲染（提示重复 id 风险），不改写内容 | `DUPLICATE_ID` |
+| `div id` 与标题锚点重复 | 照常渲染（提示重复 id 风险），不改写内容 | `DUPLICATE_ID_ANCHOR` |
+| `div id` 彼此重复 | 同上 | `DUPLICATE_ID_DIV` |
 
 协议白名单为 `http(s)` / `mailto` / `tel`，以及任意无 scheme 的引用（相对路径、`//host`、`#锚点`、`?查询`）。
 

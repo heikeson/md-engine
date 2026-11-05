@@ -4,8 +4,7 @@
  *   没有 eyebrow、没有编号卡片、没有居中大 CTA——那些都在替读者做判断。
  *   文案与演示数据按语言切换；中文首段的行内码保留独立分支，英文用纯文本版本。
  * @created 2026-11-02 00:30
- * @updated 2026-11-02 02:12 重做版式与文案
- * @updated 2026-11-02 19:32 文案改走站点字典，支持英文首页
+ * @updated 2026-11-05 23:52 首段改为「标准 Markdown 之上的一层扩展」表述
  */
 
 import type { ReactElement } from "react";
@@ -56,8 +55,9 @@ export function Home(): ReactElement {
         <h1 className="hero-title">{messages.homeHeroTitle}</h1>
         {isZh ? (
           <p className="hero-lead">
-            把 <code>&lt;Callout&gt;</code>、<code>&lt;Tabs&gt;</code>、<code>&lt;Mermaid&gt;</code>
-            这类标签解析成 mdast 节点，渲染成 React 组件，写回时逐字还原。作者只写 Markdown，不必接触 JSX。
+            在标准 Markdown（GFM + 数学公式）之上加一层尖括号容器：
+            <code>&lt;Callout&gt;</code>、<code>&lt;Tabs&gt;</code>、<code>&lt;Mermaid&gt;</code>
+            解析为 mdast 节点，渲染成 React 组件，<code>md → AST → md</code> 逐字一致。作者写 Markdown，不写 JSX。
           </p>
         ) : (
           <p className="hero-lead">{messages.homeHeroLead}</p>

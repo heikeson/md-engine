@@ -5,7 +5,7 @@
 > @created 2026-10-24 19:57
 > @updated 2026-11-05 23:52 校对到 0.5.2 源码：入口按子路径列全；样式作用域与令牌来源；诊断码细分；Callout type 补 info
 > @updated 2026-11-09 10:20 补充「依赖约定」（katex / @types 的位置原因）与 diagnose 用法
-> @status v0.5.2
+> @status v0.5.3
 
 一个面向 React 的 Markdown 内容引擎。在标准 Markdown（GFM + 数学公式）之上，把
 `<Callout>`、`<Cards><Card /></Cards>` 这类**尖括号容器**纳入解析流程，并

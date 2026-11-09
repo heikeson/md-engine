@@ -7,6 +7,7 @@
  * @updated 2026-10-24 20:24
  * @updated 2026-11-01 21:47 rawBody 容器把源码以 props 交给组件；渲染侧同步 collectMermaid 标记
  * @updated 2026-11-02 10:33 新增 config.text 文案覆写；components/plugins 浅比较稳定化（内联配置不再击穿 memo）
+ * @updated 2026-11-09 10:20 扩展与后处理改由 pipeline 统一声明；处理器按插件引用缓存复用
  */
 
 import { useMemo, type ComponentType, type ReactElement } from "react";
@@ -150,15 +151,28 @@ function createProcessor(
     .use(rehypeKatex);
 }
 
-/**
- * 无宿主插件时的处理器缓存
- * @description 处理器只在 `sourcePositions` 开关两种形态下不同，可跨实例复用：
- *   列表页一次渲染 N 篇内容时，不再各建一条 unified 管线（含 katex / slug 插件实例）。
- *   宿主自定义插件的引用无法稳定比较，给定时仍按实例新建。
- */
+/** 处理器类型（含解析/编译泛型，不能用 unified 的默认 `Processor`） */
 type RenderProcessor = ReturnType<typeof createProcessor>;
 
-const processorCache = new Map<"default" | "source-positions", RenderProcessor>();
+/** 处理器形态：只有 `sourcePositions` 开/关两种 */
+type ProcessorVariant = "default" | "source-positions";
+
+/** 空插件列表的占位引用：WeakMap 的键必须是非空对象 */
+const NO_PLUGINS: PluggableList = [];
+
+/** 无宿主插件时的处理器缓存 */
+const baseProcessorCache = new Map<ProcessorVariant, RenderProcessor>();
+
+/**
+ * 宿主插件组合的处理器缓存
+ * @description 外层按 remark 插件数组引用、内层按 rehype 插件数组引用分桶：
+ *   数组引用相同即视为同一组插件，可复用同一条管线（含各插件的 attach 结果）。
+ *   宿主若原地修改数组内容而不换引用，缓存不会失效——请把插件数组当成不可变值。
+ */
+const hostProcessorCache = new WeakMap<
+  PluggableList,
+  WeakMap<PluggableList, Map<ProcessorVariant, RenderProcessor>>
+>();
 
 /**
  * 取处理器（有缓存则复用）
@@ -166,18 +180,40 @@ const processorCache = new Map<"default" | "source-positions", RenderProcessor>(
  * @param extraRehype 宿主额外 rehype 插件
  * @param sourcePositions 是否输出源码 offset
  * @returns unified 处理器
+ * @description 列表页一次渲染 N 篇内容时不再各建一条 unified 管线；
+ *   宿主插件数组经 `useShallowStable` 稳定后同样能命中缓存（内容同则引用同）。
  */
 function getProcessor(
   extraRemark?: PluggableList,
   extraRehype?: PluggableList,
   sourcePositions?: boolean,
 ): RenderProcessor {
-  if (extraRemark || extraRehype) return createProcessor(extraRemark, extraRehype, sourcePositions);
-  const key = sourcePositions ? "source-positions" : "default";
-  const cached = processorCache.get(key);
+  const remarkKey = extraRemark ?? NO_PLUGINS;
+  const rehypeKey = extraRehype ?? NO_PLUGINS;
+  const variant: ProcessorVariant = sourcePositions ? "source-positions" : "default";
+
+  if (remarkKey === NO_PLUGINS && rehypeKey === NO_PLUGINS) {
+    const cached = baseProcessorCache.get(variant);
+    if (cached) return cached;
+    const created = createProcessor(undefined, undefined, sourcePositions);
+    baseProcessorCache.set(variant, created);
+    return created;
+  }
+
+  let byRehype = hostProcessorCache.get(remarkKey);
+  if (!byRehype) {
+    byRehype = new WeakMap();
+    hostProcessorCache.set(remarkKey, byRehype);
+  }
+  let byVariant = byRehype.get(rehypeKey);
+  if (!byVariant) {
+    byVariant = new Map();
+    byRehype.set(rehypeKey, byVariant);
+  }
+  const cached = byVariant.get(variant);
   if (cached) return cached;
-  const created = createProcessor(undefined, undefined, sourcePositions);
-  processorCache.set(key, created);
+  const created = createProcessor(extraRemark, extraRehype, sourcePositions);
+  byVariant.set(variant, created);
   return created;
 }
 

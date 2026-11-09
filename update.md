@@ -9,9 +9,47 @@
 > @updated 2026-11-02 23:00 记录未发布的图表交互修复（整画布拖动、缩放定位）
 > @updated 2026-11-02 23:14 发版 0.5.2：图表交互修复定稿（整画布拖动、初始适配居中、双指捏合、手势期直写 DOM）
 > @updated 2026-11-05 22:51 标题统一为 `## vX.Y.Z — 日期`；各版本补「一句话摘要」「升级与使用」「完整变更」，供 release.yml 抽取 Release 正文
+> @updated 2026-11-09 10:20 记录 0.5.3（管线收敛、诊断跳过块索引、处理器复用、katex 依赖声明）
 > @note 「升级与使用」按 npm 包口径写四项：依赖 / 配置 / 产物 / 回滚。数据库项不适用（本包不落库），镜像项由「产物」承担（`dist/` 与 npm 版本），故均不单列。
-> @status 0.5.2 已记录
+> @status 0.5.3 已记录
 > @readonly 由维护者（@heikeson）维护，请勿直接编辑；变更请提 issue
+
+---
+
+## v0.5.3 — 2026-11-09
+
+**一句话摘要**：内部重构版：解析与渲染的扩展、后处理收敛到同一处声明，编辑器诊断跳过块索引，处理器按插件引用复用，并补上 `katex` 依赖声明。升级只需改版本号，无需改代码。
+
+### 修复内容
+
+| 问题 | 修复 |
+|---|---|
+| pnpm 等严格 `node_modules` 布局下，产物里的 `import "katex"` 可能解析失败 | `katex` 补进 `dependencies`（`^0.16.0`），不再依赖 `rehype-katex` 的私有依赖树 |
+| 解析与渲染各写一套扩展与后处理，只靠注释维持「同一口径」 | 新增 `pipeline.ts`：micromark / mdast 扩展、remark 插件、`applySourceTransforms`（提升块级公式 → 深度裁剪 → 图表判定）统一声明，两条管线共用 |
+| 编辑器每个输入批次解析两次，其中一次只为取诊断却做了全量块索引 | 新增 `diagnose()` 与 `parse(md, { blocks: false })`，编辑器改走只取诊断的路径 |
+| 列表页每个 `<MarkdownRenderer>` 实例各建一条 unified 管线 | 处理器按「插件引用 + `sourcePositions`」缓存复用；宿主传入模块级常量插件数组时同样命中 |
+| 每个尖括号块都重新编译一次闭标签正则 | 闭标签正则按「名字 + 位置」缓存；策略层的闭合判定与序列化的结尾判定共用同一份模式 |
+| 6 处手写 mdast 递归、多处 `(node as { children? })` 断言 | 收敛到 `walkMdast`；`enforceMaxDepth` 与行内折叠保留自身递归（需重建子序列） |
+| 类名靠模板串拼接，`cn()` 只有两个组件在用 | `callout` / `image` / `acc-item` 改走 `cn()`，输出与原来逐字一致（仅去掉尾随空格） |
+| 5 个组件缺文件头，`"use client"` 位置不统一 | 补齐 `@file` / `@description`，指令统一放在文件头注释之后 |
+
+### 更新内容
+
+| 内容 | 说明 |
+|---|---|
+| `diagnose(md, options?)` | 主入口新增导出，等价于 `parse(md, { blocks: false }).diagnostics` |
+| `ParseOptions.blocks` | 新增选项，默认 `true`；传 `false` 时不提取块索引，`blocks` 返回空数组 |
+| 处理器缓存 | 无宿主插件时全局复用两条（开 / 关 `sourcePositions`）；宿主插件数组按引用分桶。插件数组须视为不可变值，原地改内容不会让缓存失效 |
+| 依赖说明 | README 新增「依赖约定」：`katex` 与 `@types/hast`、`@types/mdast` 放在 `dependencies` 的原因 |
+
+### 升级与使用
+
+- **依赖**：`npm install @heikeson/md-engine@0.5.3`；新增直接依赖 `katex@^0.16.0`，`mermaid` 仍是可选 peer（11.x）。
+- **配置**：无破坏性变更；`parse` 的返回值、诊断码与 `MarkdownRenderer` 的 props 均不变，新增选项都有默认值。
+- **产物**：`dist/` 与 `dist/styles.css` 重新构建，宿主需重新构建一次。
+- **回滚**：把依赖改回 `0.5.2` 即可，无数据迁移、无 API 变化。
+
+**Full Changelog**: https://github.com/heikeson/md-engine/compare/v0.5.2...v0.5.3
 
 ---
 

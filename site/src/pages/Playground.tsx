@@ -5,10 +5,19 @@
  *   分享链接把全文压进 `?s=`，可用于贴复现。
  * @created 2026-11-02 00:38
  * @updated 2026-11-02 00:38
+ * @updated 2026-11-09 11:40 预览按需加载图表入口，分屏内可切换 Mermaid 源码 / 图表视图
  */
 
-import { Suspense, lazy, useEffect, useMemo, useState, type ReactElement } from "react";
-import { roundtrip } from "@heikeson/md-engine";
+import {
+  Suspense,
+  lazy,
+  useEffect,
+  useMemo,
+  useState,
+  type ComponentType,
+  type ReactElement,
+} from "react";
+import { roundtrip, type RenderConfig } from "@heikeson/md-engine";
 import { CopyButton } from "../components/CodeBlock";
 import { messagesOf } from "../i18n";
 import { useLocalePath } from "../router";
@@ -173,6 +182,27 @@ export function Playground(): ReactElement {
   const [view, setView] = useState<View>("split");
   const [value, setValue] = useState<string>(sampleList[0].body);
   const [notice, setNotice] = useState("");
+  /** 预览用组件覆写：图表入口按需加载，加载前由引擎渲染源码骨架 */
+  const [chartComponents, setChartComponents] = useState<RenderConfig["components"]>();
+
+  // 放在客户端：图表入口不进首屏 chunk；未装 mermaid / dompurify 时保持骨架
+  useEffect(() => {
+    let alive = true;
+    void import("@heikeson/md-engine/mermaid")
+      .then((mod) => {
+        if (!alive) return;
+        // 覆写表按 tagName 查表，props 由引擎按容器属性透传，这里只做一次类型适配
+        setChartComponents({
+          Mermaid: mod.mermaidComponents.Mermaid as ComponentType<Record<string, unknown>>,
+        });
+      })
+      .catch(() => {
+        /* mermaid / dompurify 未安装：保持引擎默认的源码骨架 */
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   useEffect(() => {
     const shared = new URLSearchParams(window.location.search).get("s");
@@ -278,7 +308,10 @@ export function Playground(): ReactElement {
                 value={value}
                 onChange={setValue}
                 view={view}
-                config={{ placeholder: messages.pgPlaceholder, rendererConfig: {} }}
+                config={{
+                  placeholder: messages.pgPlaceholder,
+                  rendererConfig: { components: chartComponents },
+                }}
               />
             </Suspense>
           </div>

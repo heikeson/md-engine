@@ -6,6 +6,8 @@
  *   开标签会被吞进段落；只有 flow 构造能绕开这些限制（详见 docs/markdown/03-引擎设计.md）。
  * @created 2026-10-24 20:16
  * @updated 2026-10-28 11:32 内容区增加围栏状态感知：围栏代码块内的 `</Name>` 与同名 `<Name` 不再参与闭合/嵌套判定
+ * @updated 2026-11-09 12:40 行首缩进统一按 `markdownSpace` 判定：tab（-2）与它展开的虚拟空格（-1）不再漏判，
+ *   tab 缩进的子项不再整行退化成缩进代码块（子项与其 position 一并恢复）
  */
 
 import type {
@@ -21,7 +23,12 @@ import type {
 // 必须显式引入，否则按入口做依赖分析的工具（如 tsup 的 dts）会漏掉这个文件，
 // 导致 TokenTypeMap 未扩展、构建期类型报错。
 import "./jsx-types";
-import { asciiAlpha, asciiAlphanumeric, markdownLineEnding } from "micromark-util-character";
+import {
+  asciiAlpha,
+  asciiAlphanumeric,
+  markdownLineEnding,
+  markdownSpace,
+} from "micromark-util-character";
 import { COMPONENTS, ITEMS } from "../registry";
 
 const LT = 60; // <
@@ -29,8 +36,18 @@ const GT = 62; // >
 const SLASH = 47; // /
 const DQUOTE = 34; // "
 const SQUOTE = 39; // '
-const SPACE = 32; // 空格
-const TAB = 9; // 制表符
+
+/**
+ * 是否为行首缩进字符
+ * @param code 当前字符
+ * @returns 空格 / tab / tab 展开出的虚拟空格时返回 true
+ * @description 必须走 `markdownSpace`：micromark 的预处理把真实 tab 折成 `-2` 加若干虚拟空格 `-1`，
+ *   直接比较字符码 9 永远不成立，tab 缩进的标签行会漏判缩进而整行落进缩进代码块。
+ *   行尾（`-3` / `-4` / `-5`）不属于缩进，`markdownSpace` 本身已把它们排除。
+ */
+function isIndentCode(code: Code): boolean {
+  return code !== null && markdownSpace(code);
+}
 
 /**
  * 判断标签名是否受支持（容器组件或子项组件）
@@ -277,7 +294,7 @@ function tokenizeJsxBlock(
 
   /** 消费行首缩进 */
   function consumeIndent(code: Code): State | undefined {
-    if (code === SPACE || code === TAB) {
+    if (isIndentCode(code)) {
       effects.consume(code);
       return consumeIndent;
     }
@@ -449,7 +466,7 @@ function tokenizeJsxBlock(
         index += 1;
         return probeName;
       }
-      if (code === SPACE) {
+      if (isIndentCode(code)) {
         effects2.consume(code);
         return probeAttrs;
       }
@@ -505,14 +522,14 @@ function tokenizeJsxBlock(
      * @returns 下一个状态
      */
     function indentStart(code: Code): State | undefined {
-      if (code !== SPACE && code !== TAB) return nok2(code);
+      if (!isIndentCode(code)) return nok2(code);
       effects2.enter("jsxBlockIndent");
       return indentSpace(code);
     }
 
     /** 行首空白 */
     function indentSpace(code: Code): State | undefined {
-      if (code === SPACE || code === TAB) {
+      if (isIndentCode(code)) {
         effects2.consume(code);
         return indentSpace;
       }

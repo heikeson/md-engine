@@ -12,6 +12,7 @@
  * @updated 2026-11-01 23:02 EditorConfig 增加 rendererConfig：预览区可透传组件覆盖（如 mermaidComponents）
  * @updated 2026-11-02 10:44 预览与诊断改用 useDeferredValue（长文输入不卡键）；新增 config.text 文案覆写；工具栏动作补快捷键
  * @updated 2026-11-02 19:32 接入 locale/messages；字数与诊断走 ICU 复数；placeholder 接线并改为热更新
+ * @updated 2026-11-09 13:10 去掉失焦自动排版：编辑器不再改写用户输入（原文即输出，空行与缩进一律原样）
  */
 
 "use client";
@@ -19,7 +20,6 @@
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import MarkdownRenderer, { type RenderConfig } from "../render";
 import { diagnose } from "../parse";
-import { normalizeMarkdown } from "../format";
 import {
   MdEngineProvider,
   useMessage,
@@ -275,15 +275,6 @@ function EditorShell({ value, onChange, view = "split", config, fullscreen, onTo
   // 只要诊断文案：走 diagnose 跳过块索引（extractBlocks），输入批次少一次整树转换
   const diagnostics = useMemo(() => diagnose(deferredValue), [deferredValue]);
 
-  /** 失焦时整理排版（补空行、收敛空行），不改语义 */
-  const handleBlur = useCallback((): void => {
-    const current = valueRef.current;
-    const normalized = normalizeMarkdown(current);
-    if (normalized === current) return;
-    onChangeRef.current(normalized);
-    handleRef.current?.setDoc(normalized);
-  }, []);
-
   return (
     <div className="md-editor">
       <div className="md-editor-toolbar">
@@ -346,7 +337,7 @@ function EditorShell({ value, onChange, view = "split", config, fullscreen, onTo
         ) : null}
       </div>
 
-      <div className="md-editor-body" onBlur={handleBlur}>
+      <div className="md-editor-body">
         {viewMode !== "preview" && <div ref={hostRef} className="md-editor-source" />}
         {viewMode !== "source" && (
           <div ref={previewRef} className="md-editor-preview">

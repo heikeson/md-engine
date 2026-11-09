@@ -6,14 +6,18 @@
  *   3) 序列化保形：原文怎么写就怎么写回（不凭空加空行、不做多余转义）；
  *   4) 渲染结果里容器与子项的 props 可见。
  *   每条用例默认断言「往返结构等价 + 往返幂等」，个别用例再断言字节一致 / 结构 / 渲染。
+ *   末尾另有一组直断言：`normalizeMarkdown`（原样返回，不增删空行）与
+ *   `insertBlockAt`（缩进上下文插入、光标落在内容占位处）。
  * @created 2026-10-28 03:40
  * @updated 2026-10-28 11:52 扩为断言套件：新增围栏感知、跨段落折叠、序列化保形与渲染断言
  * @updated 2026-11-02 21:33 新增自闭合 TypeItem 用例（解析 / 块索引 / 渲染三处断言）
+ * @updated 2026-11-09 12:40 tab 缩进用例改为「识别为子项」；新增排版规范化与块级插入的直断言
  */
 
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { parse, roundtrip, MarkdownRenderer } from "../dist/index.js";
+import { parse, normalizeMarkdown, roundtrip, MarkdownRenderer } from "../dist/index.js";
+import { blockSnippet, insertBlockAt } from "../dist/editor/index.js";
 
 /** 去掉 position / data 后的结构快照 */
 function shape(node) {
@@ -311,10 +315,22 @@ const CASES = [
       codesList.includes("INDENT_AS_CODE") ? "围栏代码块不应提示缩进问题" : null,
   },
   {
-    name: "tab 缩进的行同样有提示",
+    // tab 会被 micromark 折成 -2 + 虚拟空格 -1：缩进探测必须走 markdownSpace，
+    // 否则整行带着 tab 进内容区，子项被当成缩进代码块（既丢子项也丢它的 position）
+    name: "tab 缩进的子项仍识别为子项（不降级成代码块）",
     md: "<Tabs>\n\t<Tab value=\"a\">A</Tab>\n</Tabs>\n",
     diagnostics: (codesList) =>
-      codesList.includes("INDENT_AS_CODE") ? null : `诊断缺失：${codesList.join(",") || "无"}`,
+      codesList.includes("INDENT_AS_CODE") ? "tab 缩进的子项不应提示缩进代码块" : null,
+    structure: (tree) => {
+      const list = items(findBlock(tree, "Tabs"));
+      if (list.length !== 1) return `子项数 ${list.length}，期望 1`;
+      return list[0].attributes.value === "a" ? null : "子项属性丢失";
+    },
+    blocks: (list) => {
+      const tabs = findInBlocks(list, "Tabs");
+      const item = tabs?.items?.[0];
+      return item && item.name === "Tab" ? null : "块索引里找不到 tab 缩进的 Tab 子项";
+    },
   },
   {
     name: "div 是合法容器（属性透传）",
@@ -453,6 +469,90 @@ for (const testCase of CASES) {
   } else {
     passed += 1;
     console.log(`✓ ${name}`);
+  }
+}
+
+// ---------- 排版规范化与块级插入（编辑器侧纯函数，不经过 mdast） ----------
+
+/**
+ * 一条直断言用例
+ * @type {Array<{ name: string, run: () => string | null }>}
+ */
+const DIRECT_CHECKS = [
+  {
+    name: "normalizeMarkdown：原样返回（不增删任何空行）",
+    run: () => {
+      const samples = [
+        '<Callout type="tip">\n正文\n</Callout>\n下一段\n',
+        '<Files>\n\n<Folder name="src">\n<File name="a.ts" />\n\n</Folder>\n</Files>\n',
+        "正文\n\n\n\n尾段\n\n\n",
+        "  <Tabs>\n  <Tab value=\"a\">A</Tab>\n  </Tabs>\n",
+        "第一行\r\n\r\n第二行\r\n",
+      ];
+      for (const md of samples) {
+        const actual = normalizeMarkdown(md);
+        if (actual !== md) return `被改写：${JSON.stringify(md)} -> ${JSON.stringify(actual)}`;
+      }
+      return null;
+    },
+  },
+  {
+    name: "insertBlockAt：缩进上下文里不自作主张顶格",
+    run: () => {
+      const doc = '- 项\n  <Callout type="tip">\n  正文\n  </Callout>\n';
+      const position = doc.indexOf("正文");
+      const result = insertBlockAt(doc, position, blockSnippet("Tabs"));
+      const inserted = result.value.slice(0, result.value.indexOf("正文"));
+      return inserted.includes("\n  <Tabs>\n  <Tab value=\"标签\">\n")
+        ? null
+        : `实际插入：${JSON.stringify(inserted)}`;
+    },
+  },
+  {
+    name: "insertBlockAt：光标落在内容占位处并选中占位文字",
+    run: () => {
+      const snippet = blockSnippet("Callout");
+      const result = insertBlockAt("", 0, snippet);
+      const selected = result.value.slice(result.selection.start, result.selection.end);
+      if (selected !== "内容") return `选中的是：${JSON.stringify(selected)}（整段：${JSON.stringify(result.value)}）`;
+      return result.value.startsWith('<Callout type="note">\n内容\n</Callout>') ? null : "骨架不完整";
+    },
+  },
+  {
+    name: "insertBlockAt：自闭合片段光标落在标签行末",
+    run: () => {
+      const snippet = '<Image src="a.png" alt="a" />';
+      const result = insertBlockAt("", 0, snippet);
+      const before = result.value.slice(0, result.selection.start);
+      return before === snippet ? null : `光标前内容：${JSON.stringify(before)}`;
+    },
+  },
+  {
+    name: "insertBlockAt：与后文隔一个空行",
+    run: () => {
+      const doc = "上一段\n正文\n";
+      const result = insertBlockAt(doc, 1, blockSnippet("Callout"));
+      return result.value.includes("</Callout>\n\n上一段\n正文\n")
+        ? null
+        : `实际：${JSON.stringify(result.value)}`;
+    },
+  },
+];
+
+for (const check of DIRECT_CHECKS) {
+  let issue = null;
+  try {
+    issue = check.run();
+  } catch (error) {
+    issue = `异常：${error.message}`;
+  }
+  if (issue) {
+    failed += 1;
+    console.log(`✗ ${check.name}`);
+    console.log(`   ${issue}`);
+  } else {
+    passed += 1;
+    console.log(`✓ ${check.name}`);
   }
 }
 

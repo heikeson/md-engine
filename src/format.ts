@@ -1,68 +1,21 @@
 /**
- * @file 排版规范化（不承担语法正确性）
- * @description 尖括号块的解析不依赖空行，本函数只负责"看起来整齐"：容器标签前后各留一个空行、
- *   连续空行收敛为一个。围栏代码块内的内容一律跳过；幂等（跑两遍结果一致）。
+ * @file 排版规范化（已停用改写，纯原样返回）
+ * @description 空行与缩进属于作者内容，引擎一律不处理：不加、不删、不合并。
+ *   本函数保留导出只为兼容既有调用点（对接契约只增不改），行为是**原样返回**，
+ *   连 CRLF 都不转换——调用方拿到的就是自己传进来的字符串。
+ *   编辑器也不会自动调用它：`onChange` 交出的就是用户键入的原文。
  * @created 2026-10-24 20:30
- * @updated 2026-10-24 20:30
+ * @updated 2026-11-09 13:40 停用空行处理：原样返回，不增删空行、不改缩进、不动换行符
  */
-
-/** 独占一行的容器标签（含闭合与自闭合）；捕获缩进用于判断是否在列表上下文 */
-const TAG_LINE = /^(\s*)<(\/?)([A-Z][A-Za-z0-9]*)((?:\s[^>]*)?)(\/?)>\s*$/;
-
-/** 围栏起始（``` 或 ~~~） */
-const FENCE_LINE = /^\s*(`{3,}|~{3,})/;
 
 /**
  * 规范化 Markdown 排版
  * @param md 原文
- * @returns 规范化后的文本
+ * @returns 与入参完全相同的文本
+ * @description 历史实现会"补空行 + 收敛空行"，实测会改坏作者排版（容器内部被撑开、
+ *   顶层块之间被插入空行），因此改为原样返回。要做排版整理请在宿主侧自己实现，
+ *   引擎不再替用户决定空行。
  */
 export function normalizeMarkdown(md: string): string {
-  const lines = (md ?? "").replace(/\r\n?/g, "\n").split("\n");
-  const out: string[] = [];
-  let fenceChar: string | null = null;
-
-  /** 需要时补一个空行（上一行非空才补） */
-  const pushBlank = (): void => {
-    if (out.length > 0 && out[out.length - 1].trim() !== "") out.push("");
-  };
-
-  for (let i = 0; i < lines.length; i += 1) {
-    const line = lines[i];
-    const fence = FENCE_LINE.exec(line);
-
-    if (fenceChar !== null) {
-      out.push(line);
-      if (fence && fence[1].startsWith(fenceChar)) fenceChar = null;
-      continue;
-    }
-    if (fence) {
-      fenceChar = fence[1][0];
-      out.push(line);
-      continue;
-    }
-
-    const tag = TAG_LINE.exec(line);
-    // 有缩进视为列表上下文，原样保留，不做空行补齐
-    if (tag && tag[1] === "") {
-      pushBlank();
-      out.push(line.trim());
-      const next = lines[i + 1];
-      if (next !== undefined && next.trim() !== "") out.push("");
-      continue;
-    }
-
-    if (line.trim() === "") {
-      // 连续空行收敛为一个
-      if (out.length > 0 && out[out.length - 1].trim() === "") continue;
-      out.push("");
-      continue;
-    }
-
-    out.push(line);
-  }
-
-  // 去掉末尾空行
-  while (out.length > 0 && out[out.length - 1] === "") out.pop();
-  return out.join("\n");
+  return md ?? "";
 }

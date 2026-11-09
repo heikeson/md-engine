@@ -6,6 +6,8 @@
  * @created 2026-10-24 20:16
  * @updated 2026-10-28 11:40 序列化改为保形：按原文行距写回换行/空行，不再统一加空行；行内形态由 data.inline 决定
  * @updated 2026-11-01 21:10 rawBody 容器（Mermaid）：exitBlock 用 token 原文切片覆盖子节点，序列化逐字回写
+ * @updated 2026-11-09 13:40 空行改为按原文行距逐行写回（原实现固定最多一个空行，既加也删）；
+ *   新增 join：容器块与兄弟节点之间不再被库默认规则插入空行
  */
 
 import type { Data, Parent, RootContent } from "mdast";
@@ -13,7 +15,7 @@ import type { Data, Parent, RootContent } from "mdast";
 import "./jsx-types";
 import { COMPONENTS } from "../registry";
 import type { CompileContext, Extension as FromMarkdownExtension, Token } from "mdast-util-from-markdown";
-import type { Handle, Options as ToMarkdownExtension, State } from "mdast-util-to-markdown";
+import type { Handle, Join, Options as ToMarkdownExtension, State } from "mdast-util-to-markdown";
 
 /** 尖括号块节点 */
 export interface JsxBlock extends Parent {
@@ -145,6 +147,8 @@ export function jsxToMarkdown(): ToMarkdownExtension {
     handlers: {
       jsxBlock: handleJsxBlock as unknown as Handle,
     },
+    // 容器块与兄弟节点之间按原文行距连接，不替用户补空行
+    join: [joinJsxBlocks as unknown as Join],
   };
 }
 
@@ -265,15 +269,16 @@ export function isInlineLayout(node: JsxBlock): boolean {
 }
 
 /**
- * 两行之间是否需要空行
+ * 取两行之间应写回的换行符
  * @param prevLine 上一段结束行（1 起）
  * @param nextLine 下一段开始行（1 起）
- * @returns 行距大于 1（中间有空行）或无位置信息时返回 true
- * @description 无位置信息（宿主手工构造的节点）回退为规范形态，保证输出可读。
+ * @returns 与原文行距等量的换行符；无位置信息时给一个空行兜底
+ * @description 原文隔几行就写回几行：不加、不删、不合并。
+ *   无位置信息（宿主手工构造的节点）回退为规范形态，保证输出可读。
  */
-function needsBlankLine(prevLine?: number, nextLine?: number): boolean {
-  if (typeof prevLine !== "number" || typeof nextLine !== "number") return true;
-  return nextLine - prevLine > 1;
+function lineBreaks(prevLine?: number, nextLine?: number): string {
+  if (typeof prevLine !== "number" || typeof nextLine !== "number") return "\n\n";
+  return "\n".repeat(Math.max(1, nextLine - prevLine));
 }
 
 /**
@@ -283,9 +288,9 @@ function needsBlankLine(prevLine?: number, nextLine?: number): boolean {
  * @param state 序列化状态
  * @param info 序列化信息
  * @returns Markdown 文本
- * @description 三种形态都按原文还原，不凭空增删空行：
- *   行内（`data.inline`）→ `<X>内容</X>`；块形态 → 按子节点与标签的行距决定 `\n` 还是 `\n\n`。
- *   需要统一成规范排版时用 `normalizeMarkdown`，不要在这里替用户决定。
+ * @description 三种形态都按原文还原，不增删空行：
+ *   行内（`data.inline`）→ `<X>内容</X>`；块形态 → 按子节点与标签的行距逐行写回（隔几行写几行）。
+ *   引擎不做排版整理：用户写了几行空行就写回几行，不加也不删。
  */
 function handleJsxBlock(
   node: JsxBlock,
@@ -325,12 +330,12 @@ function handleJsxBlock(
     return `${open}${body}</${node.name}>`;
   }
 
-  // 块形态：自己拼子节点，才能按原文行距决定空行（containerFlow 固定用空行连接）
+  // 块形态：自己拼子节点，才能按原文行距写回换行（containerFlow 固定用空行连接）
   const tracker = state.createTracker(info as never);
   let body = "";
   let prevEnd = node.position?.start.line;
   for (const child of children) {
-    const gap = needsBlankLine(prevEnd, child.position?.start.line) ? "\n\n" : "\n";
+    const gap = lineBreaks(prevEnd, child.position?.start.line);
     const piece = state.handle(child, node, state, {
       before: "\n",
       after: "\n",
@@ -342,6 +347,22 @@ function handleJsxBlock(
 
   // 原文未闭合时不补闭合标签：内容原样保留，不在保存时"顺手修好"用户内容
   if (node.data?.closed === false) return `${open}${body}`;
-  const closeGap = needsBlankLine(prevEnd, node.position?.end.line) ? "\n\n" : "\n";
-  return `${open}${body}${closeGap}</${node.name}>`;
+  return `${open}${body}${lineBreaks(prevEnd, node.position?.end.line)}</${node.name}>`;
+}
+
+/**
+ * 容器块与相邻块的连接符（join）
+ * @param left 左侧节点
+ * @param right 右侧节点
+ * @returns 需要的空行数（0 表示只换行）；不归本函数管时返回 undefined
+ * @description `mdast-util-to-markdown` 默认用空行连接 flow 子节点，会把原文紧贴的组件撑开。
+ *   这里只接管「有容器块参与」的一对节点：原文隔几行就写回几行，不加不删；
+ *   其余组合（表格、围栏等构造本身需要空行）仍走库的默认规则，避免产出解析不回来的写法。
+ */
+function joinJsxBlocks(left: RootContent, right: RootContent): number | undefined {
+  if (left.type !== "jsxBlock" && right.type !== "jsxBlock") return undefined;
+  const endLine = left.position?.end.line;
+  const startLine = right.position?.start.line;
+  if (typeof endLine !== "number" || typeof startLine !== "number") return undefined;
+  return Math.max(0, startLine - endLine - 1);
 }

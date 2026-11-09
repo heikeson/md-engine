@@ -5,6 +5,7 @@
 > @created 2026-10-24 19:57
 > @updated 2026-11-05 23:52 校对到 0.5.2 源码：入口按子路径列全；样式作用域与令牌来源；诊断码细分；Callout type 补 info
 > @updated 2026-11-09 10:20 补充「依赖约定」（katex / @types 的位置原因）与 diagnose 用法
+> @updated 2026-11-09 11:05 API 表补 `parse` 的 `blocks` 选项与 `diagnose` 行
 > @status v0.5.3
 
 一个面向 React 的 Markdown 内容引擎。在标准 Markdown（GFM + 数学公式）之上，把
@@ -232,7 +233,8 @@ const components = { ...mdxComponents, ...mermaidComponents };
 
 | 导出 | 说明 |
 |---|---|
-| `parse(md, { maxDepth? })` | 返回 `{ tree, blocks, diagnostics }` |
+| `parse(md, { maxDepth?, blocks? })` | 返回 `{ tree, blocks, diagnostics }`；`blocks: false` 时不提取块索引 |
+| `diagnose(md, { maxDepth? })` | 只取诊断，等价于 `parse(md, { blocks: false }).diagnostics` |
 | `serialize(tree)` | mdast → Markdown，与解析对称 |
 | `roundtrip(md)` | `serialize(parse(md).tree)` 的简写 |
 | `normalizeMarkdown(md)` | 幂等的排版整理 |

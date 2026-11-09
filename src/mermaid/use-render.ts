@@ -135,15 +135,24 @@ function sanitizeSvg(svg: string): string {
   });
 }
 
+/** 开标签属性（模块级复用；调用方负责重置 lastIndex） */
+const TAG_ATTR_RE = /\s([A-Za-z_:][-A-Za-z0-9_:.]*)\s*=\s*"([^"]*)"/g;
+
 /**
  * 读取开标签上的某个属性值
  * @param tag 开标签文本
- * @param name 属性名
+ * @param name 属性名（大小写不敏感）
  * @returns 属性值；不存在返回空串
  */
 function attribute(tag: string, name: string): string {
-  const matched = new RegExp(`\\s${name}\\s*=\\s*"([^"]*)"`, "i").exec(tag);
-  return matched ? matched[1] : "";
+  // 模块级正则 + 逐项扫描：原来每次读属性都编译一遍带变量名的正则
+  TAG_ATTR_RE.lastIndex = 0;
+  const target = name.toLowerCase();
+  let matched: RegExpExecArray | null;
+  while ((matched = TAG_ATTR_RE.exec(tag)) !== null) {
+    if ((matched[1] ?? "").toLowerCase() === target) return matched[2] ?? "";
+  }
+  return "";
 }
 
 /**

@@ -5,6 +5,7 @@
  * @created 2026-10-24 20:07
  * @updated 2026-10-24 20:27
  * @updated 2026-11-02 10:50 导出 UI 文案表（UIText / defaultUIText / useUIText），供宿主覆写与自定义组件取用
+ * @updated 2026-11-09 10:20 新增 diagnose（只取诊断，跳过块索引）
  */
 
 export {
@@ -27,7 +28,7 @@ export type { JsxBlock } from "./syntax/jsx-mdast";
 export { MERMAID_MAX_BYTES } from "./policy";
 export type { Diagnostic, DiagnosticCode } from "./policy";
 
-export { parse } from "./parse";
+export { parse, diagnose } from "./parse";
 export type { ParseOptions, ParseResult } from "./parse";
 export { extractBlocks } from "./blocks";
 export type { Block, ContainerBlock, ContainerItem, SourceBlock, VisualBlock, Attrs, SourceReason } from "./blocks";

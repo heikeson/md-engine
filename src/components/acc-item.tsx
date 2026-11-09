@@ -4,11 +4,13 @@
  *   `defaultOpen`（父级按 URL hash 判定是否命中）。
  * @created 2026-09-03 22:17
  * @updated 2026-10-24 21:30 语法改为尖括号；新增 id 锚点与 defaultOpen
+ * @updated 2026-11-09 10:20 类名合并改走 cn()（空条件不再留下尾部空格）
  */
 "use client";
 
 import { useState, type ReactNode } from "react";
 import { ChevronDown } from "lucide-react";
+import { cn } from "../internal/cn";
 
 /** 子项参数 */
 export interface AccItemProps {
@@ -33,7 +35,7 @@ export default function AccItem({ title, id, type, defaultOpen, children }: AccI
   const [open, setOpen] = useState(Boolean(defaultOpen) || type === "open");
 
   return (
-    <div id={id} className={`accordion-item ${open ? "open" : ""}`}>
+    <div id={id} className={cn("accordion-item", open && "open")}>
       <button
         type="button"
         className="accordion-trigger"

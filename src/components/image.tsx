@@ -5,10 +5,12 @@
  * @created 2026-09-03 21:54
  * @updated 2026-10-24 22:20 新增 zoom（点击全屏放大，Esc 关闭）
  * @updated 2026-11-02 10:41 遮罩可聚焦、Enter/Space 可关闭并在打开时接管焦点；关闭文案走 UIText
+ * @updated 2026-11-09 10:20 类名合并改走 cn()，去掉模板串拼接
  */
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { cn } from "../internal/cn";
 import { isSafeHref } from "../internal/url-policy";
 import { useUIText } from "../internal/text";
 
@@ -63,14 +65,14 @@ export default function Image({
   }, [open]);
 
   return (
-    <figure className={`image align-${align}`} style={figStyle}>
+    <figure className={cn("image", `align-${align}`)} style={figStyle}>
       {safeSrc ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={safeSrc}
           alt={alt ?? ""}
           style={{ width: w }}
-          className={zoom ? "image-img image-img-zoomable" : "image-img"}
+          className={cn("image-img", zoom && "image-img-zoomable")}
           onClick={zoom ? () => setOpen(true) : undefined}
         />
       ) : null}

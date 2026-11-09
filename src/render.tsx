@@ -13,8 +13,6 @@ import { useMemo, type ComponentType, type ReactElement } from "react";
 import { Fragment, jsx, jsxs } from "react/jsx-runtime";
 import { unified, type PluggableList } from "unified";
 import remarkParse from "remark-parse";
-import remarkGfm from "remark-gfm";
-import remarkMath from "remark-math";
 import remarkRehype from "remark-rehype";
 import rehypeSlug from "rehype-slug";
 import rehypeKatex from "rehype-katex";
@@ -23,14 +21,10 @@ import type { Element, Properties, Root as HastRoot } from "hast";
 import type { State as HastState } from "mdast-util-to-hast";
 import type { Root } from "mdast";
 import { mdxComponents } from "./components";
-import remarkJsxBlocks from "./syntax/jsx-remark";
-import remarkInlineItems from "./syntax/jsx-inline";
-import remarkHtmlAsText from "./syntax/html-text";
-import { promoteBlockMath } from "./syntax/math-block";
+import { REMARK_PARSE_PLUGINS, REMARK_TRANSFORMS, applySourceTransforms } from "./pipeline";
 import { rehypeSafeUrls } from "./rehype-safe-urls";
 import { rehypeSafeAnchors } from "./rehype-safe-anchors";
 import type { JsxBlock } from "./syntax/jsx-mdast";
-import { collectMermaid, enforceMaxDepth } from "./policy";
 import { rehypeCodeMeta } from "./rehype-code-meta";
 import { rehypeSourcePositions } from "./rehype-source-positions";
 import { MdEngineProvider, type UITextPatch } from "./internal/text";
@@ -136,14 +130,11 @@ function createProcessor(
 ) {
   return unified()
     .use(remarkParse)
-    .use(remarkJsxBlocks)
-    .use(remarkGfm)
-    .use(remarkMath)
-    // 与 parse() 保持同一套 mdast 后处理：行内子项收拢，
-    // 否则渲染与解析对同一段内容的理解会分叉（渲染侧丢标签）
-    .use(remarkInlineItems)
-    // 未识别的 HTML（白名单外标签）按文本显示：否则 remark-rehype 会直接丢掉整段内容
-    .use(remarkHtmlAsText)
+    // 与 parse() 共用同一组扩展与 mdast 后处理（pipeline.ts）：
+    // 行内子项收拢、白名单外 HTML 转文本、GFM / 数学 / 尖括号扩展都在那里声明，
+    // 避免两处各写一遍后逐步漂移（渲染侧丢标签就是这么来的）
+    .use(REMARK_PARSE_PLUGINS)
+    .use(REMARK_TRANSFORMS)
     .use(extraRemark ?? [])
     .use(remarkRehype, { handlers: { jsxBlock: jsxBlockToHast as never } })
     // 紧跟 remark-rehype：此刻所有节点的 href/src 都在，一次清洗即可覆盖
@@ -157,6 +148,37 @@ function createProcessor(
     .use(rehypeSlug)
     .use(extraRehype ?? [])
     .use(rehypeKatex);
+}
+
+/**
+ * 无宿主插件时的处理器缓存
+ * @description 处理器只在 `sourcePositions` 开关两种形态下不同，可跨实例复用：
+ *   列表页一次渲染 N 篇内容时，不再各建一条 unified 管线（含 katex / slug 插件实例）。
+ *   宿主自定义插件的引用无法稳定比较，给定时仍按实例新建。
+ */
+type RenderProcessor = ReturnType<typeof createProcessor>;
+
+const processorCache = new Map<"default" | "source-positions", RenderProcessor>();
+
+/**
+ * 取处理器（有缓存则复用）
+ * @param extraRemark 宿主额外 remark 插件
+ * @param extraRehype 宿主额外 rehype 插件
+ * @param sourcePositions 是否输出源码 offset
+ * @returns unified 处理器
+ */
+function getProcessor(
+  extraRemark?: PluggableList,
+  extraRehype?: PluggableList,
+  sourcePositions?: boolean,
+): RenderProcessor {
+  if (extraRemark || extraRehype) return createProcessor(extraRemark, extraRehype, sourcePositions);
+  const key = sourcePositions ? "source-positions" : "default";
+  const cached = processorCache.get(key);
+  if (cached) return cached;
+  const created = createProcessor(undefined, undefined, sourcePositions);
+  processorCache.set(key, created);
+  return created;
 }
 
 /**
@@ -182,19 +204,17 @@ export default function MarkdownRenderer({
     return { ...text, ...messages };
   }, [text, messages]);
   const processor = useMemo(
-    () => createProcessor(extraRemark, extraRehype, sourcePositions),
+    () => getProcessor(extraRemark, extraRehype, sourcePositions),
     [extraRemark, extraRehype, sourcePositions],
   );
   const rendered = useMemo(() => {
     const source = content ?? "";
     const mdast = processor.parse(source) as Root;
-    // 单行 `$$…$$` 提升发生在 runSync 之前：此处能拿到原文，
-    // 而 unified 的 runSync(tree) 会新建空 vfile，插件里读不到 source
-    promoteBlockMath(mdast, source);
-    enforceMaxDepth(mdast, source);
-    // 与 parse() 同一口径：空源码 / 超限的标记必须在渲染侧也生效，
-    // 否则会出现"编辑器提示超限、页面照样出图"的分叉。诊断本身在渲染侧用不上，只取副作用
-    collectMermaid(mdast);
+    // 与 parse() 共用的解析期后处理（提升块级公式 → 深度裁剪 → 图表判定）。
+    // 必须在 runSync 之前：此处能拿到原文，而 unified 的 runSync(tree) 会新建空 vfile，
+    // 插件里读不到 source。诊断本身在渲染侧用不上，只取副作用——
+    // 少了这一步就会出现"编辑器提示超限、页面照样出图"的分叉
+    applySourceTransforms(mdast, source);
     const hast = processor.runSync(mdast) as HastRoot;
     return toJsxRuntime(hast, {
       Fragment,

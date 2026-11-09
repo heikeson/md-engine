@@ -13,10 +13,9 @@
 import type { Paragraph, Root, RootContent, Text } from "mdast";
 import type { Processor } from "unified";
 import { COMPONENTS } from "../registry";
-import { parseOpenTag, type JsxBlock } from "./jsx-mdast";
-
-/** 行内闭标签：`</Name>` */
-const CLOSE_TAG_RE = /^<\/([A-Za-z][\w]*)\s*>$/;
+// 闭标签判定与 jsx-mdast 共用同一份模式（`CLOSE_TAG_RE`），避免「行内收拢能认出、
+// 策略层认不出」这类口径分叉
+import { CLOSE_TAG_RE, parseOpenTag, type JsxBlock } from "./jsx-mdast";
 
 /**
  * 取容器声明的子项名列表

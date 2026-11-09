@@ -9,7 +9,8 @@
 
 import type { Root, RootContent } from "mdast";
 import { COMPONENTS, MAX_CONTAINER_DEPTH } from "./registry";
-import type { JsxBlock } from "./syntax/jsx-mdast";
+import { closeTagRe, type JsxBlock } from "./syntax/jsx-mdast";
+import { walkMdast } from "./internal/walk";
 
 /**
  * 诊断码
@@ -145,10 +146,10 @@ function hasCloseTag(block: JsxBlock, source: string): boolean {
   const start = block.position?.start.offset ?? 0;
   const end = block.position?.end.offset ?? 0;
   if (end <= start) return false;
-  const body = new RegExp(`</${block.name}\\s*>`);
-  if (body.test(source.slice(start, end))) return true;
+  // 正则按名字缓存（jsx-mdast 统一维护）：序列化的「结尾闭标签」用同一份模式
+  if (closeTagRe(block.name).test(source.slice(start, end))) return true;
   // 同名嵌套时内层区间会止于闭合标签之前，紧跟其后的 `</Name>` 同样算作它的闭合
-  return new RegExp(`^\\s*</${block.name}\\s*>`).test(source.slice(end, end + 64));
+  return closeTagRe(block.name, "start").test(source.slice(end, end + 64));
 }
 
 /**
@@ -205,7 +206,7 @@ export function collectIndentAsCode(tree: Root, source: string): Diagnostic[] {
  */
 export function collectUnclosed(tree: Root, source: string): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
-  const visit = (node: Root | RootContent): void => {
+  walkMdast(tree, (node) => {
     if (node.type === "jsxBlock") {
       const block = node as JsxBlock;
       if (!block.selfClosing && !hasCloseTag(block, source)) {
@@ -221,10 +222,7 @@ export function collectUnclosed(tree: Root, source: string): Diagnostic[] {
         });
       }
     }
-    const children = (node as { children?: RootContent[] }).children;
-    if (children) for (const child of children) visit(child);
-  };
-  visit(tree);
+  });
   return diagnostics;
 }
 
@@ -238,7 +236,7 @@ export function collectUnclosed(tree: Root, source: string): Diagnostic[] {
  */
 export function collectMermaid(tree: Root): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
-  const visit = (node: Root | RootContent): void => {
+  walkMdast(tree, (node) => {
     if (node.type === "jsxBlock") {
       const block = node as JsxBlock;
       if (COMPONENTS[block.name]?.rawBody) {
@@ -270,9 +268,6 @@ export function collectMermaid(tree: Root): Diagnostic[] {
         }
       }
     }
-    const children = (node as { children?: RootContent[] }).children;
-    if (children) for (const child of children) visit(child);
-  };
-  visit(tree);
+  });
   return diagnostics;
 }

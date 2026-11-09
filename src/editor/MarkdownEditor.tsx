@@ -18,7 +18,7 @@
 
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import MarkdownRenderer, { type RenderConfig } from "../render";
-import { parse } from "../parse";
+import { diagnose } from "../parse";
 import { normalizeMarkdown } from "../format";
 import {
   MdEngineProvider,
@@ -272,7 +272,8 @@ function EditorShell({ value, onChange, view = "split", config, fullscreen, onTo
     handleRef.current?.setDoc(value);
   }, [value]);
 
-  const diagnostics = useMemo(() => parse(deferredValue).diagnostics, [deferredValue]);
+  // 只要诊断文案：走 diagnose 跳过块索引（extractBlocks），输入批次少一次整树转换
+  const diagnostics = useMemo(() => diagnose(deferredValue), [deferredValue]);
 
   /** 失焦时整理排版（补空行、收敛空行），不改语义 */
   const handleBlur = useCallback((): void => {

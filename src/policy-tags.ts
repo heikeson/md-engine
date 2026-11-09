@@ -15,6 +15,7 @@ import { COMPONENTS, ITEMS } from "./registry";
 import type { JsxBlock } from "./syntax/jsx-mdast";
 import type { Diagnostic } from "./policy";
 import { isSafeHref } from "./internal/url-policy";
+import { walkMdast } from "./internal/walk";
 
 /** 需要协议校验的属性名 */
 const URL_ATTRS = ["href", "src"] as const;
@@ -24,18 +25,6 @@ const HTML_OPEN_TAG = /^<([A-Z][A-Za-z0-9]*)/;
 
 /** registry 里所有合法名字（容器 + 子项） */
 const KNOWN_NAMES = new Set<string>([...Object.keys(COMPONENTS), ...Object.keys(ITEMS)]);
-
-/**
- * 深度优先遍历所有节点
- * @param node 起始节点
- * @param fn 对每个子节点执行的回调（不含 root 本身）
- */
-function forEachNode(node: Root | RootContent, fn: (child: RootContent) => void): void {
-  if (node.type !== "root") fn(node as RootContent);
-  const children = (node as { children?: RootContent[] }).children;
-  if (!children) return;
-  for (const child of children) forEachNode(child, fn);
-}
 
 /**
  * 收集非法协议诊断
@@ -68,7 +57,7 @@ export function collectUnsafeUrls(tree: Root): Diagnostic[] {
     });
   };
 
-  forEachNode(tree, (node) => {
+  walkMdast(tree, (node) => {
     const line = node.position?.start.line ?? 1;
     if (node.type === "jsxBlock") {
       const block = node as JsxBlock;
@@ -117,49 +106,40 @@ export function collectDuplicateIds(tree: Root): Diagnostic[] {
   const headingSlugs = new Set<string>();
 
   // 第一遍：文档序生成标题 slug（rehype-slug 同名标题会加 -1/-2 后缀，这里保持同口径）
-  const collectHeadings = (node: Root | RootContent): void => {
-    if (node.type === "heading") headingSlugs.add(slugger.slug(nodeText(node as RootContent)));
-    const children = (node as { children?: RootContent[] }).children;
-    if (children) for (const child of children) collectHeadings(child);
-  };
-  collectHeadings(tree);
+  walkMdast(tree, (node) => {
+    if (node.type === "heading") headingSlugs.add(slugger.slug(nodeText(node)));
+  });
 
   // 第二遍：div 的手写 id 查重（div 之间 + 与标题锚点之间）
   const seen = new Map<string, number>();
-  const checkDivs = (node: Root | RootContent): void => {
-    if (node.type === "jsxBlock") {
-      const block = node as JsxBlock;
-      if (block.name === "div") {
-        const id = block.attributes?.id;
-        const line = block.position?.start.line ?? 1;
-        if (typeof id === "string" && id.length > 0) {
-          const first = seen.get(id);
-          if (headingSlugs.has(id)) {
-            diagnostics.push({
-              code: "DUPLICATE_ID_ANCHOR",
-              level: "warn",
-              line,
-              message: `div id="${id}" 与标题生成的锚点重复，页面将出现两个同名 id`,
-              params: { id },
-            });
-          } else if (first !== undefined) {
-            diagnostics.push({
-              code: "DUPLICATE_ID_DIV",
-              level: "warn",
-              line,
-              message: `div id="${id}" 与第 ${first} 行的 div 重复，页面将出现两个同名 id`,
-              params: { id, first },
-            });
-          } else {
-            seen.set(id, line);
-          }
-        }
-      }
+  walkMdast(tree, (node) => {
+    if (node.type !== "jsxBlock") return;
+    const block = node as JsxBlock;
+    if (block.name !== "div") return;
+    const id = block.attributes?.id;
+    const line = block.position?.start.line ?? 1;
+    if (typeof id !== "string" || id.length === 0) return;
+    const first = seen.get(id);
+    if (headingSlugs.has(id)) {
+      diagnostics.push({
+        code: "DUPLICATE_ID_ANCHOR",
+        level: "warn",
+        line,
+        message: `div id="${id}" 与标题生成的锚点重复，页面将出现两个同名 id`,
+        params: { id },
+      });
+    } else if (first !== undefined) {
+      diagnostics.push({
+        code: "DUPLICATE_ID_DIV",
+        level: "warn",
+        line,
+        message: `div id="${id}" 与第 ${first} 行的 div 重复，页面将出现两个同名 id`,
+        params: { id, first },
+      });
+    } else {
+      seen.set(id, line);
     }
-    const children = (node as { children?: RootContent[] }).children;
-    if (children) for (const child of children) checkDivs(child);
-  };
-  checkDivs(tree);
+  });
 
   return diagnostics;
 }
@@ -173,7 +153,7 @@ export function collectDuplicateIds(tree: Root): Diagnostic[] {
 export function collectUnknownTags(tree: Root): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
 
-  forEachNode(tree, (node) => {
+  walkMdast(tree, (node) => {
     if (node.type !== "html") return;
     const match = HTML_OPEN_TAG.exec(String(node.value ?? "").trim());
     if (!match) return;

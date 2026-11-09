@@ -1,3 +1,12 @@
+/**
+ * @file 提示框（`<Callout>`）
+ * @description 按 `type` 映射图标与配色，标题可选；无标题时图标与正文同行。
+ *   `type` 支持 fumadocs 别名（warn / error / success / idea），只映射到既有配色，
+ *   不新增视觉分支（语法只增不改）。
+ * @created 2026-09-03 21:54
+ * @updated 2026-11-09 10:20 补齐文件头（@file / @description / @created）；类名合并改走 cn()
+ */
+
 "use client";
 
 import {
@@ -9,6 +18,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { ReactNode } from "react";
+import { cn } from "../internal/cn";
 
 type CalloutType = "note" | "tip" | "important" | "warning" | "caution" | "info" | "danger";
 
@@ -27,6 +37,11 @@ const TYPE_MAP: Record<CalloutType | string, { icon: LucideIcon; cls: string; la
   idea: { icon: Lightbulb, cls: "callout-tip", label: "想法" },
 };
 
+/**
+ * 提示框
+ * @param props 类型、标题、自定义图标与正文
+ * @returns 提示框节点
+ */
 export default function Callout({
   type = "note",
   title,
@@ -51,7 +66,7 @@ export default function Callout({
         : icon;
 
   return (
-    <div className={`callout ${meta.cls}`}>
+    <div className={cn("callout", meta.cls)}>
       {title ? (
         <>
           <div className="callout-title">

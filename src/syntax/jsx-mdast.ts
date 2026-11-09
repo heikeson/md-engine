@@ -51,6 +51,54 @@ interface OpenTag {
 const OPEN_TAG_RE = /^<([A-Za-z][\w]*)([\s\S]*?)(\/?)>$/;
 const ATTR_RE = /([A-Za-z_][\w-]*)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'))?/g;
 
+/** 整串匹配的闭标签：`</Name>`（行内收拢用它判定节点是不是闭标签） */
+export const CLOSE_TAG_RE = /^<\/([A-Za-z][\w]*)\s*>$/;
+
+/** 闭标签正则缓存：按「位置 + 名字」缓存，避免每个块都重新编译 */
+const CLOSE_TAG_CACHE = new Map<string, RegExp>();
+
+/** 闭标签的匹配位置 */
+export type CloseTagWhere =
+  /** 区间内任意处 */
+  | "any"
+  /** 以它结尾（`</Name>` 后只允许空白） */
+  | "end"
+  /** 紧跟其后（前面只允许空白） */
+  | "start";
+
+/**
+ * 转义正则元字符
+ * @param value 原始字符串
+ * @returns 可安全嵌入正则的字符串
+ */
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * 取匹配 `</Name>` 的正则（按名字缓存）
+ * @param name 组件名
+ * @param where 匹配位置，默认区间内任意处
+ * @returns 无 `g` 标志的正则（可安全重复 `test` / `exec`）
+ * @description 序列化的「结尾闭标签」与策略层的「区间内闭合判定」共用同一份模式，
+ *   避免两处对空白的容忍度不一致。
+ */
+export function closeTagRe(name: string, where: CloseTagWhere = "any"): RegExp {
+  const key = `${where}:${name}`;
+  const cached = CLOSE_TAG_CACHE.get(key);
+  if (cached) return cached;
+  const escaped = escapeRegExp(name);
+  const pattern =
+    where === "end"
+      ? `</${escaped}\\s*>\\s*$`
+      : where === "start"
+        ? `^\\s*</${escaped}\\s*>`
+        : `</${escaped}\\s*>`;
+  const created = new RegExp(pattern);
+  CLOSE_TAG_CACHE.set(key, created);
+  return created;
+}
+
 /**
  * 解析开标签原文为名字、属性与自闭合标记
  * @param raw 开标签原文，如 `<Card title="A" href="/x">`
@@ -170,7 +218,7 @@ export function sliceRawBody(raw: string, name: string, selfClosing: boolean): s
   const openEnd = openTagEnd(raw);
   if (openEnd < 0) return "";
   const bodyStart = openEnd + 1;
-  const close = new RegExp(`</${name}\\s*>\\s*$`).exec(raw);
+  const close = closeTagRe(name, "end").exec(raw);
   if (!close) return raw.slice(bodyStart);
   return raw.slice(bodyStart, close.index);
 }

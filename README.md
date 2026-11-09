@@ -4,6 +4,7 @@
 > @description React Markdown 内容引擎：尖括号容器语法的解析、渲染、序列化、格式化与 CodeMirror 6 编辑器内核，单一 npm 包按子路径拆分入口（主入口 / editor / components / mermaid / styles.css，另有 locales/zh-CN 与 locales/en-US）。
 > @created 2026-10-24 19:57
 > @updated 2026-11-05 23:52 校对到 0.5.2 源码：入口按子路径列全；样式作用域与令牌来源；诊断码细分；Callout type 补 info
+> @updated 2026-11-09 10:20 补充「依赖约定」（katex / @types 的位置原因）与 diagnose 用法
 > @status v0.5.2
 
 一个面向 React 的 Markdown 内容引擎。在标准 Markdown（GFM + 数学公式）之上，把
@@ -32,6 +33,15 @@ npm install @heikeson/md-engine
 | Tailwind | 不需要。包内样式为原生 CSS，颜色走 `--lkes-*` 变量，可脱离 Tailwind 独立使用 |
 | 模块格式 | **ESM-only**：`exports` 只提供 `import` 条件，无 CJS 入口。CommonJS 项目（老 Jest、webpack4）需经 ESM 互操作层或打包后使用 |
 
+### 依赖约定
+
+| 依赖 | 位置 | 说明 |
+|---|---|---|
+| `katex` | `dependencies` | 构建时被 external，产物里保留 `import "katex"`；由本包直接声明，避免在严格 `node_modules`（pnpm）下由 `rehype-katex` 的私有依赖树解析 |
+| `@types/hast` / `@types/mdast` | `dependencies` | **有意为之**：`dist/*.d.ts` 直接引用 `hast` / `mdast` 模块类型，宿主 `skipLibCheck: false` 时需要能解析到它们。不要移到 `devDependencies` |
+| `clsx` / `tailwind-merge` | `dependencies` | 仅用于包内 `cn()` 合并类名，宿主的同名依赖互不影响 |
+| `mermaid` / `dompurify` | 可选 peer（`/mermaid` 入口） | 只在引入 `/mermaid` 时才需要，未安装时图表降级为源码 |
+
 ## 快速开始
 
 ### 渲染
@@ -56,15 +66,19 @@ export default function Article() {
 ### 解析、序列化与格式化
 
 ```ts
-import { parse, serialize, roundtrip, normalizeMarkdown } from "@heikeson/md-engine";
+import { parse, diagnose, serialize, roundtrip, normalizeMarkdown } from "@heikeson/md-engine";
 
 const { tree, blocks, diagnostics } = parse(md);
 const same = serialize(tree);   // md → AST → md：形态（行内 / 块）与空行按原文保形
 const again = roundtrip(md);     // 等价写法
 const tidy = normalizeMarkdown(md); // 需要统一排版时用它（补空行、收敛空行），serialize 不替你改
+
+const onlyDiagnostics = diagnose(md);        // 只要诊断：跳过块索引
+const noBlocks = parse(md, { blocks: false }); // 同上，等价写法
 ```
 
 `blocks` 是带全文 offset 的扁平块索引，可用来做目录、定位或分屏滚动同步。
+输入时只需提示（如编辑器）就用 `diagnose()`：省掉 `extractBlocks` 的整树转换。
 
 ### 编辑器
 

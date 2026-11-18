@@ -3,8 +3,6 @@
  * @description Markdown → mdast（已含尖括号块与数学公式节点），再跑策略层得到诊断。
  *   渲染、序列化、编辑器块索引都基于这里产出的同一棵 mdast，避免重复解析。
  * @created 2026-10-24 20:24
- * @updated 2026-10-26 22:02
- * @updated 2026-11-01 21:47 诊断链加入 collectMermaid（图表空源码 / 超限）
  * @updated 2026-11-09 10:20 扩展与解析期后处理改为复用 pipeline 的模块级实例；新增 blocks 选项与 diagnose
  */
 

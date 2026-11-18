@@ -3,7 +3,6 @@
  * @description 组件名一律取自 `registry`，模板只描述"骨架"（标签 + 子项 + 空行），
  *   禁止在别处硬编码 `<Callout` 之类的字符串。
  * @created 2026-10-24 21:12
- * @updated 2026-10-24 21:58 容器子项支持数组（Files 混用 Folder / File）
  * @updated 2026-11-01 21:47 图表片段：rawBody 容器给流程图骨架，可插入列表加 Mermaid
  */
 

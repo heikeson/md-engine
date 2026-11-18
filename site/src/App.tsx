@@ -7,7 +7,6 @@
  *   包一层 `MdEngineProvider` 之后，子树里所有 `MarkdownRenderer` 与 `MarkdownEditor`
  *   自动跟随站点语言，调用点不必逐个传 locale。
  * @created 2026-11-02 00:50
- * @updated 2026-11-02 00:50
  * @updated 2026-11-02 19:32 接入路由级语言：注入 MdEngineProvider、双语标题、英文站只开放首页与 Playground
  */
 

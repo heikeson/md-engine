@@ -3,8 +3,6 @@
  * @description 自闭合叶子组件：对齐、宽度、题注，可选 `zoom` 点击放大。
  *   外链图片来源不确定，用原生 img 而非 next/image（后者需要逐域配置且对未知尺寸不友好）。
  * @created 2026-09-03 21:54
- * @updated 2026-10-24 22:20 新增 zoom（点击全屏放大，Esc 关闭）
- * @updated 2026-11-02 10:41 遮罩可聚焦、Enter/Space 可关闭并在打开时接管焦点；关闭文案走 UIText
  * @updated 2026-11-09 10:20 类名合并改走 cn()，去掉模板串拼接
  */
 "use client";

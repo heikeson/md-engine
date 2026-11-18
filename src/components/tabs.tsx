@@ -3,7 +3,6 @@
  * @description 聚合内层 `<Tab value="…">` 子项为可切换面板。子项标题取 `value`（与 fumadocs 命名一致），
  *   带 `default` 布尔的子项为默认激活项。
  * @created 2026-09-03 21:54
- * @updated 2026-10-24 20:27 子项属性由 label 改为 value，随尖括号语法切换
  * @updated 2026-11-02 10:40 补齐 WAI-ARIA Tabs 键盘规范：tab/panel id 关联、方向键切换、roving tabindex
  */
 "use client";

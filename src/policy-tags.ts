@@ -5,7 +5,6 @@
  *   ③ 检查 `div` 手写 `id` 与标题锚点或彼此冲突，产出 `DUPLICATE_ID`。
  *   渲染行为不在这里改：降级分别由组件（`isSafeHref`）与渲染期 remark 插件负责。
  * @created 2026-10-26 22:20
- * @updated 2026-10-26 22:20
  * @updated 2026-11-02 10:48 新增 DUPLICATE_ID：div 手写 id 与标题锚点（rehype-slug）或彼此冲突时提示
  */
 

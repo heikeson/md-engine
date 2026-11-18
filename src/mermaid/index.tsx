@@ -4,7 +4,6 @@
  *   不用图表的页面不承担这些体积；未引入本入口时 `<Mermaid>` 停留在源码骨架。
  *   本文件只做导出，不执行任何副作用（不注册全局、不带 'use client' 之外的语句）。
  * @created 2026-11-01 21:32
- * @updated 2026-11-01 21:32
  * @updated 2026-11-01 22:51 导出配色配置 API（configureChartTheme / getChartTheme / DEFAULT_CHART_THEME）
  */
 

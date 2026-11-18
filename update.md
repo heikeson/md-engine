@@ -3,10 +3,46 @@
 > @file update.md
 > @description `@heikeson/md-engine` 的版本更新记录，倒序累积。每次发版在此一次性写清「更新内容 + 修复内容」，不记录操作步骤。GitHub Release 正文由 `.github/workflows/release.yml` 从本文件同名版本段切出，故版本标题必须是 `## vX.Y.Z — 日期`。
 > @created 2026-10-26 23:37
-> @updated 2026-11-09 11:20 v0.5.3 摘要改为直接陈述，不再写标签前缀
+> @updated 2026-11-18 11:20 记录 v0.5.4：体积、单次解析、URL 闸门与锚点还原
 > @note 「升级与使用」按 npm 包口径写四项：依赖 / 配置 / 产物 / 回滚。数据库项不适用（本包不落库），镜像项由「产物」承担（`dist/` 与 npm 版本），故均不单列。
-> @status 0.5.3 已记录
+> @status 0.5.4 已记录
 > @readonly 由维护者（@heikeson）维护，请勿直接编辑；变更请提 issue
+
+---
+
+## v0.5.4 — 2026-11-18
+
+体积与安全的整备版：安装体积降到约四分之一，编辑器每批输入只解析一次，URL 闸门补齐 `srcset` / `poster` / `formaction`。渲染输出逐字未变，升级只需改版本号。
+
+### 修复内容
+
+| 问题 | 修复 |
+|---|---|
+| `srcset` / `poster` / `formaction` 不经过协议白名单，正文属性可夹带任意外域或 `data:` 地址 | 三者纳入统一闸门；`srcset` 逐候选校验，任一不合规整条移除（`isSafeHref` 拒绝 `data:`，与 `src` 同口径） |
+| 属性值写成数组时校验被跳过，React 把它拼成字符串后仍会渲染 | 非字符串的 URL 属性值一律按不安全处理：`href` 改写为 `#`，其余删除 |
+| 锚点还原无条件解码整段 fragment，`#a%2Fb` 被改写成 `#a/b` | 只还原多字节 UTF-8 序列，ASCII 转义（`%2F` / `%20` / `%22`）保持原样；中文锚点 `#动手` 仍还原为原文 |
+| 发布包带着 462 KB 的 sourcemap，`dist/index.js` 尾部还有两行重复的 `sourceMappingURL` | 关闭 tsup 的 sourcemap，重复指令随之消失；安装体积从约 607 KB 降到约 226 KB（JS 本体 147 KB） |
+| 编辑器每个延迟输入批次把同一份文本解析两次：诊断一次、预览一次 | 诊断与预览共用一次 `parse()`，预览走内部 `MarkdownTreeRenderer`；9210 字符文档每批解析开销从约 32 ms 降到约 18 ms，输出逐字未变 |
+| 四个自带 rehype 插件各走一遍整树（URL 清洗、锚点、源码位置、代码元信息） | 合并为 `rehype-postprocess` 单次遍历，节点内写入次序与原链一致，SSR 输出与合并前逐字相同 |
+| `serialize()` 每次调用都重建 gfm / math / jsx 的 toMarkdown 扩展表 | 扩展表提为模块级常量；`toMarkdown` 只把它拷进每次调用的新 state，不回写原对象 |
+
+### 更新内容
+
+| 内容 | 说明 |
+|---|---|
+| `src/rehype-postprocess.ts` | 一次 `visit` 依次完成 URL 清洗 → 锚点还原 → 源码位置 → 代码元信息；`sourcePositions` 作为选项开关，`rehypeSlug` 与 `rehypeKatex` 仍在其后单独执行 |
+| 内部渲染入口 `MarkdownTreeRenderer` | 接收已解析的 mdast，供编辑器复用同一次解析；未从主入口导出，对外契约零变化 |
+| 四个 rehype 模块改导出 per-node 函数 | `sanitizeUrlProps` / `restoreAnchors` / `applySourcePosition` / `applyCodeMeta`，不再导出插件包装 |
+| 自检新增四条断言 | 属性顺序逐字等价、`srcset` / `poster` 拦截与放行、锚点保真、`dist` 内无 sourcemap |
+
+### 升级与使用
+
+- **依赖**：`npm install @heikeson/md-engine@0.5.4`；无新增依赖，`mermaid` 仍是可选 peer。
+- **配置**：无破坏性变更；公开 props、诊断码、导出路径与 `md → AST → md` 逐字一致性均未变，内部渲染入口不进主入口。
+- **产物**：`dist/` 重新构建，安装体积明显下降。是否需要宿主重新构建取决于宿主是否在构建期固化 HTML——纯客户端渲染升版本重新打包即可生效；SSR / SSG 宿主需重新生成页面。渲染输出本身逐字未变，唯一可能让宿主察觉的差异是深链：依赖旧锚点改写行为（`#a%2Fb` 曾被还原成 `#a/b`）的目录高亮或滚动定位需要核对。
+- **回滚**：把依赖改回 `0.5.3` 即可，无数据迁移、无 API 变化。
+
+**Full Changelog**: https://github.com/heikeson/md-engine/compare/v0.5.3...v0.5.4
 
 ---
 

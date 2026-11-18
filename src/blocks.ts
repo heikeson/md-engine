@@ -4,7 +4,6 @@
  *   编辑器据此"点哪块改哪块"，不需要自己再遍历一遍树。
  *   区间一律是原文 offset（0 起，end 不含），可直接用于 `source.slice(start, end)`。
  * @created 2026-10-24 21:06
- * @updated 2026-10-24 21:06
  * @updated 2026-11-01 21:47 rawBody 容器按 source + reason:mermaid 暴露
  */
 

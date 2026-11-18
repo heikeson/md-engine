@@ -14,7 +14,11 @@ import { defineConfig, type Options } from "tsup";
  *   因此 `/mermaid` 入口须由使用方的**客户端组件**引入——这一点写在对接契约里。
  */
 
-/** 一律外置的依赖（含两个可选 peer：mermaid 与 dompurify） */
+/**
+ * 一律外置的依赖
+ * @description `mermaid` 是可选 peer（宿主自行安装）；`dompurify` 是直接依赖，
+ *   随包安装但外置，避免与宿主已装版本各持一份实例。
+ */
 const external: Options["external"] = [
   /^react$/,
   /^react-dom/,
@@ -59,6 +63,8 @@ export default defineConfig({
   // 清理交给 `dev/clean-dist.mjs`：与多入口 d.ts 并行会争抢同一批声明文件
   clean: false,
   treeshake: true,
-  sourcemap: true,
+  // 不产出 sourcemap：`files` 发的是整个 dist，map 会随包发布（实测约为代码体积的 3.2 倍），
+  // 而库消费者极少会进 node_modules 单步调试。需要时本地临时打开即可。
+  sourcemap: false,
   external,
 });

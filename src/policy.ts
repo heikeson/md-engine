@@ -3,7 +3,6 @@
  * @description 负责"不崩、不丢内容"的部分：嵌套深度裁剪、未闭合与超限诊断。
  *   与渲染实现解耦——将来换渲染方式，这里不用动。
  * @created 2026-10-24 20:24
- * @updated 2026-10-24 20:24
  * @updated 2026-11-01 21:47 新增 MERMAID_EMPTY / MERMAID_TOO_LARGE 诊断与 MERMAID_MAX_BYTES
  */
 

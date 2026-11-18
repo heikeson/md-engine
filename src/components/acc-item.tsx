@@ -3,7 +3,6 @@
  * @description 可折叠条目：标题 + 内容。带 `id` 时输出同名锚点，并响应父级传入的
  *   `defaultOpen`（父级按 URL hash 判定是否命中）。
  * @created 2026-09-03 22:17
- * @updated 2026-10-24 21:30 语法改为尖括号；新增 id 锚点与 defaultOpen
  * @updated 2026-11-09 10:20 类名合并改走 cn()（空条件不再留下尾部空格）
  */
 "use client";

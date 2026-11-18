@@ -5,7 +5,6 @@
  *   禁止在别处再硬编码组件名或属性名。改动本文件即改动内容语法，须同步
  *   `docs/markdown/02-语法规范.md` 与引擎对接契约。
  * @created 2026-10-24 20:07
- * @updated 2026-11-01 21:10 新增 Mermaid 图表容器与 rawBody（容器体按原始文本保留）声明
  * @updated 2026-11-02 21:33 TypeItem 声明 selfClosing：支持 `<TypeItem … />` 自闭合写法
  */
 

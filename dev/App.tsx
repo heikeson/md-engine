@@ -5,7 +5,6 @@
  *   语言在这里持有并包一层 `MdEngineProvider`：外壳与预览区因此共用同一个 locale，
  *   预览里的组件文案（图表工具栏、TypeTable 表头等）随切换即时变化。
  * @created 2026-10-26 21:55
- * @updated 2026-10-26 21:55
  * @updated 2026-11-02 20:18 新增语言状态与 MdEngineProvider，初始值读 `lkes-md-lang`
  */
 

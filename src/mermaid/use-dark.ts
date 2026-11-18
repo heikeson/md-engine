@@ -4,7 +4,6 @@
  *   某个布局容器，甚至只在局部区域切换（开发台就是 `<div class="dark">`）。
  *   因此按「从图表元素向上找最近的 `.dark`」判定，并订阅整棵树的 class 变化。
  * @created 2026-11-01 21:22
- * @updated 2026-11-01 22:37 支持容器级 `.dark`（不再只看 html），改用单例 MutationObserver
  * @updated 2026-11-01 22:51 判据补 [data-theme="dark"]
  */
 

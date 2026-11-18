@@ -3,7 +3,7 @@
  * @description 与解析对称：解析支持的写法，序列化必须能产出。GFM（表格/删除线/任务列表）、
  *   数学公式与尖括号块各自注册 handler，空行由 handler 统一产出。
  * @created 2026-10-24 20:30
- * @updated 2026-10-26 22:02
+ * @updated 2026-11-18 10:10 扩展表提为模块级常量：三个工厂返回的是纯描述对象，无需每次重建
  */
 
 import { toMarkdown } from "mdast-util-to-markdown";
@@ -24,6 +24,14 @@ const OPTIONS = {
 } as const;
 
 /**
+ * 序列化扩展表
+ * @description 三个工厂都只返回描述对象（handlers / join / unsafe），与输入无关，
+ *   因此在模块级构造一次即可。`toMarkdown` 会把它们拷进每次调用的新 state，
+ *   不会回写本对象（见 mdast-util-to-markdown 的 configure）。
+ */
+const EXTENSIONS = [gfmToMarkdown(), mathToMarkdown(), jsxToMarkdown()];
+
+/**
  * 把 mdast 序列化为 Markdown
  * @param tree mdast 根节点
  * @returns Markdown 文本
@@ -32,7 +40,7 @@ export function serialize(tree: Root): string {
   return toMarkdown(tree, {
     ...OPTIONS,
     // mathToMarkdown 直接把公式原文写回 `$…$` / `$$…$$`，不再走文本转义
-    extensions: [gfmToMarkdown(), mathToMarkdown(), jsxToMarkdown()],
+    extensions: EXTENSIONS,
   });
 }
 

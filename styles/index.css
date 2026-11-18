@@ -5,8 +5,6 @@
  *   颜色由 styles/tokens.css 的 --lkes-* 令牌提供，令牌未定义时各处的 var() 兜底值生效。
  *   层顺序：lkes.tokens → lkes.components；两层都低于宿主未分层的声明，宿主覆盖无需抢顺序。
  * @created 2026-10-27 13:43
- * @updated 2026-10-27 13:49
- * @updated 2026-11-01 21:34 汇总 mermaid.css
  * @updated 2026-11-02 20:37 补充层序风险提示：宿主用未分层的元素重置（如 button{border:0}）会盖掉组件样式
  */
 

@@ -2,7 +2,6 @@
  * @file 选项卡子项（`<Tab value="…">`）
  * @description 透传容器：真实渲染由父组件 Tabs 读取 value / children 后统一绘制。
  * @created 2026-09-03 22:17
- * @updated 2026-09-03 22:17 随嵌套指令方案新增
  * @updated 2026-11-09 10:20 补齐文件头（@file / @description），统一放在 `"use client"` 之前
  */
 

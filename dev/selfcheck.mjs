@@ -9,11 +9,10 @@
  *   末尾另有一组直断言：`normalizeMarkdown`（原样返回，不增删空行）与
  *   `insertBlockAt`（缩进上下文插入、光标落在内容占位处）。
  * @created 2026-10-28 03:40
- * @updated 2026-10-28 11:52 扩为断言套件：新增围栏感知、跨段落折叠、序列化保形与渲染断言
- * @updated 2026-11-02 21:33 新增自闭合 TypeItem 用例（解析 / 块索引 / 渲染三处断言）
- * @updated 2026-11-09 12:40 tab 缩进用例改为「识别为子项」；新增排版规范化与块级插入的直断言
+ * @updated 2026-11-18 10:50 新增后处理链属性顺序、srcSet / poster 闸门、锚点还原保真与 dist 无 map 四条直断言
  */
 
+import { readdirSync } from "node:fs";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { parse, normalizeMarkdown, roundtrip, MarkdownRenderer } from "../dist/index.js";
@@ -535,6 +534,66 @@ const DIRECT_CHECKS = [
       return result.value.includes("</Callout>\n\n上一段\n正文\n")
         ? null
         : `实际：${JSON.stringify(result.value)}`;
+    },
+  },
+  {
+    name: "后处理链：data-src-start 仍排在 data-code-* 与 id 之前（属性顺序逐字等价）",
+    run: () => {
+      const md = '## 标题\n\n```ts title="demo.ts"\nconst a = 1;\n```\n';
+      const html = renderToStaticMarkup(
+        React.createElement(MarkdownRenderer, { content: md, config: { sourcePositions: true } }),
+      );
+      // 合并四个 rehype 插件后，属性写入次序必须与原插件链一致：先 sourcePositions，后 codeMeta / slug
+      if (!/<pre data-src-start="\d+" data-code-raw=/.test(html)) {
+        return `pre 属性顺序不符：${html}`;
+      }
+      if (/<pre data-code-raw=/.test(html) && !/<pre data-src-start=/.test(html)) {
+        return `pre 缺 data-src-start：${html}`;
+      }
+      if (!/<h2 data-src-start="\d+" id="/.test(html)) {
+        return `h2 属性顺序不符：${html}`;
+      }
+      return null;
+    },
+  },
+  {
+    name: "URL 闸门：srcset / poster 里的 script 地址被拦下，合法 srcset 原样保留",
+    run: () => {
+      const render = (md) => renderToStaticMarkup(React.createElement(MarkdownRenderer, { content: md }));
+      // 属性经 `div` 容器透传到 hast properties，正好覆盖「正文里的属性也算不可信输入」这条路径
+      const bad = render('<div srcset="javascript:alert(1) 1x, /ok.png 2x" poster="javascript:alert(1)">\n正文\n</div>\n');
+      if (/javascript:/i.test(bad)) return `危险地址未被拦下：${bad}`;
+      if (/srcset=/i.test(bad)) return `整条 srcset 未被移除：${bad}`;
+      if (/poster=/i.test(bad)) return `poster 未被移除：${bad}`;
+      const good = render('<div srcset="/a.png 1x, /b.png 2x">\n正文\n</div>\n');
+      // hast 的 `srcset` 经 to-jsx 会变成 `srcSet` 属性名，比对时不区分大小写
+      if (!/srcSet="\/a\.png 1x, \/b\.png 2x"/i.test(good)) return `合法 srcset 被误删：${good}`;
+      return null;
+    },
+  },
+  {
+    name: "锚点还原：中文锚点还原为原文，ASCII 转义（%2F）保持原样",
+    run: () => {
+      const md = "[中文锚点](#动手)\n\n[斜杠](#a%2Fb)\n";
+      const html = renderToStaticMarkup(React.createElement(MarkdownRenderer, { content: md }));
+      if (!html.includes('href="#动手"')) return `中文锚点未还原：${html}`;
+      if (!html.includes('href="#a%2Fb"')) return `ASCII 转义被改写：${html}`;
+      return null;
+    },
+  },
+  {
+    name: "构建产物：dist 内不再产出 sourcemap",
+    run: () => {
+      const found = [];
+      const walk = (dir) => {
+        for (const entry of readdirSync(dir, { withFileTypes: true })) {
+          const full = `${dir}/${entry.name}`;
+          if (entry.isDirectory()) walk(full);
+          else if (entry.name.endsWith(".map")) found.push(full);
+        }
+      };
+      walk("dist");
+      return found.length === 0 ? null : `仍有 map 文件：${found.join("、")}`;
     },
   },
 ];

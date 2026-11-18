@@ -3,7 +3,6 @@
  * @description 映射键与 mdast 节点名完全一致（首字母大写），由渲染层的 hast tagName 直接查表。
  *   新增组件时：先在 registry 声明，再在此登记组件实现。
  * @created 2026-10-24 20:10
- * @updated 2026-10-24 21:58 文件树改为 Files / Folder / File
  * @updated 2026-11-01 21:47 登记 Mermaid 占位组件
  */
 

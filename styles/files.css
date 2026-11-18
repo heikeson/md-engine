@@ -2,7 +2,6 @@
  * @file Files 文件树样式（Files / Folder / File）
  * @description 原生 details 折叠，零 JS；目录图标双形态靠 details[open] 切换。颜色取 --lkes-* 令牌。
  * @created 2026-10-27 13:43
- * @updated 2026-10-27 13:49
  * @updated 2026-11-02 20:46 链接形态的文件名不继承宿主链接色与下划线
  */
 

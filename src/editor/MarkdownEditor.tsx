@@ -8,18 +8,14 @@
  *   语言切换属于**热更新**——重建依赖只含结构性因素（视图、只读），占位提示走
  *   CodeMirror 的 Compartment 重配，因此切语言不会丢光标、选区、滚动位置与撤销栈。
  * @created 2026-10-24 21:12
- * @updated 2026-10-24 21:10 补齐图片上传、修复 hook 依赖与声明顺序
- * @updated 2026-11-01 23:02 EditorConfig 增加 rendererConfig：预览区可透传组件覆盖（如 mermaidComponents）
- * @updated 2026-11-02 10:44 预览与诊断改用 useDeferredValue（长文输入不卡键）；新增 config.text 文案覆写；工具栏动作补快捷键
- * @updated 2026-11-02 19:32 接入 locale/messages；字数与诊断走 ICU 复数；placeholder 接线并改为热更新
- * @updated 2026-11-09 13:10 去掉失焦自动排版：编辑器不再改写用户输入（原文即输出，空行与缩进一律原样）
+ * @updated 2026-11-18 10:40 诊断与预览共用一次 parse()：预览走 MarkdownTreeRenderer，不再二次解析
  */
 
 "use client";
 
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
-import MarkdownRenderer, { type RenderConfig } from "../render";
-import { diagnose } from "../parse";
+import { MarkdownTreeRenderer, type RenderConfig } from "../render";
+import { parse } from "../parse";
 import {
   MdEngineProvider,
   useMessage,
@@ -272,8 +268,11 @@ function EditorShell({ value, onChange, view = "split", config, fullscreen, onTo
     handleRef.current?.setDoc(value);
   }, [value]);
 
-  // 只要诊断文案：走 diagnose 跳过块索引（extractBlocks），输入批次少一次整树转换
-  const diagnostics = useMemo(() => diagnose(deferredValue), [deferredValue]);
+  // 诊断与预览共用一次解析：diagnose 本身就是 parse(md, { blocks: false })，
+  // 预览若再解析一遍，同一份文本每批要跑两次 micromark（长文输入卡顿的主因）。
+  // blocks: false 仍保留——状态栏只要诊断文案，不需要块索引。
+  const parsed = useMemo(() => parse(deferredValue, { blocks: false }), [deferredValue]);
+  const diagnostics = parsed.diagnostics;
 
   return (
     <div className="md-editor">
@@ -341,11 +340,11 @@ function EditorShell({ value, onChange, view = "split", config, fullscreen, onTo
         {viewMode !== "preview" && <div ref={hostRef} className="md-editor-source" />}
         {viewMode !== "source" && (
           <div ref={previewRef} className="md-editor-preview">
-            {/* sourcePositions：给块级元素写 data-src-start，供滚动同步按内容对齐；
-                components 由宿主注入（传 mermaidComponents 后图表在编辑器里也是交互视图）；
-                locale 与文案继承外层 Provider，无需重复传；content 用延迟值：输入帧先渲染旧预览 */}
-            <MarkdownRenderer
-              content={deferredValue}
+            {/* tree 复用上面 parse() 的产物，不再二次解析；sourcePositions：给块级元素写
+                data-src-start，供滚动同步按内容对齐；components 由宿主注入（传 mermaidComponents
+                后图表在编辑器里也是交互视图）；locale 与文案继承外层 Provider，无需重复传 */}
+            <MarkdownTreeRenderer
+              tree={parsed.tree}
               className="prose-site"
               config={{ ...config?.rendererConfig, sourcePositions: true }}
             />

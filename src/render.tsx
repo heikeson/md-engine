@@ -4,13 +4,10 @@
  *   （自定义 jsxBlock handler）→ slug / katex → React 元素。渲染与解析共用同一套扩展，
  *   保证"能解析的就能渲染"。
  * @created 2026-10-24 20:24
- * @updated 2026-10-24 20:24
- * @updated 2026-11-01 21:47 rawBody 容器把源码以 props 交给组件；渲染侧同步 collectMermaid 标记
- * @updated 2026-11-02 10:33 新增 config.text 文案覆写；components/plugins 浅比较稳定化（内联配置不再击穿 memo）
- * @updated 2026-11-09 10:20 扩展与后处理改由 pipeline 统一声明；处理器按插件引用缓存复用
+ * @updated 2026-11-18 10:40 四个自带 rehype 插件合并为 rehype-postprocess 单次遍历；新增内部入口 MarkdownTreeRenderer
  */
 
-import { useMemo, type ComponentType, type ReactElement } from "react";
+import { useMemo, type ComponentType, type ReactElement, type ReactNode } from "react";
 import { Fragment, jsx, jsxs } from "react/jsx-runtime";
 import { unified, type PluggableList } from "unified";
 import remarkParse from "remark-parse";
@@ -23,11 +20,8 @@ import type { State as HastState } from "mdast-util-to-hast";
 import type { Root } from "mdast";
 import { mdxComponents } from "./components";
 import { REMARK_PARSE_PLUGINS, REMARK_TRANSFORMS, applySourceTransforms } from "./pipeline";
-import { rehypeSafeUrls } from "./rehype-safe-urls";
-import { rehypeSafeAnchors } from "./rehype-safe-anchors";
 import type { JsxBlock } from "./syntax/jsx-mdast";
-import { rehypeCodeMeta } from "./rehype-code-meta";
-import { rehypeSourcePositions } from "./rehype-source-positions";
+import { rehypePostprocess } from "./rehype-postprocess";
 import { MdEngineProvider, type UITextPatch } from "./internal/text";
 import { useShallowStable } from "./internal/use-shallow-stable";
 
@@ -138,14 +132,10 @@ function createProcessor(
     .use(REMARK_TRANSFORMS)
     .use(extraRemark ?? [])
     .use(remarkRehype, { handlers: { jsxBlock: jsxBlockToHast as never } })
-    // 紧跟 remark-rehype：此刻所有节点的 href/src 都在，一次清洗即可覆盖
-    // 容器属性、普通链接/图片与宿主插件产物，宿主覆盖 a/img 也拿不到危险地址
-    .use(rehypeSafeUrls)
-    // 紧接其后：把锚点的 percent-encoding 还原，使 href 与 rehype-slug 生成的 id 字面一致
-    .use(rehypeSafeAnchors)
-    // 紧跟 remark-rehype：此时 hast 节点还带 mdast 的 position
-    .use(sourcePositions ? [rehypeSourcePositions] : [])
-    .use(rehypeCodeMeta)
+    // 紧跟 remark-rehype：此刻所有节点的 URL 属性都在、hast 节点还带 mdast 的 position，
+    // 一次遍历即可完成 URL 清洗、锚点还原、位置透传与代码元信息（次序见 rehype-postprocess）。
+    // 合并的意义：原先四个插件各走一遍整树，长文每次渲染多付三次遍历。
+    .use(rehypePostprocess, { sourcePositions: sourcePositions === true })
     .use(rehypeSlug)
     .use(extraRehype ?? [])
     .use(rehypeKatex);
@@ -218,15 +208,16 @@ function getProcessor(
 }
 
 /**
- * 渲染 Markdown 为 React 元素
- * @param props 内容、外层类名与配置
- * @returns 渲染结果
+ * 取渲染所需的三件套：稳定化组件表、处理器与文案补丁
+ * @param config 渲染配置
+ * @returns 组件覆盖表、unified 处理器、文案补丁
+ * @description 两个渲染入口（按 content 与按 tree）共用，保证配置解读只有一处。
  */
-export default function MarkdownRenderer({
-  content,
-  className,
-  config,
-}: MarkdownRendererProps): ReactElement {
+function useRenderPipeline(config?: RenderConfig): {
+  overrides: Partial<Record<string, AnyComponent>> | undefined;
+  processor: RenderProcessor;
+  textPatch: UITextPatch | undefined;
+} {
   const overrides = useShallowStable(config?.components);
   const extraRemark = useShallowStable(config?.remarkPlugins);
   const extraRehype = useShallowStable(config?.rehypePlugins);
@@ -243,6 +234,62 @@ export default function MarkdownRenderer({
     () => getProcessor(extraRemark, extraRehype, sourcePositions),
     [extraRemark, extraRehype, sourcePositions],
   );
+  return { overrides, processor, textPatch };
+}
+
+/**
+ * hast → React 元素
+ * @param hast hast 根节点
+ * @param overrides 宿主组件覆盖表
+ * @returns React 节点
+ */
+function hastToReact(hast: HastRoot, overrides?: Partial<Record<string, AnyComponent>>): ReactNode {
+  return toJsxRuntime(hast, {
+    Fragment,
+    jsx,
+    jsxs,
+    components: { ...mdxComponents, ...overrides } as never,
+  });
+}
+
+/**
+ * 渲染外壳：Provider + 容器 div
+ * @param props 类名、配置、文案补丁与子节点
+ * @returns React 元素
+ */
+function RenderShell({
+  className,
+  config,
+  textPatch,
+  children,
+}: {
+  className?: string;
+  config?: RenderConfig;
+  textPatch: UITextPatch | undefined;
+  children: ReactNode;
+}): ReactElement {
+  return (
+    <MdEngineProvider
+      locale={config?.locale}
+      fallbackLocale={config?.fallbackLocale}
+      messages={textPatch}
+    >
+      <div className={className}>{children}</div>
+    </MdEngineProvider>
+  );
+}
+
+/**
+ * 渲染 Markdown 为 React 元素
+ * @param props 内容、外层类名与配置
+ * @returns 渲染结果
+ */
+export default function MarkdownRenderer({
+  content,
+  className,
+  config,
+}: MarkdownRendererProps): ReactElement {
+  const { overrides, processor, textPatch } = useRenderPipeline(config);
   const rendered = useMemo(() => {
     const source = content ?? "";
     const mdast = processor.parse(source) as Root;
@@ -251,22 +298,47 @@ export default function MarkdownRenderer({
     // 插件里读不到 source。诊断本身在渲染侧用不上，只取副作用——
     // 少了这一步就会出现"编辑器提示超限、页面照样出图"的分叉
     applySourceTransforms(mdast, source);
-    const hast = processor.runSync(mdast) as HastRoot;
-    return toJsxRuntime(hast, {
-      Fragment,
-      jsx,
-      jsxs,
-      components: { ...mdxComponents, ...overrides } as never,
-    });
+    return hastToReact(processor.runSync(mdast) as HastRoot, overrides);
   }, [content, overrides, processor]);
 
   return (
-    <MdEngineProvider
-      locale={config?.locale}
-      fallbackLocale={config?.fallbackLocale}
-      messages={textPatch}
-    >
-      <div className={className}>{rendered}</div>
-    </MdEngineProvider>
+    <RenderShell className={className} config={config} textPatch={textPatch}>
+      {rendered}
+    </RenderShell>
+  );
+}
+
+/** 已解析树的渲染参数（内部通道，不从主入口导出） */
+export interface MarkdownTreeRendererProps {
+  /** 已跑过解析期后处理的 mdast 根节点（只读，不要再交给其他渲染器复用） */
+  tree: Root;
+  className?: string;
+  config?: RenderConfig;
+}
+
+/**
+ * 用已解析的 mdast 渲染（内部通道）
+ * @param props 树、类名与配置
+ * @returns 渲染结果
+ * @description 编辑器把 `parse()` 的产物直接交进来，省掉第二次 `fromMarkdown`。
+ *   入口未在 `index.ts` 导出，因此不属于对外契约。
+ *   调用方须保证：`tree` 已执行过 `foldInlineItems` 与 `applySourceTransforms`
+ *   （即 `parse()` 的返回值），且交出后视为只读。
+ */
+export function MarkdownTreeRenderer({
+  tree,
+  className,
+  config,
+}: MarkdownTreeRendererProps): ReactElement {
+  const { overrides, processor, textPatch } = useRenderPipeline(config);
+  const rendered = useMemo(
+    () => hastToReact(processor.runSync(tree) as HastRoot, overrides),
+    [tree, overrides, processor],
+  );
+
+  return (
+    <RenderShell className={className} config={config} textPatch={textPatch}>
+      {rendered}
+    </RenderShell>
   );
 }

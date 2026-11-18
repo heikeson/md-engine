@@ -138,6 +138,9 @@
   "engines": {
     "node": ">=20"
   },
+  "overrides": {
+    "sucrase": "^3.35.1"
+  },
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"

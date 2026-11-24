@@ -1,5 +1,7 @@
 # @heikeson/md-engine
 
+[简体中文](./README.md) | [English](./README.en.md)
+
 React 的 Markdown 渲染器，外加一个基于 CodeMirror 6 的编辑器。GFM 和数学公式都支持，
 重点在下面这种写法：
 
@@ -189,7 +191,7 @@ npm run build      # dist 和 dist/styles.css
 ```
 
 `dev/`、`docs/`、`site/` 都不进发布包，`files` 里只有 `dist`、`styles`、`README.md`、
-`对接契约.md`、`LICENSE`。
+`README.en.md`、`对接契约.md`、`LICENSE`。
 
 ```
 src/

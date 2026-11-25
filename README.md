@@ -1,6 +1,6 @@
 # @heikeson/md-engine
 
-[简体中文](./README.md) | [English](./README.en.md)
+简体中文 | [English](./README.en.md)
 
 React 的 Markdown 渲染器，外加一个基于 CodeMirror 6 的编辑器。GFM 和数学公式都支持，
 重点在下面这种写法：
@@ -169,7 +169,7 @@ cookie、`<html lang>`，那些在 SSR 下会让首屏语言对不上。确实�
 
 引一次 `@heikeson/md-engine/styles.css`。配色走独立的 `--lkes-*` 变量，九个令牌，亮暗各一套
 字面量，祖先加 `.dark` 或者 `[data-theme="dark"]` 就整体切暗色。变量清单和覆盖写法在
-[对接契约.md](./对接契约.md) 第 9 节。
+[对接契约.md](./对接契约.md) 第 10 节（英文版 [对接契约.en.md](./对接契约.en.md)）。
 
 按组件拆分也行，`styles/*.css` 在 npm 包里是原样发布的。但令牌单独放在 `tokens.css`，
 只引分片就拿不到 `--lkes-*`，暗色失效、颜色退回兜底值。顺序也有讲究，`tokens` 得在前，
@@ -191,7 +191,7 @@ npm run build      # dist 和 dist/styles.css
 ```
 
 `dev/`、`docs/`、`site/` 都不进发布包，`files` 里只有 `dist`、`styles`、`README.md`、
-`README.en.md`、`对接契约.md`、`LICENSE`。
+`README.en.md`、`对接契约.md`、`对接契约.en.md`、`LICENSE`。
 
 ```
 src/

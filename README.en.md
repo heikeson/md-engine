@@ -1,6 +1,6 @@
 # @heikeson/md-engine
 
-[简体中文](./README.md) | [English](./README.en.md)
+[简体中文](./README.md) | English
 
 A Markdown renderer for React, plus an editor built on CodeMirror 6. GFM and math are supported.
 The interesting part is this:
@@ -180,8 +180,8 @@ syntax.
 
 Import `@heikeson/md-engine/styles.css` once. Colors come from standalone `--lkes-*` variables: nine
 tokens with light and dark literals. Add `.dark` or `[data-theme="dark"]` on an ancestor to switch the
-whole thing to dark. The token list and override recipes are in section 9 of
-[对接契约.md](./对接契约.md) (Chinese).
+whole thing to dark. The token list and override recipes are in section 10 of
+[the integration contract](./对接契约.en.md).
 
 Importing per component also works — `styles/*.css` is published as-is in the npm package. But the
 tokens live in `tokens.css` alone: import only a slice and you get no `--lkes-*`, so dark mode stops
@@ -204,7 +204,7 @@ npm run build      # dist and dist/styles.css
 ```
 
 `dev/`, `docs/` and `site/` are not published; `files` ships only `dist`, `styles`, the READMEs,
-`对接契约.md` and `LICENSE`.
+`对接契约.md`, `对接契约.en.md` and `LICENSE`.
 
 ```
 src/
@@ -233,7 +233,8 @@ styles/             plain CSS slices
 ```
 
 The main entry exports no editor code at all. Full signatures, diagnostic codes and CSS variables live
-in [对接契约.md](./对接契约.md); version history is in [update.md](./update.md) (both Chinese).
+in [the integration contract](./对接契约.en.md) (Chinese original: [对接契约.md](./对接契约.md)); version
+history is in [update.md](./update.md) (Chinese).
 
 ## Compatibility
 

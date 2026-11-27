@@ -223,6 +223,48 @@ const CASES = [
     identical: true,
   },
 
+  // ---------- 0.6.0 新增容器 ----------
+  {
+    name: "Columns / Column：宽度属性与列布局渲染",
+    md: "<Columns>\n<Column width=\"2\">宽</Column>\n<Column width=\"1\">窄</Column>\n</Columns>\n",
+    identical: true,
+    structure: (tree) => {
+      const list = items(findBlock(tree, "Columns"));
+      if (list.length !== 2) return `子项数 ${list.length}，期望 2`;
+      return list[0].attributes.width === "2" && list[1].attributes.width === "1" ? null : "宽度属性丢失";
+    },
+    html: (html) =>
+      html.includes('class="columns"') && html.includes("--lkes-col-grow:2")
+        ? null
+        : `列宽未下发：${html}`,
+  },
+  {
+    name: "Timeline / TimelineItem：表外 type 按 note 渲染",
+    md:
+      "<Timeline>\n<TimelineItem date=\"2026-10\" title=\"解析\" type=\"tip\">正文</TimelineItem>\n" +
+      "<TimelineItem title=\"未知语气\" type=\"info\">正文</TimelineItem>\n</Timeline>\n",
+    identical: true,
+    structure: (tree) => {
+      const list = items(findBlock(tree, "Timeline"));
+      if (list.length !== 2) return `子项数 ${list.length}，期望 2`;
+      return list[0].attributes.date === "2026-10" && list[1].attributes.type === "info" ? null : "子项属性丢失";
+    },
+    html: (html) =>
+      html.includes("timeline-item is-tip") && html.includes("timeline-item is-note")
+        ? null
+        : `语气类名不符：${html}`,
+  },
+  {
+    name: "Video：非法来源被拦下，题注仍渲染",
+    md: "<Video src=\"javascript:alert(1)\" poster=\"/p.png\" caption=\"演示\" width=\"480\" />\n",
+    identical: true,
+    diagnostics: (codesList) =>
+      codesList.includes("UNSAFE_HREF") ? null : `诊断缺失：${codesList.join(",")}`,
+    html: (html) => {
+      if (html.includes("<video")) return `危险来源未被拦下：${html}`;
+      return html.includes("演示") ? null : "题注未渲染";
+    },
+  },
   // ---------- D4：序列化保形 ----------
   {
     name: "紧凑写法（无空行）原样写回",

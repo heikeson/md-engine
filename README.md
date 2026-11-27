@@ -34,7 +34,7 @@ export default function Article({ content }: { content: string }) {
 }
 ```
 
-`prose-site` 别省，八个容器的样式都挂在它下面。Mermaid 用 `.lkes-mermaid`，编辑器用
+`prose-site` 别省，十一个容器的样式都挂在它下面。Mermaid 用 `.lkes-mermaid`，编辑器用
 `.md-editor`，这两个不需要。
 
 解析和渲染都不碰 `window`、`document`，服务端可以直接调。
@@ -50,6 +50,9 @@ export default function Article({ content }: { content: string }) {
 | `Accordion` | 无 | `AccItem`：`title`、`type`（`open` / `close`） |
 | `Files` | 无 | `Folder`：`name`、`defaultOpen`；`File`：`name`、`href`、`icon` |
 | `TypeTable` | 无 | `TypeItem`：`name`、`type`、`default`、`required` |
+| `Columns` | 无 | `Column`：`width` |
+| `Timeline` | 无 | `TimelineItem`：`date`、`title`、`type` |
+| `Video` | `src`、`poster`、`caption`、`width` | 自闭合 |
 | `Image` | `src`、`alt`、`align`、`width`、`caption`、`zoom` | 自闭合 |
 | `Mermaid` | `title`、`height` | 原始文本，内部不按 Markdown 解析 |
 | `div` | `class`、`id` | 正文，属性透传到 DOM |
@@ -70,7 +73,7 @@ export default function Article({ content }: { content: string }) {
 - 容器顶格。子项可以缩进，正文行缩进到 4 格会被 CommonMark 判成代码块。
 - 属性只认 `a="b"` 和裸布尔，`{...}` 表达式不支持。
 - 白名单外的标签，连同里面的内容按文本原样显示。想要一个能挂 `class` 的分块，用 `div`。
-- `Image`、`Card`、`File` 能自闭合，其他容器必须写结束标签。
+- `Image`、`Video`、`Card`、`File` 能自闭合，其他容器必须写结束标签。
 - 嵌套最多 3 层，超出的那层按原文输出。
 
 ## 解析与序列化

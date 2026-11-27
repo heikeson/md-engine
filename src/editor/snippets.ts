@@ -3,7 +3,7 @@
  * @description 组件名一律取自 `registry`，模板只描述"骨架"（标签 + 子项 + 空行），
  *   禁止在别处硬编码 `<Callout` 之类的字符串。
  * @created 2026-10-24 21:12
- * @updated 2026-11-01 21:47 图表片段：rawBody 容器给流程图骨架，可插入列表加 Mermaid
+ * @updated 2026-11-27 10:20 补 Columns / Timeline / Video 骨架
  */
 
 import { COMPONENTS } from "../registry";
@@ -21,6 +21,28 @@ const FILES_SNIPPET = `<Files>
 </Files>
 `;
 
+/** 多列骨架：两列各占 1 份，改 width 即可调比例 */
+const COLUMNS_SNIPPET = `<Columns>
+<Column width="1">
+内容
+</Column>
+<Column width="1">
+内容
+</Column>
+</Columns>
+`;
+
+/** 时间线骨架：date / title 写在属性里，正文是条目内容 */
+const TIMELINE_SNIPPET = `<Timeline>
+<TimelineItem date="2026-01" title="标题">
+内容
+</TimelineItem>
+</Timeline>
+`;
+
+/** 视频骨架：自闭合，来源与题注都写在属性里 */
+const VIDEO_SNIPPET = '<Video src="" caption="" />\n';
+
 /**
  * 生成容器的插入骨架
  * @param name 组件名（须存在于 registry）
@@ -37,10 +59,15 @@ export function blockSnippet(name: string): string {
   }
 
   if (spec.selfClosing) {
-    return `<${name} src="" alt="" />\n`;
+    // 自闭合叶子里只有 Video 没有 alt；其余（Image）沿用图片骨架
+    return name === "Video" ? VIDEO_SNIPPET : `<${name} src="" alt="" />\n`;
   }
 
   if (name === "Files") return FILES_SNIPPET;
+
+  if (name === "Columns") return COLUMNS_SNIPPET;
+
+  if (name === "Timeline") return TIMELINE_SNIPPET;
 
   if (name === "TypeTable") {
     return `<TypeTable>
@@ -79,6 +106,9 @@ export const INSERTABLE_BLOCKS = [
   "Accordion",
   "Files",
   "TypeTable",
+  "Columns",
+  "Timeline",
   "Image",
+  "Video",
   "Mermaid",
 ] as const;

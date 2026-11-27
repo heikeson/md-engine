@@ -48,7 +48,7 @@ const ZH_DOCS: readonly DocEntry[] = [
   {
     slug: "syntax",
     title: "容器语法",
-    summary: "9 种容器与书写约束",
+    summary: "11 种容器与书写约束",
     group: "syntax",
     body: syntaxRaw,
   },
@@ -80,7 +80,7 @@ const EN_DOCS: readonly DocEntry[] = [
   {
     slug: "syntax",
     title: "Container syntax",
-    summary: "Nine containers and the rules for writing them",
+    summary: "Eleven containers and the rules for writing them",
     group: "syntax",
     body: syntaxEn,
   },

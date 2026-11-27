@@ -5,7 +5,7 @@
  *   禁止在别处再硬编码组件名或属性名。改动本文件即改动内容语法，须同步
  *   `docs/markdown/02-语法规范.md` 与引擎对接契约。
  * @created 2026-10-24 20:07
- * @updated 2026-11-02 21:33 TypeItem 声明 selfClosing：支持 `<TypeItem … />` 自闭合写法
+ * @updated 2026-11-27 10:20 新增 Columns/Column、Timeline/TimelineItem、Video
  */
 
 /** 组件的编辑形态：visual 允许结构化编辑；source 只按源码块保留 */
@@ -73,6 +73,10 @@ export const ITEMS: Readonly<Record<string, ItemSpec>> = {
     boolAttrs: ["required"],
     selfClosing: true,
   },
+  // 列布局子项：width 为比例（"2" 占 2 份）或带单位宽度（"320px"）；不写则等分
+  Column: { name: "Column", attrs: ["width"] },
+  // 时间线子项：date 时间标识、title 标题、type 语气（note / tip / warning / danger）
+  TimelineItem: { name: "TimelineItem", attrs: ["date", "title", "type"] },
 };
 
 /** 容器组件声明表 */
@@ -92,6 +96,17 @@ export const COMPONENTS: Readonly<Record<string, ComponentSpec>> = {
   Files: { name: "Files", mode: "visual", items: ["Folder", "File"] },
   // 类型表：fumadocs 的 TypeTable，但属性只支持字符串，故用子项而非对象表达式
   TypeTable: { name: "TypeTable", mode: "visual", items: "TypeItem" },
+  // 多列布局：子项 Column 的 width 决定比例或固定宽度，窄屏自动堆叠
+  Columns: { name: "Columns", mode: "visual", items: "Column" },
+  // 时间线：子项 TimelineItem 带 date / title / type，竖线与节点由包内样式绘制
+  Timeline: { name: "Timeline", mode: "visual", items: "TimelineItem" },
+  // 视频：自闭合叶子，src / poster 与 Image 同口径走协议白名单
+  Video: {
+    name: "Video",
+    mode: "visual",
+    selfClosing: true,
+    attrs: ["src", "poster", "caption", "width"],
+  },
   Image: {
     name: "Image",
     mode: "visual",

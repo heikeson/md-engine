@@ -1,0 +1,41 @@
+/**
+ * @file Columns 多列布局样式
+ * @description flex 多列：列宽由组件下发的 --lkes-col-grow（比例）与 --lkes-col-basis（固定宽度）决定。
+ *   窄屏（<640px）整条堆叠，列宽声明在样式里覆盖，因此不依赖元素内联 flex。
+ * @created 2026-11-27 10:20
+ * @updated 2026-11-27 10:20
+ */
+
+@layer lkes.components {
+  .prose-site .columns {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 1.25rem 0;
+  }
+
+  .prose-site .column {
+    flex-grow: var(--lkes-col-grow, 1);
+    flex-shrink: 1;
+    flex-basis: var(--lkes-col-basis, 0);
+    min-width: 0;
+  }
+
+  /* 首末子元素贴边：列内正文不额外撑高 */
+  .prose-site .column > :first-child {
+    margin-top: 0;
+  }
+  .prose-site .column > :last-child {
+    margin-bottom: 0;
+  }
+
+  @media (max-width: 639px) {
+    .prose-site .columns {
+      flex-direction: column;
+    }
+    .prose-site .column {
+      flex-basis: auto;
+      width: 100%;
+    }
+  }
+}

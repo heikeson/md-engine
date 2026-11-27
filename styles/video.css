@@ -1,0 +1,28 @@
+/**
+ * @file Video 视频样式
+ * @description 与 Image 同一套排版口径：居中、限宽、题注弱化；
+ *   视频自身背景压黑，避免未加载时闪烁宿主底色。
+ * @created 2026-11-27 10:20
+ * @updated 2026-11-27 10:20
+ */
+
+@layer lkes.components {
+  .prose-site .video {
+    margin: 1.25rem auto;
+    text-align: center;
+  }
+
+  .prose-site .video-el {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    border-radius: var(--lkes-radius, 0.5rem);
+    background-color: #000000;
+  }
+
+  .prose-site .video figcaption {
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--lkes-muted, #6b7280);
+  }
+}

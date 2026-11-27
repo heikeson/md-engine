@@ -1,6 +1,6 @@
 # 容器语法总览
 
-覆盖 8 个容器与 7 个子项，用于本地逐项核对样式与交互。
+覆盖 11 个容器与 9 个子项，用于本地逐项核对样式与交互。
 
 ## Callout 标题形态
 
@@ -191,3 +191,86 @@ danger 语气，破坏性操作。
 <Image src="/dev-logo.svg" alt="占位图" caption="本地占位图，来自 dev/public/dev-logo.svg" zoom />
 
 <Image src="dev-logo.svg" alt="相对路径图" caption="相对路径不应被协议闸门降级" />
+
+## Columns
+
+按比例分列：`width="2"` 与 `width="1"` 各占 2 份与 1 份。
+
+<Columns>
+
+<Column width="2">
+
+宽列：正文照常按 Markdown 解析，`行内码` 与会 **强调** 都可用。
+
+</Column>
+
+<Column width="1">
+
+窄列：列表也可用。
+
+- 项一
+- 项二
+
+</Column>
+
+</Columns>
+
+不写 `width` 时等分；窄屏（<640px）自动堆叠成单列。
+
+<Columns>
+
+<Column>
+
+左列内容。
+
+</Column>
+
+<Column>
+
+右列内容。
+
+</Column>
+
+</Columns>
+
+## Timeline
+
+时间线节点按 `type` 取色，表外取值按 `note` 渲染。
+
+<Timeline>
+
+<TimelineItem date="2026-10-24" title="解析层">
+
+容器进 mdast，带 `position`，可序列化回原文。
+
+</TimelineItem>
+
+<TimelineItem date="2026-11-18" title="渲染层" type="tip">
+
+渲染与解析共用同一套扩展，SSR 安全。
+
+</TimelineItem>
+
+<TimelineItem date="2026-11-27" title="注意事项" type="warning">
+
+嵌套最多 3 层，超限整块降级为源码。
+
+</TimelineItem>
+
+<TimelineItem title="未写 date" type="danger">
+
+只有标题的条目也能正常渲染。
+
+</TimelineItem>
+
+</Timeline>
+
+## Video
+
+自闭合叶子：`src` 与 `poster` 走与 `Image` 相同的协议白名单。
+
+<Video src="/dev-logo.svg" poster="/dev-logo.svg" caption="本地占位素材，仅用于核对排版" width="480" />
+
+未给 `src`（或协议不合规）时不加载视频，只保留题注：
+
+<Video caption="没有来源的视频" />

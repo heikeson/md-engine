@@ -13,11 +13,14 @@ A container is a `jsxBlock` node in mdast, not a string replacement: the same no
 | `Accordion` | — | `AccItem`: `title` / `type` |
 | `Files` | — | `Folder`: `name` / `defaultOpen`; `File`: `name` / `href` / `icon`, self-closing allowed |
 | `TypeTable` | — | `TypeItem`: `name` / `type` / `default` / `required` (boolean), self-closing allowed |
+| `Columns` | — | `Column`: `width` |
+| `Timeline` | — | `TimelineItem`: `date` / `title` / `type` |
+| `Video` | `src` / `poster` / `caption` / `width` | self-closing |
 | `Image` | `src` / `alt` / `align` / `width` / `caption` / `zoom` | self-closing |
 | `Mermaid` | `title` / `height` | raw text |
 | `div` | `class` / `id` | prose |
 
-"Nine containers plus a generic `div`" comes from this table: `div` passes its attributes straight to the DOM and its body is parsed as Markdown.
+"Eleven containers plus a generic `div`" comes from this table: `div` passes its attributes straight to the DOM and its body is parsed as Markdown.
 
 ## Callout
 
@@ -164,6 +167,46 @@ Every property table on this page is rendered by it. Attributes accept strings o
 
 `TypeItem` has two equivalent forms: self-closing leaves the description column empty, the block form writes the description between the tags.
 
+## Columns
+
+Multi-column layout. A bare number in `width` splits by ratio; a value with a unit (`px` / `%` / `rem` …) sets a fixed width; omitting it splits evenly. Below 640px the columns stack into one.
+
+```md
+<Columns>
+  <Column width="2">Wide column, body is still Markdown.</Column>
+  <Column width="1">Narrow column.</Column>
+</Columns>
+```
+
+<Columns>
+  <Column width="2">Wide column, body is still Markdown.</Column>
+  <Column width="1">Narrow column.</Column>
+</Columns>
+
+## Timeline
+
+A vertical timeline. `date` and `title` are attributes; `type` takes `note` / `tip` / `warning` / `danger`, and any other value renders as `note`.
+
+```md
+<Timeline>
+  <TimelineItem date="2026-10" title="Parse">Containers become mdast nodes.</TimelineItem>
+  <TimelineItem date="2026-11" title="Render" type="tip">SSR safe.</TimelineItem>
+</Timeline>
+```
+
+<Timeline>
+  <TimelineItem date="2026-10" title="Parse">Containers become mdast nodes with positions.</TimelineItem>
+  <TimelineItem date="2026-11" title="Render" type="tip">Parsing and rendering share one extension set.</TimelineItem>
+</Timeline>
+
+## Video
+
+A self-closing leaf. `src` and `poster` go through the same protocol allow-list as `Image`; a bare number in `width` means pixels.
+
+```md
+<Video src="/demo.mp4" poster="/demo.png" caption="Caption" width="480" />
+```
+
 ## Image
 
 A self-closing leaf. `align` defaults to `center`; `zoom` is a bare boolean that enables click-to-zoom and `Esc` to close.
@@ -205,5 +248,5 @@ Use it when you need a block carrying `class` / `id`. Attributes pass through to
 - Containers start at column zero. Children may be indented per level; a **body** line indented by 4+ spaces (or a tab) becomes an indented code block under CommonMark, which reports `INDENT_AS_CODE` without rewriting the content.
 - Tags outside the whitelist are shown as text together with their body (`UNKNOWN_TAG`); nothing is lost and no HTML is executed.
 - Nesting is capped at 3 container levels, children excluded; the level beyond the limit degrades to raw text (`DEPTH_EXCEEDED`).
-- Only `Image`, `Card`, `File`, `TypeItem` and `Mermaid` may be written as `<X />`; everything else needs a closing tag.
+- Only `Image`, `Video`, `Card`, `File`, `TypeItem` and `Mermaid` may be written as `<X />`; everything else needs a closing tag.
 - `normalizeMarkdown` only adds blank lines around standalone tags that start with an **uppercase** letter, so lowercase tags such as `div` are left alone.

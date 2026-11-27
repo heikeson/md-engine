@@ -37,7 +37,7 @@ export default function Article({ content }: { content: string }) {
 }
 ```
 
-Do not drop `prose-site` — the styles for all eight containers hang off it. Mermaid uses
+Do not drop `prose-site` — the styles for all eleven containers hang off it. Mermaid uses
 `.lkes-mermaid` and the editor uses `.md-editor`, neither of which you need here.
 
 Parsing and rendering never touch `window` or `document`, so the server can call them directly.
@@ -53,6 +53,9 @@ Parsing and rendering never touch `window` or `document`, so the server can call
 | `Accordion` | none | `AccItem`: `title`, `type` (`open` / `close`) |
 | `Files` | none | `Folder`: `name`, `defaultOpen`; `File`: `name`, `href`, `icon` |
 | `TypeTable` | none | `TypeItem`: `name`, `type`, `default`, `required` |
+| `Columns` | none | `Column`: `width` |
+| `Timeline` | none | `TimelineItem`: `date`, `title`, `type` |
+| `Video` | `src`, `poster`, `caption`, `width` | self-closing |
 | `Image` | `src`, `alt`, `align`, `width`, `caption`, `zoom` | self-closing |
 | `Mermaid` | `title`, `height` | raw text, not parsed as Markdown |
 | `div` | `class`, `id` | body; attributes pass through to the DOM |
@@ -75,7 +78,7 @@ A few hard rules — break them and you get no error, just mangled output:
 - Only `a="b"` attributes and bare booleans are understood; `{...}` expressions are not supported.
 - Tags outside the whitelist are shown as literal text, contents included. If you want a plain block
   you can hang a `class` on, use `div`.
-- `Image`, `Card` and `File` may self-close; every other container needs a closing tag.
+- `Image`, `Video`, `Card` and `File` may self-close; every other container needs a closing tag.
 - Nesting stops at 3 levels; anything deeper is emitted as raw text.
 
 ## Parsing and serialization

@@ -13,11 +13,14 @@
 | `Accordion` | — | `AccItem`：`title` / `type` |
 | `Files` | — | `Folder`：`name` / `defaultOpen`；`File`：`name` / `href` / `icon`，可自闭合 |
 | `TypeTable` | — | `TypeItem`：`name` / `type` / `default` / `required`（布尔），可自闭合 |
+| `Columns` | — | `Column`：`width` |
+| `Timeline` | — | `TimelineItem`：`date` / `title` / `type` |
+| `Video` | `src` / `poster` / `caption` / `width` | 自闭合 |
 | `Image` | `src` / `alt` / `align` / `width` / `caption` / `zoom` | 自闭合 |
 | `Mermaid` | `title` / `height` | 原始文本 |
 | `div` | `class` / `id` | 正文 |
 
-「九个容器加一个通用 `div`」的口径来自这张表：`div` 的属性原样透传到 DOM，内容照常按 Markdown 解析。
+「十一个容器加一个通用 `div`」的口径来自这张表：`div` 的属性原样透传到 DOM，内容照常按 Markdown 解析。
 
 ## Callout
 
@@ -164,6 +167,46 @@
 
 `TypeItem` 两种写法等价：自闭合时说明列留空，块形态则在标签之间写说明。
 
+## Columns
+
+多列布局。`width` 纯数字按比例分配，带单位（`px` / `%` / `rem` 等）按固定宽度；不写则等分。窄屏（<640px）自动堆叠成单列。
+
+```md
+<Columns>
+  <Column width="2">宽列，正文照常按 Markdown 解析。</Column>
+  <Column width="1">窄列。</Column>
+</Columns>
+```
+
+<Columns>
+  <Column width="2">宽列，正文照常按 Markdown 解析。</Column>
+  <Column width="1">窄列。</Column>
+</Columns>
+
+## Timeline
+
+时间线。`date` 与 `title` 写在属性里，`type` 取 `note` / `tip` / `warning` / `danger`，表外取值按 `note` 渲染。
+
+```md
+<Timeline>
+  <TimelineItem date="2026-10" title="解析">容器进 mdast。</TimelineItem>
+  <TimelineItem date="2026-11" title="渲染" type="tip">SSR 安全。</TimelineItem>
+</Timeline>
+```
+
+<Timeline>
+  <TimelineItem date="2026-10" title="解析">容器进 mdast，带位置信息。</TimelineItem>
+  <TimelineItem date="2026-11" title="渲染" type="tip">渲染与解析共用同一套扩展。</TimelineItem>
+</Timeline>
+
+## Video
+
+自闭合叶子。`src` 与 `poster` 走与 `Image` 相同的协议白名单，`width` 纯数字按像素。
+
+```md
+<Video src="/demo.mp4" poster="/demo.png" caption="题注" width="480" />
+```
+
 ## Image
 
 自闭合叶子。`align` 缺省 `center`；`zoom` 是布尔，写了才能点击放大、按 `Esc` 关闭。
@@ -205,5 +248,5 @@ flowchart LR
 - 容器顶格书写。子项可按层缩进；**正文行**缩进 ≥4 空格（或 tab）会被 CommonMark 判成缩进代码块，`parse` 给出 `INDENT_AS_CODE`，内容不改写。
 - 白名单外的标签连同正文按文本显示（`UNKNOWN_TAG`），不丢内容，也不执行 HTML。
 - 容器嵌套上限 3 层，子项不计层；超限那一层整块降级为原文（`DEPTH_EXCEEDED`）。
-- 只有 `Image`、`Card`、`File`、`TypeItem`、`Mermaid` 允许 `<X />`，其余必须写闭合标签。
+- 只有 `Image`、`Video`、`Card`、`File`、`TypeItem`、`Mermaid` 允许 `<X />`，其余必须写闭合标签。
 - `normalizeMarkdown` 只给**大写开头**的独立标签行补空行，`div` 这类小写标签不参与排版整理。

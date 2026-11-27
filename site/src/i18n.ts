@@ -205,7 +205,7 @@ const zh: SiteMessages = {
   homeRenderResult: "渲染结果",
   homeContainerTitle: "容器清单",
   homeContainerNote:
-    "九个容器加一个通用 div。属性只能传字符串和裸布尔，子项写成嵌套标签，所以内容始终保持纯文本。",
+    "十一个容器加一个通用 div。属性只能传字符串和裸布尔，子项写成嵌套标签，所以内容始终保持纯文本。",
   homeTheoryTag: "标签",
   homeTheoryAttrs: "属性",
   homeTheoryItems: "子项",
@@ -289,7 +289,7 @@ const en: SiteMessages = {
   homeRenderResult: "Rendered",
   homeContainerTitle: "Containers",
   homeContainerNote:
-    "Nine containers plus a generic div. Attributes accept strings and bare booleans only, children are nested tags, so the content stays plain text throughout.",
+    "Eleven containers plus a generic div. Attributes accept strings and bare booleans only, children are nested tags, so the content stays plain text throughout.",
   homeTheoryTag: "Tag",
   homeTheoryAttrs: "Attributes",
   homeTheoryItems: "Children",

@@ -1,0 +1,89 @@
+/**
+ * @file Timeline 时间线样式
+ * @description 竖线由每个子项的 ::before 绘制（末项隐藏），节点圆点压在竖线上，
+ *   写法与 Steps 一致：逐项连线，不依赖容器高度换算。
+ *   语气色只声明色相（--lkes-tone），日期文字用 color-mix 向正文色混合，亮暗共用一套值。
+ * @created 2026-11-27 10:20
+ * @updated 2026-11-27 10:20
+ */
+
+@layer lkes.components {
+  .prose-site .timeline {
+    margin: 1.25rem 0;
+    padding-inline-start: 1.5rem;
+  }
+
+  .prose-site .timeline-item {
+    position: relative;
+    padding-bottom: 1.25rem;
+  }
+  .prose-site .timeline-item:last-child {
+    padding-bottom: 0;
+  }
+
+  /* 连接线：从圆点下方延伸到下一项（末项不画） */
+  .prose-site .timeline-item::before {
+    content: "";
+    position: absolute;
+    inset-inline-start: -1.1875rem;
+    top: 0.875rem;
+    bottom: 0;
+    width: 1px;
+    background-color: var(--lkes-border, #e5e7eb);
+  }
+  .prose-site .timeline-item:last-child::before {
+    display: none;
+  }
+
+  /* 节点：圆点 + 背景色描边，压在连接线上 */
+  .prose-site .timeline-marker {
+    position: absolute;
+    inset-inline-start: -1.5rem;
+    top: 0.375rem;
+    width: 0.625rem;
+    height: 0.625rem;
+    border-radius: 9999px;
+    background-color: var(--lkes-tone, var(--lkes-accent, #0f766e));
+    box-shadow: 0 0 0 3px var(--lkes-bg, #ffffff);
+  }
+
+  .prose-site .timeline-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .prose-site .timeline-date {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: color-mix(in oklab, var(--lkes-tone, var(--lkes-accent, #0f766e)) 70%, var(--lkes-fg, #1f2937));
+  }
+
+  .prose-site .timeline-title {
+    font-weight: 600;
+    color: var(--lkes-fg, #1f2937);
+  }
+
+  .prose-site .timeline-content > :first-child {
+    margin-top: 0;
+  }
+  .prose-site .timeline-content > :last-child {
+    margin-bottom: 0;
+  }
+
+  /* 语气：只给色相，节点与日期色都从它派生 */
+  .prose-site .timeline-item.is-note {
+    --lkes-tone: #3b82f6;
+  }
+  .prose-site .timeline-item.is-tip {
+    --lkes-tone: #10b981;
+  }
+  .prose-site .timeline-item.is-warning {
+    --lkes-tone: #f59e0b;
+  }
+  .prose-site .timeline-item.is-danger {
+    --lkes-tone: #ef4444;
+  }
+}

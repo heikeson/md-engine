@@ -3,7 +3,7 @@
 渲染一段带容器的 Markdown 需要三步：安装、引入样式、给外层容器加 `prose-site`。
 
 <Callout type="note" title="版本与环境">
-  本页对 `0.5.2`。peer 依赖 `react` / `react-dom` 为 `>=19`，`engines.node` 为 `>=20`（只约束构建与发布，运行时不检查）。
+  本页对 `0.6.0`。peer 依赖 `react` / `react-dom` 为 `>=19`，`engines.node` 为 `>=20`（只约束构建与发布，运行时不检查）。
   包是 ESM-only：`exports` 只提供 `import` 条件，没有 CJS 入口。
 </Callout>
 
@@ -38,7 +38,7 @@ export default function Article() {
 
 | 样式来源 | 作用域 | 不给 `prose-site` 的结果 |
 |---|---|---|
-| `callout / tabs / steps / cards / accordion / files / type-table / image.css` | `.prose-site …` | DOM 与文本照常输出，边框、内边距、配色不生效 |
+| `callout / tabs / steps / cards / accordion / files / type-table / columns / timeline / image / video.css` | `.prose-site …` | DOM 与文本照常输出，边框、内边距、配色不生效 |
 | `mermaid.css` | `.lkes-mermaid` | 不受影响（不需要 `prose-site`） |
 | `editor.css` | `.md-editor` | 不受影响（不需要 `prose-site`） |
 
@@ -81,7 +81,7 @@ const tidy = normalizeMarkdown(md);  // 只在需要统一排版时调用
 ## 下一步
 
 <Tabs>
-  <Tab value="写容器">看 **容器语法**：10 个容器的属性、子项与书写约束。</Tab>
+  <Tab value="写容器">看 **容器语法**：11 个容器（另含通用 `div`）的属性、子项与书写约束。</Tab>
   <Tab value="做后台">看 **编辑器与图表**：`MarkdownEditor` 的参数、快捷键与滚动同步。</Tab>
   <Tab value="改配色">看 **样式与令牌**：9 个 `--lkes-*` 令牌与覆盖方式。</Tab>
 </Tabs>

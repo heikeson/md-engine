@@ -201,20 +201,36 @@
 
 ## Video
 
-自闭合叶子。`src` 与 `poster` 走与 `Image` 相同的协议白名单，`width` 纯数字按像素。
+自闭合叶子。`src` 与 `poster` 走与 `Image` 相同的协议白名单；`width` 也与 `Image` 同一套写法（`auto` / 占比 / 分数 / 像素 / 长度）。未给 `src` 或协议不合规时不加载视频，只保留题注。
 
 ```md
-<Video src="/demo.mp4" poster="/demo.png" caption="题注" width="480" />
+<Video src="/demo.mp4" poster="/demo.png" caption="题注" width="60%" />
+
+<Video src="/demo.mp4" caption="三分之一宽" width="1/3" />
 ```
 
 ## Image
 
-自闭合叶子。`width` 纯数字按像素（`width="360"` 即 360px），也可写 `px` / `%` / `rem` / `em` / `ch` / `vw`，其余写法忽略；`align` 只认 `left` / `center` / `right`，缺省与写错都按 `center`。图片默认懒加载（`loading="lazy"`、`decoding="async"`），题注跟随图片对齐方式。
+自闭合叶子。`width` 支持以下写法，超过 `100%` 按满宽处理，写法不合法的一律按 `auto`：
+
+| `width` | 含义 |
+|---|---|
+| 不写 / `auto` | 原始尺寸，最宽不超过正文容器 |
+| `60%` | 占正文宽度的比例 |
+| `1/3`、`2/3` | 分数写法，等价于百分比 |
+| `360` | 像素（自动补 `px`） |
+| `20rem` | 任意允许的长度（`px` / `rem` / `em` / `ch` / `vw`） |
+
+`align` 取 `left` / `center` / `right`，控制整块（连同题注）的位置，缺省与写错都按 `center`；这是对齐而非图文环绕。图片默认懒加载（`loading="lazy"`、`decoding="async"`），题注跟随图片对齐方式。
 
 `zoom` 是布尔：写了才可放大。触发元素是 `role="button"` 的图片本身，可用 Tab 聚焦、Enter / Space 打开；遮罩 `Esc` 或点击关闭，打开期间锁定页面滚动，关闭后焦点回到图片。
 
 ```md
-<Image src="/cover.svg" alt="封面" caption="题注写在这里" width="360" zoom />
+<Image src="/cover.svg" alt="封面" caption="题注写在这里" width="60%" align="left" zoom />
+
+<Image src="/cover.svg" alt="封面" caption="三分之一宽，靠右" width="1/3" align="right" />
+
+<Image src="/cover.svg" alt="封面" caption="原始尺寸居中" width="auto" />
 ```
 
 ## Mermaid

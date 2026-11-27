@@ -66,7 +66,23 @@ export default function Article({ content }: { content: string }) {
 <Cards>
   <Card title="快速开始" description="渲染一节的最小示例" href="/docs/start" />
 </Cards>
+
+<Columns>
+  <Column width="2">宽列</Column>
+  <Column width="1">窄列</Column>
+</Columns>
+
+<Timeline>
+  <TimelineItem date="2026-11" title="要点">正文</TimelineItem>
+</Timeline>
+
+<Video src="/demo.mp4" poster="/demo.png" caption="演示" width="60%" />
 ```
+
+`Image` 与 `Video` 的 `width` 是同一套写法：`auto`（原始尺寸）、`60%`（占比）、`1/3`（分数）、
+`360`（像素）、`20rem`（长度），超过 100% 按满宽处理。`Image` 另有 `align`（`left` / `center` /
+`right`），控制整块连同题注的位置，是块级对齐而非图文环绕。`Column` 的 `width` 语义不同：纯数字
+按比例分份，带单位按固定宽度。
 
 有几条是硬规则，写错了不报错但会变形：
 

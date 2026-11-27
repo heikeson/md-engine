@@ -83,7 +83,10 @@ import "@heikeson/md-engine/styles/callout.css";
     <File name="cards.css" />
     <File name="files.css" />
     <File name="type-table.css" />
+    <File name="columns.css" />
+    <File name="timeline.css" />
     <File name="image.css" />
+    <File name="video.css" />
     <File name="steps.css" />
     <File name="mermaid.css" />
     <File name="editor.css" />

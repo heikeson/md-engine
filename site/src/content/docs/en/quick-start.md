@@ -3,7 +3,7 @@
 Rendering Markdown with containers takes three steps: install, import the stylesheet, and put `prose-site` on the outer container.
 
 <Callout type="note" title="Version and runtime">
-  This page targets `0.5.2`. The `react` / `react-dom` peers are `>=19`; `engines.node` is `>=20` (build and publish only, nothing is checked at runtime).
+  This page targets `0.6.0`. The `react` / `react-dom` peers are `>=19`; `engines.node` is `>=20` (build and publish only, nothing is checked at runtime).
   The package is ESM-only: `exports` provides an `import` condition only, with no CJS entry.
 </Callout>
 
@@ -38,7 +38,7 @@ export default function Article() {
 
 | Stylesheet | Scope | Without `prose-site` |
 |---|---|---|
-| `callout / tabs / steps / cards / accordion / files / type-table / image.css` | `.prose-site …` | DOM and text still render; borders, padding and colours do not apply |
+| `callout / tabs / steps / cards / accordion / files / type-table / columns / timeline / image / video.css` | `.prose-site …` | DOM and text still render; borders, padding and colours do not apply |
 | `mermaid.css` | `.lkes-mermaid` | Unaffected (no `prose-site` needed) |
 | `editor.css` | `.md-editor` | Unaffected (no `prose-site` needed) |
 
@@ -81,7 +81,7 @@ const tidy = normalizeMarkdown(md);  // only when you want unified layout
 ## Where to go next
 
 <Tabs>
-  <Tab value="Writing containers">Read **Container syntax**: attributes, children and writing rules for all 10 containers.</Tab>
+  <Tab value="Writing containers">Read **Container syntax**: attributes, children and writing rules for all 11 containers plus the generic `div`.</Tab>
   <Tab value="Building an admin UI">Read **Editor and diagrams**: `MarkdownEditor` props, shortcuts and scroll sync.</Tab>
   <Tab value="Recolouring">Read **Styles and tokens**: the nine `--lkes-*` tokens and how to override them.</Tab>
 </Tabs>

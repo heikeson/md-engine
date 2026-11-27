@@ -201,20 +201,36 @@ A vertical timeline. `date` and `title` are attributes; `type` takes `note` / `t
 
 ## Video
 
-A self-closing leaf. `src` and `poster` go through the same protocol allow-list as `Image`; a bare number in `width` means pixels.
+A self-closing leaf. `src` and `poster` go through the same protocol allow-list as `Image`, and `width` uses the same grammar as `Image` (`auto` / percentage / fraction / pixels / length). Without `src`, or with a rejected scheme, no video is loaded and only the caption remains.
 
 ```md
-<Video src="/demo.mp4" poster="/demo.png" caption="Caption" width="480" />
+<Video src="/demo.mp4" poster="/demo.png" caption="Caption" width="60%" />
+
+<Video src="/demo.mp4" caption="One third wide" width="1/3" />
 ```
 
 ## Image
 
-A self-closing leaf. A bare number in `width` means pixels (`width="360"` is 360px); `px` / `%` / `rem` / `em` / `ch` / `vw` are also accepted and anything else is ignored. `align` only accepts `left` / `center` / `right`; omitting it or writing something else means `center`. Images load lazily (`loading="lazy"`, `decoding="async"`) and captions follow the figure alignment.
+A self-closing leaf. `width` accepts the forms below; anything above `100%` is clamped to full width and invalid values fall back to `auto`:
+
+| `width` | Meaning |
+|---|---|
+| omitted / `auto` | natural size, never wider than the column |
+| `60%` | share of the column width |
+| `1/3`, `2/3` | fraction, equivalent to a percentage |
+| `360` | pixels (`px` is appended automatically) |
+| `20rem` | any allowed length (`px` / `rem` / `em` / `ch` / `vw`) |
+
+`align` takes `left` / `center` / `right` and positions the whole figure including its caption; omitting it or writing something else means `center`. It is block alignment, not text wrapping. Images load lazily (`loading="lazy"`, `decoding="async"`) and captions follow the figure alignment.
 
 `zoom` is a bare boolean: the image itself becomes the trigger with `role="button"`, so it is reachable with Tab and opens with Enter / Space. The overlay closes on `Esc` or a click, locks page scrolling while open, and returns focus to the image afterwards.
 
 ```md
-<Image src="/cover.svg" alt="Cover" caption="The caption goes here" width="360" zoom />
+<Image src="/cover.svg" alt="Cover" caption="Caption goes here" width="60%" align="left" zoom />
+
+<Image src="/cover.svg" alt="Cover" caption="One third wide, aligned right" width="1/3" align="right" />
+
+<Image src="/cover.svg" alt="Cover" caption="Natural size, centered" width="auto" />
 ```
 
 ## Mermaid

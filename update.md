@@ -20,12 +20,14 @@
 |---|---|
 | `<Columns>` / `<Column>` | 横向多列。`Column` 的 `width` 纯数字按比例分列（`"2"` 占 2 份），带单位（`px` / `%` / `rem` / `em` / `ch` / `vw`）按固定宽度，不写则等分；窄屏（<640px）自动堆叠。列宽以 `--lkes-col-grow` / `--lkes-col-basis` 下发，堆叠时由样式整条覆盖 |
 | `<Timeline>` / `<TimelineItem>` | 竖向时间线。子项 `date` 为时间标识、`title` 为标题、`type` 取 `note` / `tip` / `warning` / `danger`，表外取值按 `note` 渲染；竖线与节点由包内 CSS 绘制 |
-| `<Video />` | 自闭合媒体块。属性 `src`、`poster`、`caption`、`width`；`src` / `poster` 与 `Image` 同口径过协议白名单，不合规时不加载、只保留题注；`width` 纯数字按像素 |
-| `<Image />` 改进 | `width` 纯数字按像素补齐（原来 `width="360"` 直接进 CSS 被浏览器丢弃）、其余只认 `px` / `%` / `rem` / `em` / `ch` / `vw`，非法写法忽略；`align` 只认 `left` / `center` / `right`，表外取值按 `center`（原实现会把 `align="a b"` 拼成两个类名）；图片默认 `loading="lazy"` + `decoding="async"`；`zoom` 触发面补 `role="button"` / `tabIndex` 与 Enter / Space，遮罩改 `role="dialog"`，打开期间锁滚动、关闭后焦点归还；`src` 为空或不合规时不再输出空 `figure`；题注跟随图片对齐方式 |
+| `<Video />` | 自闭合媒体块。属性 `src`、`poster`、`caption`、`width`；`src` / `poster` 与 `Image` 同口径过协议白名单，不合规时不加载、只保留题注；`width` 与 `Image` 共用同一套写法（`auto` / 占比 / 分数 / 像素 / 长度） |
+| `<Image />` 宽度与对齐 | `width` 支持 `auto`（原始尺寸）/ `60%`（占比）/ `1/3`（分数）/ `360`（像素）/ `20rem`（长度），超过 100% 收敛到 100%，非法写法按 `auto`。同时修掉两处旧问题：`width="360"` 原先直接进 CSS 被浏览器丢弃，百分比原先在 `figure` 与 `img` 上各乘一次（图只剩四分之一宽）；`align` 只认 `left` / `center` / `right`，控制整块（含题注）位置，表外取值按 `center`（原实现会把 `align="a b"` 拼成两个类名） |
+| `<Image />` 交互与安全 | 默认 `loading="lazy"` + `decoding="async"`；`zoom` 触发面补 `role="button"` / `tabIndex` 与 Enter / Space，遮罩改 `role="dialog"`，打开期间锁滚动、关闭后焦点归还；`src` 为空或不合规时不再输出空 `figure`；题注跟随图片对齐方式 |
 | 文案 | 新增 `UIText.imageZoomOpen`（放大触发面的 aria-label），中英文默认值随包发布 |
 | 注册表与编辑器 | `registry` 新增两个子项（`Column`、`TimelineItem`）与三个容器声明；工具栏插入顺序补 `Columns`、`Timeline`、`Video`，各自给可直接改的骨架 |
 | 样式分片 | 新增 `styles/columns.css`、`timeline.css`、`video.css`；`styles/image.css` 补焦点环、遮罩淡入与阴影、题注对齐 |
-| 自检 | 新增六条用例：列宽下发、表外 `type` 降级、`javascript:` 来源被拦下、图片宽度补单位与对齐白名单、非法来源不渲染、懒加载与放大触发面可键盘访问 |
+| 自检 | 新增九条用例：列宽下发、表外 `type` 降级、`javascript:` 来源被拦下、图片宽度补单位与对齐白名单、占比与分数宽度、`auto` 与超宽收敛、非法来源不渲染、懒加载与放大触发面可键盘访问、视频宽度与图片同口径 |
+| 文档与样例 | README（中英）、对接契约（中英）与站点语法/快速开始页同步三个新容器与 `Image` / `Video` 的宽度写法；`dev/fixtures/containers.md` 补齐 `div`、嵌套容器、Files 二级目录、TypeTable 自闭合行、Accordion 深链、Columns 固定宽度列、Timeline 富正文与 Video 占比等形态 |
 
 ### 升级与使用
 

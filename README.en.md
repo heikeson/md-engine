@@ -69,7 +69,24 @@ Parsing and rendering never touch `window` or `document`, so the server can call
 <Cards>
   <Card title="Quick start" description="Smallest example that renders a section" href="/docs/start" />
 </Cards>
+
+<Columns>
+  <Column width="2">Wide column</Column>
+  <Column width="1">Narrow column</Column>
+</Columns>
+
+<Timeline>
+  <TimelineItem date="2026-11" title="Point">Body</TimelineItem>
+</Timeline>
+
+<Video src="/demo.mp4" poster="/demo.png" caption="Demo" width="60%" />
 ```
+
+`Image` and `Video` share one `width` grammar: `auto` (natural size), `60%` (share of the column),
+`1/3` (fraction), `360` (pixels), `20rem` (length); anything above 100% is clamped to full width.
+`Image` also takes `align` (`left` / `center` / `right`), which positions the whole figure including
+its caption — block alignment, not text wrapping. `Column`'s `width` means something else: a bare
+number splits by ratio, a value with a unit sets a fixed width.
 
 A few hard rules — break them and you get no error, just mangled output:
 

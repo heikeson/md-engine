@@ -255,6 +255,15 @@ const CASES = [
         : `语气类名不符：${html}`,
   },
   {
+    name: "Video：宽度写法与 Image 一致（分数 / auto）",
+    md: "<Video src=\"/a.mp4\" width=\"1/2\" />\n\n<Video src=\"/a.mp4\" width=\"auto\" />\n",
+    identical: true,
+    html: (html) => {
+      if (!html.includes('style="width:50%"')) return `分数未换算成百分比：${html}`;
+      return html.includes("width:auto") ? "auto 不该输出内联宽度" : null;
+    },
+  },
+  {
     name: "Video：非法来源被拦下，题注仍渲染",
     md: "<Video src=\"javascript:alert(1)\" poster=\"/p.png\" caption=\"演示\" width=\"480\" />\n",
     identical: true,
@@ -285,6 +294,33 @@ const CASES = [
     html: (html) => {
       if (/javascript:/i.test(html)) return `危险地址未被拦下：${html}`;
       return /<img|<figure/.test(html) ? "空来源仍渲染了占位节点" : null;
+    },
+  },
+  {
+    name: "Image：占比宽度（百分比 / 分数）与左右对齐",
+    md:
+      "<Image src=\"/a.png\" alt=\"半宽\" width=\"50%\" align=\"left\" />\n\n" +
+      "<Image src=\"/a.png\" alt=\"三分之一\" width=\"1/3\" align=\"right\" />\n",
+    identical: true,
+    html: (html) => {
+      if (!html.includes('style="width:50%"')) return `百分比未生效：${html}`;
+      if (!html.includes('style="width:33.33%"')) return `分数未换算成百分比：${html}`;
+      if (!html.includes("align-left") || !html.includes("align-right")) return "对齐类名丢失";
+      // 图片按容器宽填满：50% 只应出现一次（figure 上），内层是 100%
+      const occurrences = (html.match(/width:50%/g) ?? []).length;
+      return occurrences === 1 ? null : `百分比被重复应用：width:50% 出现 ${occurrences} 次`;
+    },
+  },
+  {
+    name: "Image：auto 不输出内联宽度，超过 100% 收敛",
+    md:
+      "<Image src=\"/a.png\" alt=\"自动\" width=\"auto\" />\n\n" +
+      "<Image src=\"/a.png\" alt=\"超宽\" width=\"150%\" />\n",
+    identical: true,
+    html: (html) => {
+      if (html.includes("width:auto")) return "auto 不该输出内联宽度";
+      if (html.includes("150%")) return "超过 100% 未收敛";
+      return html.includes('style="width:100%"') ? null : "收敛后的满宽未输出";
     },
   },
   {

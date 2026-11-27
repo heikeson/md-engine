@@ -1,6 +1,6 @@
 # 容器语法总览
 
-覆盖 11 个容器与 9 个子项，用于本地逐项核对样式与交互。
+覆盖 11 个容器与 9 个子项，另含通用 `div`，用于本地逐项核对样式与交互。
 
 ## Callout 标题形态
 
@@ -82,6 +82,13 @@ danger 语气，破坏性操作。
 
 </Tabs>
 
+行内形态：标签与内容写在同一行，保存时按原形态写回。
+
+<Tabs>
+<Tab value="行内一">内容一</Tab>
+<Tab value="行内二">内容二</Tab>
+</Tabs>
+
 ## Steps
 
 <Steps>
@@ -112,6 +119,8 @@ danger 语气，破坏性操作。
 
 <Card title="叶子卡片" description="描述写在属性里，自闭合写法" href="/about" />
 
+<Card title="带图标的卡片" icon="⚡" description="icon 支持 emoji 或短文本" href="/about" />
+
 <Card title="带正文的卡片">
 
 卡片正文可以写多段内容。
@@ -136,6 +145,12 @@ danger 语气，破坏性操作。
 
 </AccItem>
 
+<AccItem title="可深链的条目" id="acc-demo">
+
+访问 `#acc-demo` 会自动展开本项，优先级高于 `type`。
+
+</AccItem>
+
 </Accordion>
 
 ## Files 文件树
@@ -156,7 +171,17 @@ danger 语气，破坏性操作。
 
 </Folder>
 
+<Folder name="packages">
+
+<Folder name="engine" defaultOpen>
+
+<File name="index.ts" />
+
+</Folder>
+
 <File name="README.md" />
+
+</Folder>
 
 <File name="run.sh" />
 
@@ -184,6 +209,10 @@ danger 语气，破坏性操作。
 
 </TypeItem>
 
+自闭合写法：说明列留空。
+
+<TypeItem name="zoom" type="boolean" default="false" />
+
 </TypeTable>
 
 ## Image
@@ -191,6 +220,14 @@ danger 语气，破坏性操作。
 <Image src="/dev-logo.svg" alt="占位图" caption="本地占位图，来自 dev/public/dev-logo.svg；width 纯数字按像素" width="320" zoom />
 
 <Image src="dev-logo.svg" alt="相对路径图" caption="相对路径不应被协议闸门降级" />
+
+宽度支持占比、像素与自动，`align` 决定整块位置：
+
+<Image src="/dev-logo.svg" alt="占比六成" caption="width 写 60%，整块靠左" width="60%" align="left" />
+
+<Image src="/dev-logo.svg" alt="三分之一宽" caption="width 写 1/3，整块靠右" width="1/3" align="right" />
+
+<Image src="/dev-logo.svg" alt="自动宽度" caption="width 写 auto，原始尺寸居中" width="auto" align="center" />
 
 ## Columns
 
@@ -233,6 +270,24 @@ danger 语气，破坏性操作。
 
 </Columns>
 
+带单位的 `width` 按固定宽度，其余列自动占满剩余空间：
+
+<Columns>
+
+<Column width="220px">
+
+固定 220px 的列。
+
+</Column>
+
+<Column>
+
+自适应列。
+
+</Column>
+
+</Columns>
+
 ## Timeline
 
 时间线节点按 `type` 取色，表外取值按 `note` 渲染。
@@ -263,6 +318,23 @@ danger 语气，破坏性操作。
 
 </TimelineItem>
 
+条目正文可以是多段内容：
+
+<TimelineItem date="2026-11-27" title="富正文" type="note">
+
+第一段：列表也能用。
+
+- 项一
+- 项二
+
+第二段：围栏代码块原样保留。
+
+```ts
+const depth = 3;
+```
+
+</TimelineItem>
+
 </Timeline>
 
 ## Video
@@ -274,3 +346,48 @@ danger 语气，破坏性操作。
 未给 `src`（或协议不合规）时不加载视频，只保留题注：
 
 <Video caption="没有来源的视频" />
+
+宽度写法与 `Image` 一致：`auto` / `60%` / `1/3` / `360` / `20rem`。
+
+<Video src="/dev-logo.svg" poster="/dev-logo.svg" caption="占比一半" width="50%" />
+
+<Video src="/dev-logo.svg" caption="三分之一宽，不写 poster" width="1/3" />
+
+## div 通用分块
+
+需要挂 `class` / `id` 的一层分块时用它：属性透传到 DOM，内容照常按 Markdown 解析。
+
+<div class="note-block" id="div-demo">
+
+`div` 不是组件，宿主的类名可以直接接管样式。
+
+</div>
+
+## 嵌套容器
+
+容器内可再套容器，最多 3 层（超限见「容错降级」样例）。
+
+<Callout type="note" title="嵌套示例">
+
+<Columns>
+
+<Column width="1">
+
+左列放列表：
+
+- 项一
+- 项二
+
+</Column>
+
+<Column width="2">
+
+右列放引用：
+
+> 容器里的内容仍然是 Markdown。
+
+</Column>
+
+</Columns>
+
+</Callout>

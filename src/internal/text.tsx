@@ -24,6 +24,8 @@ import { enUS } from "../locales/en-US";
 /** UI 文案键（全部必填；覆写时传 Partial） */
 export interface UIText {
   // —— 组件 ——
+  /** Image 放大触发面的 aria-label（键盘可达的 img 触发元素） */
+  imageZoomOpen: string;
   /** Image 放大遮罩的关闭按钮 aria-label */
   imageZoomClose: string;
   // —— Mermaid 交互视图 ——

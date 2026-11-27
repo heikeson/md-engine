@@ -265,6 +265,43 @@ const CASES = [
       return html.includes("演示") ? null : "题注未渲染";
     },
   },
+  // ---------- 图片组件 ----------
+  {
+    name: "Image：宽度纯数字按像素，align 只认白名单",
+    md: "<Image src=\"/a.png\" alt=\"图\" width=\"360\" align=\"left drop\" />\n",
+    identical: true,
+    html: (html) => {
+      if (!html.includes("width:360px")) return `宽度未按像素补齐：${html}`;
+      if (!html.includes('class="image align-center"')) return `对齐未回退到 center：${html}`;
+      return null;
+    },
+  },
+  {
+    name: "Image：非法来源不加载，也不留空 figure",
+    md: "<Image src=\"javascript:alert(1)\" alt=\"坏图\" />\n",
+    identical: true,
+    diagnostics: (codesList) =>
+      codesList.includes("UNSAFE_HREF") ? null : `诊断缺失：${codesList.join(",")}`,
+    html: (html) => {
+      if (/javascript:/i.test(html)) return `危险地址未被拦下：${html}`;
+      return /<img|<figure/.test(html) ? "空来源仍渲染了占位节点" : null;
+    },
+  },
+  {
+    name: "Image：懒加载与放大触发面键盘可达",
+    md: "<Image src=\"/a.png\" alt=\"图\" caption=\"题注\" zoom />\n",
+    identical: true,
+    html: (html) => {
+      if (!html.includes('loading="lazy"') || !html.includes('decoding="async"')) {
+        return "缺少懒加载 / 异步解码属性";
+      }
+      if (!html.includes('role="button"') || !html.includes('tabindex="0"')) {
+        return "放大触发面不可键盘访问";
+      }
+      return html.includes('aria-haspopup="dialog"') ? null : "缺少 aria-haspopup";
+    },
+  },
+
   // ---------- D4：序列化保形 ----------
   {
     name: "紧凑写法（无空行）原样写回",

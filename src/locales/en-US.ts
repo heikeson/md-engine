@@ -11,6 +11,7 @@ import type { UIText } from "../internal/text";
 /** 英语（美国） */
 export const enUS = {
   // —— 组件 ——
+  imageZoomOpen: "Open larger image",
   imageZoomClose: "Close zoomed image",
   // —— Mermaid ——
   mermaidSourceView: "Source view",

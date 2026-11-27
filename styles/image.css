@@ -1,9 +1,20 @@
 /**
  * @file Image 图片样式（对齐 / 尺寸 / 题注 / 点击放大）
- * @description 原生 CSS 实现；遮罩色取 --lkes-overlay，圆角取 --lkes-radius。
+ * @description 原生 CSS 实现；遮罩色取 --lkes-overlay，圆角取 --lkes-radius，焦点环取 --lkes-ring。
+ *   题注跟随图片对齐方式：左对齐靠起始边、右对齐靠末尾边，居中仍在下方居中。
  * @created 2026-10-27 13:43
- * @updated 2026-10-27 13:49
+ * @updated 2026-11-27 11:10 题注跟随对齐、放大触发面补焦点环、遮罩淡入与阴影、长题注换行
  */
+
+/* 遮罩淡入：放在层外，避免与分层声明抢优先级 */
+@keyframes lkes-image-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
 
 @layer lkes.components {
   .prose-site .image {
@@ -33,14 +44,29 @@
 
   .prose-site .image figcaption {
     margin-top: 0.5rem;
-    text-align: center;
     font-size: 0.875rem;
     color: var(--lkes-muted, #6b7280);
+    overflow-wrap: anywhere;
+  }
+  .prose-site .image.align-left figcaption {
+    text-align: start;
+  }
+  .prose-site .image.align-center figcaption {
+    text-align: center;
+  }
+  .prose-site .image.align-right figcaption {
+    text-align: end;
   }
 
   /* 点击放大：全屏遮罩，点遮罩或 Esc 关闭 */
   .prose-site .image-img-zoomable {
     cursor: zoom-in;
+  }
+
+  /* 键盘可达的触发面：焦点可见，不依赖宿主是否重置了 outline */
+  .prose-site .image-img-zoomable:focus-visible {
+    outline: 2px solid var(--lkes-ring, #0f766e);
+    outline-offset: 3px;
   }
 
   .prose-site .image-zoom-mask {
@@ -53,6 +79,13 @@
     padding: 1rem;
     background-color: var(--lkes-overlay, rgb(0 0 0 / 0.8));
     cursor: zoom-out;
+    animation: lkes-image-fade-in 140ms ease-out;
+  }
+
+  /* 遮罩自身是弹层：去掉内层焦点环，Esc / Enter / 点击均可关闭 */
+  .prose-site .image-zoom-mask:focus-visible {
+    outline: 2px solid var(--lkes-ring, #0f766e);
+    outline-offset: -4px;
   }
 
   .prose-site .image-zoom-img {
@@ -60,5 +93,13 @@
     max-width: 100%;
     object-fit: contain;
     border-radius: var(--lkes-radius, 0.5rem);
+    box-shadow: 0 24px 64px rgb(0 0 0 / 0.45);
+    cursor: zoom-out;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .prose-site .image-zoom-mask {
+      animation: none;
+    }
   }
 }

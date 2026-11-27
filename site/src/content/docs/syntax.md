@@ -209,10 +209,12 @@
 
 ## Image
 
-自闭合叶子。`align` 缺省 `center`；`zoom` 是布尔，写了才能点击放大、按 `Esc` 关闭。
+自闭合叶子。`width` 纯数字按像素（`width="360"` 即 360px），也可写 `px` / `%` / `rem` / `em` / `ch` / `vw`，其余写法忽略；`align` 只认 `left` / `center` / `right`，缺省与写错都按 `center`。图片默认懒加载（`loading="lazy"`、`decoding="async"`），题注跟随图片对齐方式。
+
+`zoom` 是布尔：写了才可放大。触发元素是 `role="button"` 的图片本身，可用 Tab 聚焦、Enter / Space 打开；遮罩 `Esc` 或点击关闭，打开期间锁定页面滚动，关闭后焦点回到图片。
 
 ```md
-<Image src="/cover.svg" alt="封面" caption="题注写在这里" width="360" />
+<Image src="/cover.svg" alt="封面" caption="题注写在这里" width="360" zoom />
 ```
 
 ## Mermaid

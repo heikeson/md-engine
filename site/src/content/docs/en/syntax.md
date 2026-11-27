@@ -209,10 +209,12 @@ A self-closing leaf. `src` and `poster` go through the same protocol allow-list 
 
 ## Image
 
-A self-closing leaf. `align` defaults to `center`; `zoom` is a bare boolean that enables click-to-zoom and `Esc` to close.
+A self-closing leaf. A bare number in `width` means pixels (`width="360"` is 360px); `px` / `%` / `rem` / `em` / `ch` / `vw` are also accepted and anything else is ignored. `align` only accepts `left` / `center` / `right`; omitting it or writing something else means `center`. Images load lazily (`loading="lazy"`, `decoding="async"`) and captions follow the figure alignment.
+
+`zoom` is a bare boolean: the image itself becomes the trigger with `role="button"`, so it is reachable with Tab and opens with Enter / Space. The overlay closes on `Esc` or a click, locks page scrolling while open, and returns focus to the image afterwards.
 
 ```md
-<Image src="/cover.svg" alt="Cover" caption="The caption goes here" width="360" />
+<Image src="/cover.svg" alt="Cover" caption="The caption goes here" width="360" zoom />
 ```
 
 ## Mermaid

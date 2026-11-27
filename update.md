@@ -12,7 +12,7 @@
 
 ## v0.6.0 — 2026-11-27
 
-新增三个容器：多列布局、时间线与视频。全部是新增，既有语法、属性语义、类名与导出路径未变，升级只需改版本号。
+新增三个容器：多列布局、时间线与视频，并整备了 `<Image />` 的宽度、对齐与放大交互。公开语法只增不改，既有类名与导出路径未变，升级只需改版本号。
 
 ### 更新内容
 
@@ -21,14 +21,16 @@
 | `<Columns>` / `<Column>` | 横向多列。`Column` 的 `width` 纯数字按比例分列（`"2"` 占 2 份），带单位（`px` / `%` / `rem` / `em` / `ch` / `vw`）按固定宽度，不写则等分；窄屏（<640px）自动堆叠。列宽以 `--lkes-col-grow` / `--lkes-col-basis` 下发，堆叠时由样式整条覆盖 |
 | `<Timeline>` / `<TimelineItem>` | 竖向时间线。子项 `date` 为时间标识、`title` 为标题、`type` 取 `note` / `tip` / `warning` / `danger`，表外取值按 `note` 渲染；竖线与节点由包内 CSS 绘制 |
 | `<Video />` | 自闭合媒体块。属性 `src`、`poster`、`caption`、`width`；`src` / `poster` 与 `Image` 同口径过协议白名单，不合规时不加载、只保留题注；`width` 纯数字按像素 |
+| `<Image />` 改进 | `width` 纯数字按像素补齐（原来 `width="360"` 直接进 CSS 被浏览器丢弃）、其余只认 `px` / `%` / `rem` / `em` / `ch` / `vw`，非法写法忽略；`align` 只认 `left` / `center` / `right`，表外取值按 `center`（原实现会把 `align="a b"` 拼成两个类名）；图片默认 `loading="lazy"` + `decoding="async"`；`zoom` 触发面补 `role="button"` / `tabIndex` 与 Enter / Space，遮罩改 `role="dialog"`，打开期间锁滚动、关闭后焦点归还；`src` 为空或不合规时不再输出空 `figure`；题注跟随图片对齐方式 |
+| 文案 | 新增 `UIText.imageZoomOpen`（放大触发面的 aria-label），中英文默认值随包发布 |
 | 注册表与编辑器 | `registry` 新增两个子项（`Column`、`TimelineItem`）与三个容器声明；工具栏插入顺序补 `Columns`、`Timeline`、`Video`，各自给可直接改的骨架 |
-| 样式分片 | 新增 `styles/columns.css`、`timeline.css`、`video.css`，均按 `--lkes-*` 令牌取色，随 `styles.css` 一并汇总 |
-| 自检 | 新增三条用例：列宽下发、表外 `type` 降级、`javascript:` 来源被拦下 |
+| 样式分片 | 新增 `styles/columns.css`、`timeline.css`、`video.css`；`styles/image.css` 补焦点环、遮罩淡入与阴影、题注对齐 |
+| 自检 | 新增六条用例：列宽下发、表外 `type` 降级、`javascript:` 来源被拦下、图片宽度补单位与对齐白名单、非法来源不渲染、懒加载与放大触发面可键盘访问 |
 
 ### 升级与使用
 
 - **依赖**：`npm install @heikeson/md-engine@0.6.0`；无新增依赖，`mermaid` 仍是可选 peer。
-- **配置**：无破坏性变更；三个容器都是新增语法，不写就不会出现在页面上，`RenderConfig`、诊断码与导出路径均未变。
+- **配置**：无破坏性变更；三个容器都是新增语法，不写就不会出现在页面上，`RenderConfig`、诊断码与导出路径均未变。新增文案键 `imageZoomOpen` 带中英文默认值，未覆写时不影响现有页面。
 - **产物**：`dist/` 与 `dist/styles.css` 重新构建（新增三片样式），宿主需重新构建一次；只覆盖 `--lkes-*` 的换肤方式不受影响。
 - **回滚**：把依赖改回 `0.5.4` 即可。回滚后新容器会退回文本显示（`UNKNOWN_TAG`），原文不丢，但页面上会露出尖括号标签，需要同时撤回正文里的新容器写法。
 

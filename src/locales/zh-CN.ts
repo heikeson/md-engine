@@ -11,6 +11,7 @@ import type { UIText } from "../internal/text";
 /** 简体中文 */
 export const zhCN = {
   // —— 组件 ——
+  imageZoomOpen: "放大查看图片",
   imageZoomClose: "关闭放大图片",
   // —— Mermaid ——
   mermaidSourceView: "源码视图",

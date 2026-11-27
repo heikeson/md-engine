@@ -56,8 +56,9 @@ export function Home(): ReactElement {
         {isZh ? (
           <p className="hero-lead">
             在标准 Markdown（GFM + 数学公式）之上加一层尖括号容器：
-            <code>&lt;Callout&gt;</code>、<code>&lt;Tabs&gt;</code>、<code>&lt;Mermaid&gt;</code>
-            解析为 mdast 节点，渲染成 React 组件，<code>md → AST → md</code> 逐字一致。作者写 Markdown，不写 JSX。
+            <code>&lt;Callout&gt;</code>、<code>&lt;Tabs&gt;</code>、<code>&lt;Columns&gt;</code>、
+            <code>&lt;Video&gt;</code> 等标签解析为 mdast 节点，渲染成 React 组件，
+            <code>md → AST → md</code> 逐字一致。作者写 Markdown，不写 JSX。
           </p>
         ) : (
           <p className="hero-lead">{messages.homeHeroLead}</p>

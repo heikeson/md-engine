@@ -84,7 +84,7 @@ export default function EditorPage() {
 
 `Mod` 在 macOS 上是 `Cmd`，其他平台是 `Ctrl`；自定义快捷键排在 `defaultKeymap` 之前，同组合以编辑器为准。
 
-可一键插入的容器共 9 个：`Callout`、`Tabs`、`Steps`、`Cards`、`Accordion`、`Files`、`TypeTable`、`Image`、`Mermaid`。骨架文本由 `blockSnippet(name)` 按注册表生成，属性名与子项名不会与解析规则脱节。
+可一键插入的容器共 12 个：`Callout`、`Tabs`、`Steps`、`Cards`、`Accordion`、`Files`、`TypeTable`、`Columns`、`Timeline`、`Image`、`Video`、`Mermaid`。骨架文本由 `blockSnippet(name)` 按注册表生成，属性名与子项名不会与解析规则脱节。
 
 ## 滚动同步
 

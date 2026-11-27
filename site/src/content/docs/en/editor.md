@@ -84,7 +84,7 @@ The wrap / line-prefix toolbar buttons and the shortcuts call the same pure func
 
 `Mod` is `Cmd` on macOS and `Ctrl` elsewhere. Custom keymap entries sit before `defaultKeymap`, so the editor wins on conflicts.
 
-Nine containers can be inserted from the toolbar: `Callout`, `Tabs`, `Steps`, `Cards`, `Accordion`, `Files`, `TypeTable`, `Image`, `Mermaid`. The skeleton text comes from `blockSnippet(name)`, generated from the registry, so attribute and child names cannot drift from the parser.
+Twelve containers can be inserted from the toolbar: `Callout`, `Tabs`, `Steps`, `Cards`, `Accordion`, `Files`, `TypeTable`, `Columns`, `Timeline`, `Image`, `Video`, `Mermaid`. The skeleton text comes from `blockSnippet(name)`, generated from the registry, so attribute and child names cannot drift from the parser.
 
 ## Scroll sync
 

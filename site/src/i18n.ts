@@ -282,7 +282,7 @@ const en: SiteMessages = {
   titleNotFound: "Page not found · md-engine",
   homeHeroTitle: "A Markdown engine that parses angle-bracket containers into mdast nodes",
   homeHeroLead:
-    "Tags such as <Callout>, <Tabs> and <Mermaid> are parsed into mdast nodes, rendered as React components, and written back verbatim. Authors write Markdown, not JSX.",
+    "Tags such as <Callout>, <Tabs>, <Columns> and <Video> are parsed into mdast nodes, rendered as React components, and written back verbatim. Authors write Markdown, not JSX.",
   homeHeroMeta: "React 19+ · plain CSS, no Tailwind · MIT",
   homeReadDocs: "Read the docs",
   homeTryBrowser: "Try it in the browser",

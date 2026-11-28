@@ -1,9 +1,10 @@
 /**
  * @file 布局：顶栏、页脚、文档三栏
  * @description 顶栏只做两件事：标识和导航，右侧不再挂推广按钮。
+ *   顶栏保持实色（不做半透明毛玻璃），滚动阴影与分区靠一条淡线表达。
  *   页脚压成一条与三列链接，不写品牌简介——没人读。
  * @created 2026-11-02 01:12
- * @updated 2026-11-02 01:40 顶栏收窄，页脚去简介
+ * @updated 2026-11-28 10:26 顶栏高度走 --header-h；导航下划线改为滑入；页脚加分区渐隐线
  */
 
 /* ---- 顶栏 ---- */
@@ -11,9 +12,14 @@
   position: sticky;
   top: 0;
   z-index: 40;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--line-faint);
   /* 纯色底，不用毛玻璃：半透明加模糊是 SaaS 落地页的做派，文档站压一个实色就够 */
   background: var(--bg);
+  box-shadow: 0 1px 0 rgb(16 24 40 / 0.02);
+}
+
+.dark .site-header {
+  box-shadow: 0 1px 0 rgb(0 0 0 / 0.4);
 }
 
 .header-inner {
@@ -23,7 +29,7 @@
   max-width: var(--site-max);
   margin: 0 auto;
   padding: 0 var(--gutter);
-  height: 54px;
+  height: var(--header-h);
 }
 
 .brand {
@@ -32,9 +38,10 @@
   gap: 8px;
   font-size: 14px;
   font-weight: 600;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.012em;
 }
 
+/* 标识块：默认前景反白，悬停时换成强调色——唯一的彩色落点 */
 .brand-mark {
   display: grid;
   place-items: center;
@@ -43,6 +50,16 @@
   border-radius: var(--r-sm);
   background: var(--fg);
   color: var(--bg);
+  transition: background-color var(--dur) var(--ease), transform var(--dur) var(--ease-out);
+}
+
+.brand:hover .brand-mark {
+  background: var(--accent);
+  transform: rotate(-6deg);
+}
+
+.brand:active .brand-mark {
+  transform: rotate(0deg) scale(0.94);
 }
 
 .brand-version {
@@ -51,29 +68,37 @@
   font-weight: 400;
   color: var(--muted);
   padding-left: 2px;
+  font-variant-numeric: tabular-nums;
 }
 
 .site-nav {
   display: flex;
   align-items: center;
-  gap: 18px;
-  margin-left: 8px;
+  gap: 20px;
+  margin-left: 10px;
 }
 
+/* 下划线用背景图滑入：鼠标移入时从左展开，移出时收回，不改变行盒高度 */
 .nav-link {
+  position: relative;
   font-size: 13.5px;
   color: var(--fg-soft);
   padding: 4px 0;
-  border-bottom: 1px solid transparent;
+  background-image: linear-gradient(currentColor, currentColor);
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 0 1px;
+  transition: color var(--dur-fast) var(--ease), background-size var(--dur) var(--ease);
 }
 
 .nav-link:hover {
   color: var(--fg);
+  background-size: 100% 1px;
 }
 
 .nav-link.is-active {
   color: var(--fg);
-  border-bottom-color: var(--fg);
+  background-size: 100% 1px;
 }
 
 /* 汉堡按钮：仅移动端出现 */
@@ -85,6 +110,7 @@
   margin-left: auto;
   border-radius: var(--r-sm);
   color: var(--fg-soft);
+  transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
 }
 
 .nav-toggle:hover {
@@ -95,31 +121,37 @@
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   margin-left: auto;
 }
 
 .icon-btn {
   display: grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   border-radius: var(--r-sm);
+  border: 1px solid transparent;
   color: var(--muted);
+  transition: color var(--dur-fast) var(--ease), background-color var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease);
 }
 
 .icon-btn:hover {
   color: var(--fg);
   background: var(--bg-sink);
+  border-color: var(--line);
 }
 
 /* 语言切换：文字按钮，宽度随词长自适应（特异性高于 .icon-btn，移动端同样生效） */
 .icon-btn.lang-btn {
   width: auto;
-  height: 28px;
+  height: 30px;
   padding: 0 8px;
   font-size: 12px;
+  letter-spacing: 0.02em;
   white-space: nowrap;
+  border-color: var(--line);
 }
 
 /* 主题图标：由祖先 .dark 决定显隐，JS 不参与 */
@@ -143,36 +175,55 @@
 
   .site-nav {
     position: absolute;
-    top: 54px;
+    top: var(--header-h);
     left: 0;
     right: 0;
     flex-direction: column;
     gap: 0;
     margin: 0;
-    padding: 6px var(--gutter) 12px;
+    padding: 4px var(--gutter) 10px;
     background: var(--bg);
     border-bottom: 1px solid var(--line);
-    box-shadow: 0 8px 16px -12px rgba(0, 0, 0, 0.18);
+    box-shadow: var(--shadow-2);
     display: none;
+    animation: nav-drop var(--dur) var(--ease-out);
   }
 
   .site-nav.is-open {
     display: flex;
   }
 
+  @keyframes nav-drop {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+  }
+
   .nav-link {
     padding: 11px 0;
     font-size: 14px;
-    border-bottom: 1px solid var(--line);
+    border-bottom: 1px solid var(--line-faint);
+    background-size: 0 0;
+  }
+
+  .nav-link:hover,
+  .nav-link.is-active {
+    background-size: 0 0;
   }
 
   .nav-link.is-active {
-    border-bottom-color: var(--line);
+    color: var(--accent);
+    border-bottom-color: var(--line-faint);
   }
 
   .icon-btn {
     width: 40px;
     height: 40px;
+  }
+
+  .icon-btn.lang-btn {
+    height: 34px;
   }
 
   /* 主题切换不再与收起的导航抢占空间 */
@@ -183,7 +234,7 @@
 
 /* ---- 页脚 ---- */
 .site-footer {
-  margin-top: clamp(64px, 8vw, 104px);
+  margin-top: clamp(72px, 8.5vw, 112px);
   border-top: 1px solid var(--line);
 }
 
@@ -194,7 +245,7 @@
   justify-content: space-between;
   max-width: var(--site-max);
   margin: 0 auto;
-  padding: 28px var(--gutter);
+  padding: 32px var(--gutter) 36px;
 }
 
 .footer-cols {
@@ -212,22 +263,29 @@
 .footer-col a {
   color: var(--fg-soft);
   width: fit-content;
+  background-image: linear-gradient(currentColor, currentColor);
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 0 1px;
+  transition: color var(--dur-fast) var(--ease), background-size var(--dur) var(--ease);
 }
 
 .footer-col a:hover {
   color: var(--fg);
+  background-size: 100% 1px;
 }
 
 .footer-col-title {
   font-size: 11.5px;
+  letter-spacing: 0.05em;
   color: var(--muted);
-  margin-bottom: 1px;
+  margin-bottom: 2px;
 }
 
 .footer-meta {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
   font-size: 12.5px;
   color: var(--muted);
 }
@@ -236,28 +294,30 @@
   font-size: 13.5px;
   font-weight: 600;
   color: var(--fg);
+  letter-spacing: -0.01em;
 }
 
 .footer-meta code {
   font-size: 11.5px;
   color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
 
 /* ---- 文档三栏 ---- */
 .docs-shell {
   display: grid;
-  grid-template-columns: 188px minmax(0, 1fr) 168px;
-  gap: 48px;
+  grid-template-columns: 190px minmax(0, 1fr) 172px;
+  gap: 52px;
   max-width: 1180px;
   margin: 0 auto;
-  padding: 36px var(--gutter) 0;
+  padding: 40px var(--gutter) 0;
   align-items: start;
 }
 
 @media (max-width: 1080px) {
   .docs-shell {
     grid-template-columns: 178px minmax(0, 1fr);
-    gap: 32px;
+    gap: 36px;
   }
 
   .doc-toc {
@@ -269,6 +329,7 @@
   .docs-shell {
     grid-template-columns: minmax(0, 1fr);
     gap: 22px;
+    padding-top: 24px;
   }
 
   /* 文档侧栏移动端折叠为可展开面板 */
@@ -290,7 +351,7 @@
   }
 
   .docs-nav-caret {
-    transition: transform 0.15s ease;
+    transition: transform var(--dur) var(--ease);
     color: var(--muted);
   }
 

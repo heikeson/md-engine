@@ -4,7 +4,7 @@
  *   源码从 `data-code-raw` 取——这正是 rehypeCodeMeta 存在的理由，宿主不必自己去解析子节点。
  *   复制按钮文案走站点字典，随路由语言切换。
  * @created 2026-11-01 23:58
- * @updated 2026-11-02 19:32 复制/已复制文案走字典
+ * @updated 2026-11-28 10:38 复制成功态以 data-copied 交给 CSS 上色
  */
 
 import { useState, type HTMLAttributes, type ReactElement, type ReactNode } from "react";
@@ -52,7 +52,14 @@ export function CopyButton({ code, label }: { code: string; label?: string }): R
   };
 
   return (
-    <button type="button" className="copy-btn" onClick={copy} aria-label={idle}>
+    <button
+      type="button"
+      className="copy-btn"
+      onClick={copy}
+      aria-label={idle}
+      /* 成功态交给 CSS 上色，避免在 JS 里拼类名 */
+      data-copied={done ? "" : undefined}
+    >
       {done ? messages.copied : idle}
     </button>
   );

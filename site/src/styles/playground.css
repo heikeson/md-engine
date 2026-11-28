@@ -1,16 +1,17 @@
 /**
  * @file Playground 样式
  * @description 编辑器根元素是 height:100%，所以从 .playground 到它之间每一层都必须有确定高度，
- *   否则 CodeMirror 会塌成一行。工具条压到 44px，把高度留给正文。
+ *   否则 CodeMirror 会塌成一行。工具条压到 48px，把高度留给正文。
+ *   状态徽标带一枚指示点：绿=往返一致，琥珀=有差异，颜色不再是唯一信号（点旁边还有文字）。
  * @created 2026-11-02 01:34
- * @updated 2026-11-02 02:34 工具条收窄，状态改为文字徽标
+ * @updated 2026-11-28 10:42 顶栏高度走 --header-h；分段控件与状态点；骨架加扫光
  */
 
 .playground {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 54px);
-  height: calc(100dvh - 54px);
+  height: calc(100vh - var(--header-h));
+  height: calc(100dvh - var(--header-h));
   min-height: 480px;
 }
 
@@ -19,15 +20,33 @@
   align-items: center;
   gap: 16px;
   flex-wrap: wrap;
-  min-height: 44px;
-  padding: 6px var(--gutter);
+  min-height: 48px;
+  padding: 8px var(--gutter);
   border-bottom: 1px solid var(--line);
+  background: var(--bg);
 }
 
 .pg-group {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+/* 分组之间一条 16px 竖线，工具条读起来是「样例 / 视图 / 操作」三段 */
+.pg-group + .pg-group:not(.pg-actions) {
+  position: relative;
+  padding-left: 16px;
+}
+
+.pg-group + .pg-group:not(.pg-actions)::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 1px;
+  height: 16px;
+  background: var(--line);
+  transform: translateY(-50%);
 }
 
 .pg-label {
@@ -44,8 +63,15 @@
   color: var(--fg);
   font-size: 12.5px;
   font-family: inherit;
+  transition: border-color var(--dur-fast) var(--ease), background-color var(--dur-fast) var(--ease);
 }
 
+.pg-select:hover {
+  border-color: var(--fg-soft);
+  background: var(--bg-soft);
+}
+
+/* 分段控件：选中格浮起一层，靠底色与 1px 阴影区分，不用边框 */
 .pg-views {
   padding: 2px;
   border-radius: var(--r-sm);
@@ -54,9 +80,11 @@
 
 .pg-view {
   padding: 3px 10px;
-  border-radius: 3px;
+  border-radius: 4px;
   font-size: 12px;
   color: var(--muted);
+  transition: color var(--dur-fast) var(--ease), background-color var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease);
 }
 
 .pg-view:hover {
@@ -66,6 +94,11 @@
 .pg-view.is-active {
   background: var(--bg);
   color: var(--fg);
+  box-shadow: 0 1px 2px rgb(16 24 40 / 0.08);
+}
+
+.dark .pg-view.is-active {
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.5);
 }
 
 .pg-actions {
@@ -73,17 +106,29 @@
 }
 
 .pg-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 11.5px;
   font-family: var(--font-mono);
-  padding: 2px 7px;
+  padding: 3px 8px;
   border-radius: var(--r-sm);
   border: 1px solid var(--line);
   color: var(--muted);
+  white-space: nowrap;
+}
+
+.pg-status::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 99px;
+  background: currentColor;
 }
 
 .pg-status.is-ok {
   color: var(--accent);
-  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 28%, transparent);
   background: var(--accent-soft);
 }
 
@@ -100,17 +145,21 @@
 }
 
 .pg-notice {
-  padding: 6px var(--gutter);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px var(--gutter);
   font-size: 12.5px;
   color: var(--accent);
   background: var(--accent-soft);
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
 }
 
 .pg-stage {
   flex: 1;
   min-height: 0;
-  padding: 12px var(--gutter) 14px;
+  padding: 14px var(--gutter) 16px;
+  background: var(--bg);
 }
 
 .pg-editor {
@@ -142,11 +191,27 @@
 .pg-skeleton-line {
   height: 10px;
   border-radius: 3px;
-  background: var(--bg-sink);
+  background: linear-gradient(
+    90deg,
+    var(--bg-sink) 0%,
+    var(--bg-soft) 40%,
+    var(--bg-sink) 80%
+  );
+  background-size: 220% 100%;
+  animation: pg-sheen 1.6s var(--ease) infinite;
 }
 
 .pg-skeleton-line.short {
   width: 54%;
+}
+
+@keyframes pg-sheen {
+  from {
+    background-position: 120% 0;
+  }
+  to {
+    background-position: -120% 0;
+  }
 }
 
 .pg-skeleton-hint {
@@ -165,35 +230,47 @@
   color: var(--muted);
 }
 
+/* 尊重系统减少动效偏好：骨架停在静态底色上 */
+@media (prefers-reduced-motion: reduce) {
+  .pg-skeleton-line {
+    animation: none;
+  }
+}
+
 /* ---- 404 ---- */
 .notfound {
   max-width: var(--site-max);
   margin: 0 auto;
-  padding: clamp(72px, 11vw, 132px) var(--gutter);
+  padding: clamp(80px, 12vw, 150px) var(--gutter);
 }
 
 .nf-code {
+  display: inline-block;
+  padding-bottom: 6px;
   font-family: var(--font-mono);
   font-size: 12px;
   color: var(--muted);
-  letter-spacing: 0.08em;
+  letter-spacing: 0.16em;
+  border-bottom: 1px solid var(--line);
 }
 
 .nf-title {
-  margin-top: 8px;
-  font-size: clamp(24px, 3.4vw, 34px);
+  margin-top: 16px;
+  font-size: clamp(26px, 3.6vw, 38px);
   font-weight: 600;
+  letter-spacing: -0.028em;
 }
 
 .nf-sub {
-  margin-top: 8px;
+  max-width: 52ch;
+  margin-top: 10px;
   color: var(--fg-soft);
-  font-size: 14.5px;
+  font-size: 15px;
 }
 
 .nf-links {
   display: flex;
-  gap: 8px;
-  margin-top: 22px;
+  gap: 10px;
+  margin-top: 26px;
   flex-wrap: wrap;
 }

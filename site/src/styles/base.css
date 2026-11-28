@@ -1,12 +1,13 @@
 /**
  * @file 基础样式
- * @description 正文 15px / 行高 1.75，标题只靠字重与字号拉开层级，不用颜色。
- *   主按钮用前景色反白，强调色留给链接——一页里彩色的地方越少，越像有人在认真排版。
+ * @description 正文 15.5px / 行高 1.72；标题只靠字重与字号拉开层级，不用颜色。
+ *   浏览器自己画的那几处（选中、光标、滚动条、焦点环、下划线偏移）也在这里统一定义，
+ *   否则它们会带着浏览器默认值混进版式里。
  * @created 2026-11-02 01:08
- * @updated 2026-11-02 20:37 元素级重置收进 @layer reset：未分层声明会压过包内 @layer lkes.components
+ * @updated 2026-11-28 10:24 补滚动条/光标/焦点环；按钮与区块层级统一走令牌
  */
 
-/* 元素级重置统一放进 reset 层（层序在 site.css 顶部声明：reset → lkes.tokens → lkes.components）。
+/* 元素级重置统一放进 reset 层（层序在 site.css 顶部声明：reset → site → lkes.tokens → lkes.components）。
    未分层声明的优先级高于任何 @layer，重置若留在层外会盖掉包内组件样式
    （曾表现为 `button{border:0}` 清掉 Tabs 选中态下划线与图表工具栏按钮外观）。
    站点自己的组件类（.btn / .doc-prose …）仍保持未分层，随时可覆盖包内样式 */
@@ -20,6 +21,9 @@
   html {
     -webkit-text-size-adjust: 100%;
     scroll-behavior: smooth;
+    /* 滚动条宽度与滑块颜色跟随主题，暗色下不再露出一条系统白条 */
+    scrollbar-width: thin;
+    scrollbar-color: var(--line-strong) transparent;
   }
 
   body {
@@ -27,24 +31,30 @@
     background: var(--bg);
     color: var(--fg);
     font-family: var(--font-sans);
-    font-size: 15px;
-    line-height: 1.75;
+    font-size: var(--text-md);
+    line-height: 1.72;
+    letter-spacing: 0.002em;
     -webkit-font-smoothing: antialiased;
+    caret-color: var(--accent);
   }
 
   h1, h2, h3, h4 {
     margin: 0;
-    line-height: 1.28;
-    letter-spacing: -0.012em;
+    line-height: 1.26;
+    letter-spacing: -0.014em;
+    /* 标题换行后不出现单字孤行 */
+    text-wrap: balance;
   }
 
   p {
     margin: 0;
+    text-wrap: pretty;
   }
 
   a {
     color: inherit;
     text-decoration: none;
+    text-underline-offset: 3px;
   }
 
   button {
@@ -58,6 +68,7 @@
   code {
     font-family: var(--font-mono);
     font-size: 0.88em;
+    font-variant-ligatures: none;
   }
 
   /* 窄屏下长图不被撑破 */
@@ -71,10 +82,32 @@
     color: var(--accent);
   }
 
-  ::focus-visible {
+  /* 双冒号是伪元素写法，焦点环必须用单冒号，否则整条规则不生效 */
+  :focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
     border-radius: 3px;
+  }
+
+  /* WebKit 没有 scrollbar-color，滑块单独画 */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    border: 3px solid transparent;
+    border-radius: 99px;
+    background-clip: content-box;
+    background-color: var(--line-strong);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--muted);
   }
 }
 
@@ -85,31 +118,41 @@
   justify-content: center;
   gap: 7px;
   height: 36px;
-  padding: 0 14px;
+  padding: 0 15px;
   border-radius: var(--r);
   font-size: 13.5px;
   font-weight: 500;
   white-space: nowrap;
-  transition: background-color 0.14s ease, border-color 0.14s ease, color 0.14s ease;
+  transition: background-color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
+}
+
+.btn:active {
+  transform: translateY(1px);
 }
 
 .btn-primary {
   background: var(--fg);
   color: var(--bg);
+  box-shadow: var(--shadow-1);
 }
 
 .btn-primary:hover {
   background: var(--fg-soft);
+  box-shadow: var(--shadow-pop);
 }
 
 .btn-ghost {
   border: 1px solid var(--line-strong);
   color: var(--fg-soft);
+  background: var(--bg);
 }
 
 .btn-ghost:hover {
   border-color: var(--fg-soft);
   color: var(--fg);
+  background: var(--bg-soft);
 }
 
 .btn-small {
@@ -119,11 +162,13 @@
   border: 1px solid var(--line-strong);
   border-radius: var(--r-sm);
   color: var(--fg-soft);
+  background: var(--bg);
 }
 
 .btn-small:hover {
   border-color: var(--fg-soft);
   color: var(--fg);
+  background: var(--bg-soft);
 }
 
 .text-link {
@@ -153,23 +198,25 @@
 }
 
 .section + .section {
-  margin-top: clamp(56px, 7vw, 84px);
+  margin-top: clamp(64px, 7.5vw, 92px);
+}
+
+.section-head {
+  margin-bottom: var(--space-6);
 }
 
 .section-title {
-  font-size: 21px;
+  font-size: var(--text-2xl);
   font-weight: 600;
+  letter-spacing: -0.024em;
   margin-bottom: 6px;
 }
 
 .section-note {
-  max-width: 66ch;
+  max-width: 68ch;
   color: var(--fg-soft);
-  font-size: 14px;
-}
-
-.section-head {
-  margin-bottom: 22px;
+  font-size: var(--text-base);
+  line-height: 1.7;
 }
 
 .sr-only {

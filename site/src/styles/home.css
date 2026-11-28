@@ -2,48 +2,73 @@
  * @file 首页样式
  * @description 全部左对齐。层级靠字号、字重、行距与细分隔线，不用色块、渐变和投影。
  *   首屏不抢视觉，第一屏的重心是那段源码与它右边真实渲染出来的东西。
+ *   表格类区块（语法表、入口表）用行悬停交代可读性，不用斑马纹。
  * @created 2026-11-02 01:22
- * @updated 2026-11-02 02:18 重做版式
+ * @updated 2026-11-28 10:30 字号走令牌；对照面板分层底色；表格行悬停与标签徽标
  */
 
 /* ---- Hero ---- */
 .hero {
+  position: relative;
   max-width: var(--site-max);
   margin: 0 auto;
-  padding: clamp(40px, 6vw, 72px) var(--gutter) 0;
+  padding: clamp(44px, 6.4vw, 80px) var(--gutter) 0;
+}
+
+/* 顶部一层极淡的强调色辉散，只做深度，看不见色相 */
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0 var(--gutter) auto;
+  height: 240px;
+  background: radial-gradient(
+    60% 100% at 18% 0%,
+    color-mix(in srgb, var(--accent) 5%, transparent),
+    transparent 70%
+  );
+  pointer-events: none;
+  z-index: -1;
 }
 
 .hero-title {
-  max-width: 24ch;
-  font-size: clamp(28px, 4.2vw, 44px);
+  max-width: 22ch;
+  font-size: var(--text-3xl);
   font-weight: 600;
-  line-height: 1.22;
-  letter-spacing: -0.03em;
+  line-height: 1.16;
+  letter-spacing: -0.032em;
 }
 
 .hero-lead {
-  max-width: 64ch;
-  margin-top: 18px;
+  max-width: 62ch;
+  margin-top: var(--space-5);
   color: var(--fg-soft);
-  font-size: 15.5px;
+  font-size: var(--text-md);
+  line-height: 1.75;
 }
 
 .hero-lead code {
-  padding: 1px 4px;
-  border-radius: 3px;
+  padding: 1px 5px;
+  border-radius: 4px;
   background: var(--bg-sink);
   color: var(--fg);
   font-size: 0.86em;
+  box-shadow: inset 0 0 0 1px var(--line-faint);
 }
 
 .install-line {
   display: inline-flex;
   align-items: center;
   gap: 12px;
-  margin-top: 20px;
+  margin-top: var(--space-5);
   padding: 5px 6px 5px 12px;
   border: 1px solid var(--line-strong);
   border-radius: var(--r);
+  background: var(--bg-soft);
+  transition: border-color var(--dur) var(--ease), background-color var(--dur) var(--ease);
+}
+
+.install-line:hover {
+  border-color: var(--fg-soft);
   background: var(--bg);
 }
 
@@ -58,15 +83,15 @@
 }
 
 .hero-meta {
-  margin-top: 12px;
+  margin-top: var(--space-3);
   font-size: 12.5px;
   color: var(--muted);
 }
 
 .hero-actions {
   display: flex;
-  gap: 8px;
-  margin-top: 22px;
+  gap: 10px;
+  margin-top: var(--space-6);
   flex-wrap: wrap;
 }
 
@@ -74,13 +99,16 @@
 .split-demo {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  margin-top: clamp(32px, 4vw, 48px);
+  margin-top: clamp(36px, 4.4vw, 56px);
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
   overflow: hidden;
+  background: var(--bg);
 }
 
 .split-col {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
 }
 
@@ -91,28 +119,47 @@
 .split-bar {
   display: flex;
   align-items: center;
-  height: 32px;
+  gap: 8px;
+  height: 34px;
   padding: 0 14px;
   background: var(--bg-soft);
   border-bottom: 1px solid var(--line);
   font-family: var(--font-mono);
   font-size: 11.5px;
+  letter-spacing: 0.02em;
   color: var(--muted);
 }
 
+/* 栏目标识前的一枚小方块，区分源码与渲染两侧 */
+.split-bar::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+  background: var(--line-strong);
+}
+
+.split-col:last-child .split-bar::before {
+  background: var(--accent);
+  opacity: 0.7;
+}
+
 .split-code {
+  flex: 1;
   margin: 0;
-  padding: 16px 14px;
+  padding: 16px 16px 18px;
   overflow-x: auto;
+  background: var(--code-bg);
   font-family: var(--font-mono);
   font-size: 12.5px;
-  line-height: 1.7;
+  line-height: 1.72;
   color: var(--fg-soft);
   tab-size: 2;
 }
 
 .split-render {
-  padding: 16px 14px;
+  flex: 1;
+  padding: 16px 16px 18px;
 }
 
 /* ---- 语法表 ---- */
@@ -125,20 +172,27 @@
   grid-template-columns: 116px minmax(0, 1.15fr) 116px minmax(0, 1.25fr);
   gap: 16px;
   align-items: baseline;
-  padding: 9px 2px;
+  padding: 10px 0;
   border-bottom: 1px solid var(--line);
   font-size: 13.5px;
+  transition: background-color var(--dur-fast) var(--ease);
+}
+
+.syntax-row:not(.syntax-head):hover {
+  background: var(--bg-soft);
 }
 
 .syntax-head {
   font-size: 11.5px;
+  letter-spacing: 0.05em;
   color: var(--muted);
-  padding: 7px 2px;
+  padding: 8px 0;
 }
 
 .syntax-tag {
   font-size: 13px;
   color: var(--fg);
+  font-weight: 500;
 }
 
 .syntax-head span:first-child {
@@ -161,7 +215,7 @@
 .pack-grid {
   display: grid;
   grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
-  gap: 36px;
+  gap: 40px;
   align-items: start;
 }
 
@@ -178,9 +232,14 @@
   grid-template-columns: 104px minmax(0, 1fr) auto;
   gap: 14px;
   align-items: baseline;
-  padding: 9px 0;
+  padding: 10px 0;
   border-bottom: 1px solid var(--line);
   font-size: 13px;
+  transition: background-color var(--dur-fast) var(--ease);
+}
+
+.pack-item:hover {
+  background: var(--bg-soft);
 }
 
 .pack-path {
@@ -212,15 +271,29 @@
   min-width: 0;
 }
 
+/* 两个标签做成小徽标：左列是既有做法，右列钉强调色边 */
 .compare-label {
+  align-self: flex-start;
+  padding: 1px 7px;
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  background: var(--bg-soft);
   font-family: var(--font-mono);
-  font-size: 11.5px;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   color: var(--muted);
+}
+
+.compare-col:last-child .compare-label {
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 
 .compare-foot {
   max-width: 68ch;
-  margin-top: 18px;
+  margin-top: var(--space-5);
   font-size: 13px;
   color: var(--muted);
 }
@@ -231,11 +304,11 @@
 }
 
 .closing .install-line {
-  margin-top: 14px;
+  margin-top: var(--space-3);
 }
 
 .closing-note {
-  margin-top: 14px;
+  margin-top: var(--space-4);
   font-size: 13.5px;
   color: var(--fg-soft);
 }
@@ -243,6 +316,7 @@
 .closing-note a {
   color: var(--accent);
   border-bottom: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  transition: border-color var(--dur-fast) var(--ease);
 }
 
 .closing-note a:hover {
@@ -261,6 +335,10 @@
     border-top: 1px solid var(--line);
   }
 
+  .split-code {
+    height: auto;
+  }
+
   /* 语法表改为纵向卡片：表头隐藏，字段以「列名：值」堆叠 */
   .syntax-table {
     border-top: 0;
@@ -273,7 +351,13 @@
   .syntax-row {
     display: block;
     padding: 12px 2px;
+    margin: 0;
     border-bottom: 1px solid var(--line);
+    border-radius: 0;
+  }
+
+  .syntax-row:not(.syntax-head):hover {
+    background: transparent;
   }
 
   .syntax-tag {

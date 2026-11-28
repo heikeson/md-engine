@@ -1,9 +1,10 @@
 /**
  * @file 代码块与着色
- * @description 代码块只有边框和一层极浅的底，没有阴影。着色用低饱和的五六种颜色，
- *   暗色下单独一套，保证在白底和黑底上都读得清而不刺眼。
+ * @description 代码块只有一层边框和一层极浅的底，没有阴影——边框已经交代了边界。
+ *   复制按钮按下后由 data-copied 切成强调色，成功与失败都看得见。
+ *   着色用低饱和的五六种颜色，暗色下单独一套，保证在白底和黑底上都读得清而不刺眼。
  * @created 2026-11-02 01:16
- * @updated 2026-11-02 02:30 去掉演示面板样式，圆角与底色收敛
+ * @updated 2026-11-28 10:38 复制成功态、悬停边框、字号行高走令牌
  */
 
 .code-block {
@@ -12,6 +13,11 @@
   border-radius: var(--r-lg);
   background: var(--code-bg);
   overflow: hidden;
+  transition: border-color var(--dur) var(--ease);
+}
+
+.code-block:hover {
+  border-color: var(--line-strong);
 }
 
 .code-bar {
@@ -19,8 +25,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  height: 32px;
-  padding: 0 12px;
+  height: 34px;
+  padding: 0 10px 0 14px;
   background: var(--code-bar);
   border-bottom: 1px solid var(--line);
 }
@@ -28,6 +34,7 @@
 .code-title {
   font-family: var(--font-mono);
   font-size: 11.5px;
+  letter-spacing: 0.02em;
   color: var(--muted);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -43,21 +50,34 @@
   border: 1px solid var(--line-strong);
   color: var(--muted);
   background: transparent;
-  transition: color 0.14s ease, border-color 0.14s ease;
+  transition: color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease),
+    background-color var(--dur-fast) var(--ease);
 }
 
 .copy-btn:hover {
   color: var(--fg);
   border-color: var(--fg-soft);
+  background: var(--bg-soft);
+}
+
+.copy-btn:active {
+  transform: translateY(1px);
+}
+
+/* 复制成功：交给 CSS 上色，JS 只负责切换属性 */
+.copy-btn[data-copied] {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  background: var(--accent-soft);
 }
 
 .code-body {
   margin: 0;
-  padding: 14px 16px;
+  padding: 15px 16px 17px;
   overflow-x: auto;
   font-family: var(--font-mono);
   font-size: 12.8px;
-  line-height: 1.72;
+  line-height: 1.75;
   color: var(--fg-soft);
   tab-size: 2;
 }
@@ -70,12 +90,12 @@
 
 /* ---- 着色 ---- */
 .tok-comment {
-  color: #9a9aa3;
+  color: #97979f;
   font-style: italic;
 }
 
 .tok-string {
-  color: #0d6b63;
+  color: var(--accent);
 }
 
 .tok-keyword {
@@ -92,10 +112,6 @@
 
 .dark .tok-comment {
   color: #5f6166;
-}
-
-.dark .tok-string {
-  color: #63d3c7;
 }
 
 .dark .tok-keyword {

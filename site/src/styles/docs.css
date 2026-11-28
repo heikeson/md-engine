@@ -2,13 +2,14 @@
  * @file 文档页样式
  * @description 左目录、右目录都随滚动吸附；正文宽度压在 720px 内，
  *   容器类组件（Tabs、Cards、Files）在窄栏里会显得拥挤，所以正文卡片的边距单独放宽一点。
+ *   正文行距放到 1.8，段间距小于标题上方留白——读长文时视线才不会被段落切碎。
  * @created 2026-11-02 01:28
- * @updated 2026-11-02 20:46 正文链接与表格规则降进 @layer site，避免压过包内组件的卡片/文件树/TypeTable 样式
+ * @updated 2026-11-28 10:34 面包屑取代眉标；正文排版整备；补 .prose-site 基础排版
  */
 
 .docs-sidebar {
   position: sticky;
-  top: 86px;
+  top: calc(var(--header-h) + 30px);
   padding-right: 8px;
 }
 
@@ -20,15 +21,14 @@
 .side-group {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  margin-bottom: 20px;
+  gap: 1px;
+  margin-bottom: 22px;
 }
 
 .side-group-title {
   font-size: 11.5px;
   letter-spacing: 0.06em;
   color: var(--muted);
-  text-transform: uppercase;
   margin-bottom: 6px;
   padding-left: 10px;
 }
@@ -36,14 +36,29 @@
 .side-link {
   position: relative;
   padding: 6px 10px;
-  border-radius: 7px;
+  border-radius: var(--r-sm);
   font-size: 13.5px;
   color: var(--fg-soft);
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+
+/* 选中态：淡底 + 左缘一条强调线（唯一用到强调色的导航位置） */
+.side-link::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 2px;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--accent);
+  /* 用纵向缩放代替高度过渡：只走合成层，不触发布局 */
+  transform: translateY(-50%) scaleY(0);
+  transition: transform var(--dur) var(--ease-out);
 }
 
 .side-link:hover {
-  background: var(--bg-sink);
+  background: var(--bg-soft);
   color: var(--fg);
 }
 
@@ -53,6 +68,10 @@
   font-weight: 500;
 }
 
+.side-link.is-active::before {
+  transform: translateY(-50%) scaleY(1);
+}
+
 /* ---- 正文 ---- */
 .doc-main {
   min-width: 0;
@@ -60,110 +79,219 @@
 }
 
 .doc-head {
-  padding-bottom: 20px;
-  margin-bottom: 24px;
+  padding-bottom: 22px;
+  margin-bottom: 28px;
   border-bottom: 1px solid var(--line);
 }
 
-.doc-eyebrow {
+/* 分组名做成面包屑：说明位置，不占标题上方的视觉重量 */
+.doc-crumbs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-family: var(--font-mono);
   font-size: 11.5px;
+  letter-spacing: 0.02em;
   color: var(--muted);
 }
 
+.doc-crumbs a {
+  color: var(--muted);
+  transition: color var(--dur-fast) var(--ease);
+}
+
+.doc-crumbs a:hover {
+  color: var(--accent);
+}
+
+.doc-crumbs span[aria-hidden] {
+  color: var(--line-strong);
+}
+
+.doc-crumbs-current {
+  color: var(--fg-soft);
+}
+
 .doc-title {
-  margin-top: 6px;
-  font-size: clamp(24px, 3vw, 32px);
+  margin-top: 10px;
+  font-size: clamp(26px, 3.2vw, 34px);
   font-weight: 600;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.028em;
 }
 
 .doc-summary {
   margin-top: 8px;
-  color: var(--muted);
-  font-size: 14.5px;
+  color: var(--fg-soft);
+  font-size: var(--text-md);
+  line-height: 1.7;
 }
 
 .doc-prose {
-  font-size: 15px;
-  line-height: 1.76;
+  font-size: var(--text-md);
+  line-height: 1.8;
 }
 
 .doc-prose > h2 {
-  margin-top: 2.1em;
-  margin-bottom: 0.6em;
+  margin-top: 2.2em;
+  margin-bottom: 0.55em;
   padding-top: 0.1em;
   font-size: 22px;
   font-weight: 600;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.022em;
 }
 
 /* 锚点跳转给吸附顶栏留位置 */
 .doc-prose h2,
 .doc-prose h3,
 .doc-prose h4 {
-  scroll-margin-top: 84px;
+  scroll-margin-top: calc(var(--header-h) + 28px);
 }
 
 .doc-prose > h3 {
-  margin-top: 1.7em;
-  margin-bottom: 0.5em;
+  margin-top: 1.75em;
+  margin-bottom: 0.45em;
   font-size: 17.5px;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+}
+
+.doc-prose > h4 {
+  margin-top: 1.5em;
+  margin-bottom: 0.4em;
+  font-size: 15.5px;
   font-weight: 600;
 }
 
 .doc-prose > p {
-  margin: 0.85em 0;
+  margin: 0.9em 0;
   color: var(--fg-soft);
 }
 
 .doc-prose > ul,
 .doc-prose > ol {
   color: var(--fg-soft);
-  padding-left: 1.35em;
+  padding-left: 1.4em;
+  margin: 0.9em 0;
 }
 
 .doc-prose > ul li,
 .doc-prose > ol li {
-  margin: 0.35em 0;
+  margin: 0.4em 0;
+}
+
+.doc-prose li::marker {
+  color: var(--line-strong);
+}
+
+.doc-prose > hr {
+  height: 1px;
+  margin: 2.2em 0;
+  border: 0;
+  background: linear-gradient(to right, var(--line), var(--line-faint) 65%, transparent);
 }
 
 .doc-prose .code-block {
-  margin: 1.1em 0;
+  margin: 1.2em 0;
 }
 
 /* 链接与表格降进 @layer site（层序见 site.css：reset → site → lkes.tokens → lkes.components）：
    包内组件（卡片、文件树、TypeTable）的内部元素优先用包内样式，不被站点的正文排版压过；
    普通 Markdown 的链接与表格仍由这里排版——引擎不碰它们 */
 @layer site {
+  /* 宿主没有引入 prose.css 时，.prose-site 至少保住普通 Markdown 的排版（首页演示区用到） */
+  .prose-site h1 {
+    margin: 1.6em 0 0.5em;
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: -0.024em;
+  }
+
+  .prose-site h2 {
+    margin: 1.7em 0 0.5em;
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.018em;
+  }
+
+  .prose-site h3 {
+    margin: 1.5em 0 0.4em;
+    font-size: 16.5px;
+    font-weight: 600;
+  }
+
+  .prose-site > :first-child {
+    margin-top: 0;
+  }
+
+  .prose-site p {
+    margin: 0.65em 0;
+  }
+
+  .prose-site ul,
+  .prose-site ol {
+    margin: 0.65em 0;
+    padding-left: 1.35em;
+  }
+
+  .prose-site li {
+    margin: 0.28em 0;
+  }
+
+  .prose-site blockquote {
+    margin: 1em 0;
+    padding-left: 16px;
+    border-left: 2px solid var(--line-strong);
+    color: var(--muted);
+  }
+
+  .prose-site hr {
+    height: 1px;
+    margin: 1.8em 0;
+    border: 0;
+    background: var(--line);
+  }
+
   .doc-prose a {
     color: var(--accent);
     text-decoration: underline;
     text-underline-offset: 3px;
     text-decoration-thickness: 1px;
+    text-decoration-color: color-mix(in srgb, var(--accent) 40%, transparent);
+    transition: text-decoration-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+  }
+
+  .doc-prose a:hover {
+    color: var(--accent-hover);
+    text-decoration-color: currentColor;
   }
 
   .doc-prose table {
     width: 100%;
     border-collapse: collapse;
-    margin: 1.1em 0;
+    margin: 1.2em 0;
     font-size: 14px;
   }
 
   .doc-prose th,
   .doc-prose td {
-    padding: 8px 12px;
+    padding: 9px 12px;
     border-bottom: 1px solid var(--line);
     text-align: left;
     vertical-align: top;
   }
 
+  .doc-prose tbody tr:hover {
+    background: var(--bg-soft);
+  }
+
   .doc-prose th {
     font-weight: 500;
     color: var(--muted);
-    font-size: 12.5px;
+    font-size: 12px;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.05em;
+    background: var(--bg-soft);
+    border-bottom-color: var(--line-strong);
   }
 
   .doc-prose td {
@@ -175,13 +303,19 @@
     padding: 1px 5px;
     border-radius: 4px;
     background: var(--bg-sink);
+    box-shadow: inset 0 0 0 1px var(--line-faint);
+  }
+
+  /* 正文里的行内码不在段首堆积空格 */
+  .doc-prose p code {
+    white-space: nowrap;
   }
 }
 
 /* ---- 右侧目录 ---- */
 .doc-toc {
   position: sticky;
-  top: 86px;
+  top: calc(var(--header-h) + 30px);
   padding-left: 4px;
 }
 
@@ -189,7 +323,6 @@
   display: block;
   font-size: 11.5px;
   letter-spacing: 0.06em;
-  text-transform: uppercase;
   color: var(--muted);
   margin-bottom: 10px;
 }
@@ -209,6 +342,7 @@
   font-size: 12.5px;
   color: var(--muted);
   line-height: 1.5;
+  transition: color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
 }
 
 .toc-item a:hover {
@@ -226,7 +360,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
-  margin-top: 56px;
+  margin-top: 64px;
   padding-top: 24px;
   border-top: 1px solid var(--line);
 }
@@ -238,12 +372,18 @@
   padding: 12px 14px;
   border: 1px solid var(--line);
   border-radius: var(--r);
-  transition: border-color 0.15s ease;
+  transition: border-color var(--dur) var(--ease), background-color var(--dur) var(--ease),
+    transform var(--dur) var(--ease-out);
 }
 
 .pager-card:hover {
   border-color: var(--line-strong);
   background: var(--bg-soft);
+  transform: translateY(-1px);
+}
+
+.pager-card:active {
+  transform: translateY(0);
 }
 
 .pager-next {

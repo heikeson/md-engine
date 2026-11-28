@@ -1,58 +1,132 @@
 /**
  * @file 站点令牌
- * @description 配色刻意收得很窄：几乎黑白，只留一个低饱和的青色给链接与选中态。
- *   强调色不作为按钮底色、不铺背景——开发者站的辨识度来自排版，不来自色块。
+ * @description 配色仍收得很窄：中性色承担结构，青色只给链接、选中态与状态点。
+ *   新增三组工具变量：字号阶梯（--text-*）、间距阶梯（--space-*）、层次与动效（--shadow-*、--ease）。
+ *   同时把引擎的 --lkes-* 覆盖成与站点同一套字面量，否则包内组件的灰与站点的灰会差半个色阶。
  * @created 2026-11-02 01:05
- * @updated 2026-11-02 01:40 去掉阴影与渐变色阶，圆角收敛，主色改为中性
+ * @updated 2026-11-28 10:20 补字号/间距阶梯、层次阴影与缓动曲线；--lkes-* 与站点对齐
  */
 
 :root {
   --site-max: 1080px;
   --gutter: clamp(20px, 4.5vw, 44px);
+  /* 顶栏高度：Playground 的满高计算与文档侧栏吸附位置都引用它 */
+  --header-h: 56px;
 
+  /* ---- 面 ---- */
   --bg: #ffffff;
   --bg-soft: #fafafa;
   --bg-sink: #f4f4f5;
+  --bg-elev: #ffffff;
+  --bg-inset: #f7f7f8;
 
-  --fg: #18181b;
-  --fg-soft: #52525b;
-  --muted: #8b8b93;
+  /* ---- 文字：三档，间距足够拉开，避免中间灰发浑 ---- */
+  --fg: #141417;
+  --fg-soft: #4c4c55;
+  --muted: #85858e;
 
-  --line: #e7e7e9;
-  --line-strong: #d6d6da;
+  /* ---- 线：faint 用于分区，strong 用于控件描边 ---- */
+  --line-faint: #f0f0f3;
+  --line: #e6e6ea;
+  --line-strong: #d3d3da;
 
-  --accent: #0d6b63;
+  /* ---- 强调：亮色下压深保证 4.5:1，暗色下提亮 ---- */
+  --accent: #0b6b62;
+  --accent-hover: #08544d;
   --accent-soft: #eaf5f3;
 
-  --code-bg: #fafafa;
+  /* ---- 代码 ---- */
+  --code-bg: #fbfbfc;
   --code-bar: #ffffff;
 
-  --r-sm: 4px;
-  --r: 6px;
-  --r-lg: 10px;
+  /* ---- 形状 ---- */
+  --r-sm: 5px;
+  --r: 8px;
+  --r-lg: 12px;
+
+  /* ---- 层次：一层极浅的就够，靠边框分工，两者不同时上 ---- */
+  --shadow-1: 0 1px 2px rgb(16 24 40 / 0.04), 0 1px 3px rgb(16 24 40 / 0.03);
+  --shadow-2: 0 10px 26px -14px rgb(16 24 40 / 0.18), 0 2px 6px -2px rgb(16 24 40 / 0.06);
+  --shadow-pop: 0 6px 18px -8px rgb(16 24 40 / 0.16), 0 1px 2px rgb(16 24 40 / 0.05);
+
+  /* ---- 动效：一条指数出曲线，全站共用 ---- */
+  --ease: cubic-bezier(0.22, 0.68, 0.16, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 120ms;
+  --dur: 200ms;
+
+  /* ---- 字号阶梯：2xs → 3xl，标题 clamp 到 3xl ---- */
+  --text-2xs: 11px;
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-base: 14px;
+  --text-md: 15.5px;
+  --text-lg: 17px;
+  --text-xl: 21px;
+  --text-2xl: clamp(23px, 2.6vw, 28px);
+  --text-3xl: clamp(30px, 4.4vw, 50px);
+
+  /* ---- 间距阶梯：4px 基数 ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 40px;
+  --space-9: 56px;
+  --space-10: 72px;
+  --space-11: 96px;
 
   --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", "PingFang SC",
     "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas,
     "Liberation Mono", monospace;
+
+  /* 引擎组件令牌对齐（未分层声明，优先级高于包内 @layer lkes.tokens） */
+  --lkes-bg: #ffffff;
+  --lkes-fg: #141417;
+  --lkes-muted: #85858e;
+  --lkes-fill: #f4f4f5;
+  --lkes-border: #e6e6ea;
+  --lkes-accent: #0b6b62;
+  --lkes-ring: #0b6b62;
+  --lkes-radius: 8px;
 }
 
 .dark,
 [data-theme="dark"] {
-  --bg: #0b0c0d;
-  --bg-soft: #121415;
-  --bg-sink: #191b1d;
+  --bg: #0a0b0c;
+  --bg-soft: #101214;
+  --bg-sink: #17191c;
+  --bg-elev: #121416;
+  --bg-inset: #0e1012;
 
-  --fg: #ececee;
-  --fg-soft: #a6a6ae;
-  --muted: #74747c;
+  --fg: #ededf0;
+  --fg-soft: #a8a8b2;
+  --muted: #7a7a84;
 
-  --line: #232527;
-  --line-strong: #333638;
+  --line-faint: #1d2124;
+  --line: #232629;
+  --line-strong: #35393f;
 
-  --accent: #4fd1c5;
-  --accent-soft: #102523;
+  --accent: #5ad8ca;
+  --accent-hover: #7ce6da;
+  --accent-soft: #0d2422;
 
-  --code-bg: #0f1112;
-  --code-bar: #0b0c0d;
+  --code-bg: #0e1112;
+  --code-bar: #0a0b0c;
+
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-2: 0 12px 30px -18px rgb(0 0 0 / 0.8), 0 2px 8px -4px rgb(0 0 0 / 0.5);
+  --shadow-pop: 0 8px 22px -12px rgb(0 0 0 / 0.7), 0 1px 2px rgb(0 0 0 / 0.4);
+
+  --lkes-bg: #0a0b0c;
+  --lkes-fg: #ededf0;
+  --lkes-muted: #7a7a84;
+  --lkes-fill: #17191c;
+  --lkes-border: #232629;
+  --lkes-accent: #5ad8ca;
+  --lkes-ring: #5ad8ca;
 }

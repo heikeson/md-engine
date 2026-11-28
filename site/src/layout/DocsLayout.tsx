@@ -5,7 +5,7 @@
  *   某个容器被改坏，这里立刻看得见。
  *   外壳文案走站点字典（文档正文本身仍由内容层维护）。
  * @created 2026-11-02 00:12
- * @updated 2026-11-02 19:32 目录/翻页文案走字典
+ * @updated 2026-11-28 10:34 标题上方的分组改为面包屑，位置信息不占标题的视觉重量
  */
 
 import { useState, type ReactElement } from "react";
@@ -85,7 +85,11 @@ export function DocsLayout({ doc }: { doc: DocEntry }): ReactElement {
 
       <article className="doc-main">
         <header className="doc-head">
-          <span className="doc-eyebrow">{groups[doc.group]}</span>
+          <nav className="doc-crumbs" aria-label={messages.docsCatalog}>
+            <Link href="/docs">{messages.navDocs}</Link>
+            <span aria-hidden="true">/</span>
+            <span className="doc-crumbs-current">{groups[doc.group]}</span>
+          </nav>
           <h1 className="doc-title">{doc.title}</h1>
           <p className="doc-summary">{doc.summary}</p>
         </header>

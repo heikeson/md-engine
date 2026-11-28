@@ -3,7 +3,7 @@
  * @description 全量满足 `UIText`，编译期强制无缺键。复数分支按 CLDR 区分 one/other。
  *   消息内不使用 ASCII 单引号（ICU 转义符），需要引号处用双引号或改写。
  * @created 2026-11-02 19:32
- * @updated 2026-11-02 19:32
+ * @updated 2026-11-28 14:20 补 `editorSnippet*`：插入骨架的占位文字
  */
 
 import type { UIText } from "../internal/text";
@@ -58,6 +58,16 @@ export const enUS = {
   editorWrapPlaceholder: "Text",
   editorPlaceholder: "Write Markdown here. Type an angle bracket to insert a container.",
   editorInsertBlock: "Insert {name}",
+  editorSnippetContent: "Content",
+  editorSnippetTitle: "Title",
+  editorSnippetTabLabel: "Label",
+  editorSnippetChartTitle: "Chart title",
+  editorSnippetDiagramStart: "Start",
+  editorSnippetDiagramDecision: "Decision",
+  editorSnippetDiagramAction: "Action",
+  editorSnippetDiagramYes: "Yes",
+  editorSnippetPropId: "Unique identifier",
+  editorSnippetPropLabel: "Display name",
   /** @deprecated 改用 editorWordCount */
   editorWordCountUnit: "characters",
   /** @deprecated 改用 editorDiagnostic */

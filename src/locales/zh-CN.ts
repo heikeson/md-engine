@@ -3,7 +3,7 @@
  * @description 全量满足 `UIText`，编译期强制无缺键。带 `{...}` 的是 ICU 消息模板，
  *   带 `plural` 的是复数分支；纯文本消息不含花括号，格式化时走快路径。
  * @created 2026-11-02 19:32
- * @updated 2026-11-02 19:32
+ * @updated 2026-11-28 14:20 补 `editorSnippet*`：插入骨架的占位文字
  */
 
 import type { UIText } from "../internal/text";
@@ -58,6 +58,16 @@ export const zhCN = {
   editorWrapPlaceholder: "文本",
   editorPlaceholder: "在这里写 Markdown，输入尖括号可以直接插入容器",
   editorInsertBlock: "插入 {name}",
+  editorSnippetContent: "内容",
+  editorSnippetTitle: "标题",
+  editorSnippetTabLabel: "标签",
+  editorSnippetChartTitle: "图表标题",
+  editorSnippetDiagramStart: "开始",
+  editorSnippetDiagramDecision: "判断",
+  editorSnippetDiagramAction: "执行",
+  editorSnippetDiagramYes: "是",
+  editorSnippetPropId: "唯一标识",
+  editorSnippetPropLabel: "显示名称",
   /** @deprecated 改用 editorWordCount */
   editorWordCountUnit: "字",
   /** @deprecated 改用 editorDiagnostic */

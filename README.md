@@ -130,7 +130,8 @@ export default function EditorPage() {
 ```
 
 受控组件，`value` 就是 Markdown 文本，左边编辑右边预览。工具栏插入的骨架由 `registry.ts`
-生成，跟解析规则同名同属性，不会对不上。快捷键跟按钮走同一个实现：`Mod+B`、`Mod+I`、
+生成，跟解析规则同名同属性，不会对不上。骨架里的占位文字（正文、标题、图表节点）跟着生效语言
+走：中文环境插入「内容」，英文环境插入 `Content`。快捷键跟按钮走同一个实现：`Mod+B`、`Mod+I`、
 `Mod+E` 分别是粗体、斜体、行内码，`Mod+Shift+S` 删除线，`Mod+1` 二级标题，`Mod+Shift+Q`
 引用，`Mod+Shift+L` 列表。
 

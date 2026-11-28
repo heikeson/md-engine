@@ -3,10 +3,35 @@
 > @file update.md
 > @description `@heikeson/md-engine` 的版本更新记录，倒序累积。每次发版在此一次性写清「更新内容 + 修复内容」，不记录操作步骤。GitHub Release 正文由 `.github/workflows/release.yml` 从本文件同名版本段切出，故版本标题必须是 `## vX.Y.Z — 日期`。
 > @created 2026-10-26 23:37
-> @updated 2026-11-27 10:40 记录 v0.6.0：新增 Columns / Timeline / Video 三个容器
+> @updated 2026-11-28 14:40 记录 v0.6.1：插入骨架的占位文字随语言变化，文档站整备
 > @note 「升级与使用」按 npm 包口径写四项：依赖 / 配置 / 产物 / 回滚。数据库项不适用（本包不落库），镜像项由「产物」承担（`dist/` 与 npm 版本），故均不单列。
-> @status 0.6.0 已记录
+> @status 0.6.1 已记录
 > @readonly 由维护者（@heikeson）维护，请勿直接编辑；变更请提 issue
+
+---
+
+## v0.6.1 — 2026-11-28
+
+编辑器插入的骨架占位文字改为跟随生效语言：中文插入「内容」，英文插入 `Content`。公开导出只多了一个可选参数，既有调用照旧。
+
+### 更新内容
+
+| 内容 | 说明 |
+|---|---|
+| 骨架占位文字随语言 | `blockSnippet(name, texts?)` 新增第二参 `SnippetTexts`（`UIText` 中 `editorSnippet*` 子集）。内置工具栏透传生效文案，正文、条目标题、Tab 标签、图表标题与图表节点、TypeTable 字段说明都随 `locale` 变化；不传第二参仍返回中文骨架。占位文字照旧整体选中，键入即替换 |
+| 文案键 | 新增 10 个：`editorSnippetContent`、`editorSnippetTitle`、`editorSnippetTabLabel`、`editorSnippetChartTitle`、`editorSnippetDiagramStart` / `DiagramDecision` / `DiagramAction` / `DiagramYes`、`editorSnippetPropId`、`editorSnippetPropLabel`，中英文默认值随包发布 |
+| 导出 | `./editor` 新增类型导出 `SnippetTexts`，宿主自建工具栏时把 `useUIText()` 的结果传进 `blockSnippet` 即可 |
+| 文档站 | 演练场新增「布局与媒体」样例（`Columns`、`Timeline`、带宽度与放大的 `Image`），样例统一顶格书写；文档页标题上方的分组改为面包屑；复制按钮成功态由 `data-copied` 交给 CSS；首页、文档与布局样式整备 |
+| 文档与自检 | README 与对接契约（中英）补 `blockSnippet` 第二参用法；站点编辑器文档的可插入容器由 9 个更正为 12 个；自检新增「骨架占位文字随语言包变化」一条 |
+
+### 升级与使用
+
+- **依赖**：`npm install @heikeson/md-engine@0.6.1`；无新增依赖，`mermaid` 仍是可选 peer。
+- **配置**：无破坏性变更。`blockSnippet(name)` 的旧调用照常返回中文骨架；新增文案键带中英文默认值，未覆写时不影响现有页面。
+- **产物**：`dist/` 与 `dist/styles.css` 重新构建，宿主需重新构建一次；只覆盖 `--lkes-*` 的换肤方式不受影响。
+- **回滚**：把依赖改回 `0.6.0` 即可。回滚后插入的骨架固定为中文占位，正文与已存内容不受影响。
+
+**Full Changelog**: https://github.com/heikeson/md-engine/compare/v0.6.0...v0.6.1
 
 ---
 

@@ -17,6 +17,8 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { parse, normalizeMarkdown, roundtrip, MarkdownRenderer } from "../dist/index.js";
 import { blockSnippet, insertBlockAt } from "../dist/editor/index.js";
+import { enUS } from "../dist/locales/en-US.js";
+import { zhCN } from "../dist/locales/zh-CN.js";
 
 /** 去掉 position / data 后的结构快照 */
 function shape(node) {
@@ -639,6 +641,23 @@ const DIRECT_CHECKS = [
       const result = insertBlockAt("", 0, snippet);
       const before = result.value.slice(0, result.selection.start);
       return before === snippet ? null : `光标前内容：${JSON.stringify(before)}`;
+    },
+  },
+  {
+    name: "blockSnippet：骨架占位文字随语言包变化",
+    run: () => {
+      const en = blockSnippet("Callout", enUS);
+      if (!en.includes("\nContent\n")) return `英文骨架未本地化：${JSON.stringify(en)}`;
+      const enTabs = blockSnippet("Tabs", enUS);
+      if (!enTabs.includes('<Tab value="Label">') || !enTabs.includes("\nContent\n")) {
+        return `英文 Tabs 骨架未本地化：${JSON.stringify(enTabs)}`;
+      }
+      const enMermaid = blockSnippet("Mermaid", enUS);
+      if (!enMermaid.includes('title="Chart title"') || !enMermaid.includes("A[Start]")) {
+        return `英文图表骨架未本地化：${JSON.stringify(enMermaid)}`;
+      }
+      const zh = blockSnippet("Callout", zhCN);
+      return zh.includes("\n内容\n") ? null : `中文骨架被改动：${JSON.stringify(zh)}`;
     },
   },
   {

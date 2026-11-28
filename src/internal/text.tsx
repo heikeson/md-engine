@@ -9,7 +9,7 @@
  *
  *   约定：键只增不改——新增键必须带中英文默认值；`@deprecated` 的旧键保留并单向投影。
  * @created 2026-11-02 10:30
- * @updated 2026-11-02 19:32 引入 locale 解析链、ICU 消息、根级 Provider（MdEngineProvider）与 useMessage
+ * @updated 2026-11-28 14:20 新增 `editorSnippet*`（插入骨架的占位文字，随语言变化）
  */
 
 "use client";
@@ -93,6 +93,26 @@ export interface UIText {
   editorPlaceholder: string;
   /** 插入容器按钮的提示（`{name}` 为组件标识符，不翻译） */
   editorInsertBlock: string;
+  /** 插入骨架的正文占位（容器 / 卡片 / 步骤的正文行） */
+  editorSnippetContent: string;
+  /** 插入骨架的条目标题占位（Steps / Accordion / Timeline 的 title） */
+  editorSnippetTitle: string;
+  /** 插入骨架的标签占位（Tabs 子项的 value） */
+  editorSnippetTabLabel: string;
+  /** 插入骨架的图表标题占位（Mermaid 的 title） */
+  editorSnippetChartTitle: string;
+  /** 图表骨架：起始节点文字 */
+  editorSnippetDiagramStart: string;
+  /** 图表骨架：判断节点文字 */
+  editorSnippetDiagramDecision: string;
+  /** 图表骨架：执行节点文字 */
+  editorSnippetDiagramAction: string;
+  /** 图表骨架：判断分支上的肯定回答 */
+  editorSnippetDiagramYes: string;
+  /** 插入骨架：TypeTable 标识字段的说明 */
+  editorSnippetPropId: string;
+  /** 插入骨架：TypeTable 展示字段的说明 */
+  editorSnippetPropLabel: string;
   /** @deprecated 句子碎片，改用 `editorWordCount`；仅保留以兼容既有覆写 */
   editorWordCountUnit: string;
   /** @deprecated 句子碎片，改用 `editorDiagnostic` */

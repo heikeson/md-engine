@@ -8,7 +8,7 @@
  *   语言切换属于**热更新**——重建依赖只含结构性因素（视图、只读），占位提示走
  *   CodeMirror 的 Compartment 重配，因此切语言不会丢光标、选区、滚动位置与撤销栈。
  * @created 2026-10-24 21:12
- * @updated 2026-11-18 10:40 诊断与预览共用一次 parse()：预览走 MarkdownTreeRenderer，不再二次解析
+ * @updated 2026-11-28 14:20 插入骨架的占位文字随语言变化（文案表透传给 blockSnippet）
  */
 
 "use client";
@@ -307,9 +307,11 @@ function EditorShell({ value, onChange, view = "split", config, fullscreen, onTo
           <button
             key={name}
             type="button"
-            // 按钮文字是 Markdown 里的组件标识符，不翻译；提示文案本地化
+            // 按钮文字是 Markdown 里的组件标识符，不翻译；提示文案与骨架占位文字本地化
             title={t("editorInsertBlock", { name })}
-            onClick={() => applyLive((doc, sel) => insertBlockAt(doc, sel.start, blockSnippet(name)))}
+            onClick={() =>
+              applyLive((doc, sel) => insertBlockAt(doc, sel.start, blockSnippet(name, text)))
+            }
             disabled={config?.readOnly}
           >
             {name}
